@@ -4,8 +4,13 @@ import UIKit.UIGestureRecognizerSubclass
 
 /// Ask the canvas to fit the art on screen (the nonce changes on each request).
 struct FitCommand: Equatable {
+    enum Action: Equatable { case fit, zoomIn, zoomOut }
+    var action: Action = .fit
     var nonce = 0
 }
+
+/// What Apple Pencil's double-tap or squeeze asks for (following the user's Pencil settings).
+enum PencilAction { case toggleEraser, previousTool, showColorPicker }
 
 /// SwiftUI wrapper around the infinite canvas: one finger draws; two fingers pinch (changing how
 /// big a pixel is on screen) and pan; a two-finger tap fits the art.
@@ -14,6 +19,10 @@ struct PixelCanvas: UIViewRepresentable {
     let model: EditorModel
     var fit = FitCommand()
     var drawingEnabled = true
+    /// Apple Pencil draws; fingers only pan and zoom (palm rejection).
+    var pencilOnly = false
+    var onPencilDetected: () -> Void = {}
+    var onPencilAction: (PencilAction) -> Void = { _ in }
 
     // Start from the current nonce so a recreated canvas doesn't replay the last fit.
     func makeCoordinator() -> Coordinator { Coordinator(model: model, lastFitNonce: fit.nonce) }
@@ -29,17 +38,22 @@ struct PixelCanvas: UIViewRepresentable {
 
     func updateUIView(_ view: InfiniteCanvasView, context: Context) {
         context.coordinator.model = model
+        context.coordinator.onPencilDetected = onPencilDetected
+        context.coordinator.onPencilAction = onPencilAction
         view.drawingEnabled = drawingEnabled
+        view.pencilOnly = pencilOnly
         view.render(state)
         if fit.nonce != context.coordinator.lastFitNonce {
             context.coordinator.lastFitNonce = fit.nonce
-            view.fitToArt()
+            view.perform(fit.action)
         }
     }
 
     final class Coordinator: InfiniteCanvasViewDelegate {
         var model: EditorModel
         var lastFitNonce: Int
+        var onPencilDetected: () -> Void = {}
+        var onPencilAction: (PencilAction) -> Void = { _ in }
         init(model: EditorModel, lastFitNonce: Int) {
             self.model = model
             self.lastFitNonce = lastFitNonce
@@ -51,6 +65,8 @@ struct PixelCanvas: UIViewRepresentable {
         func canvasTouchCancelled() { model.touchCancelled() }
         func canvasViewportChanged(_ viewport: Viewport) { model.viewport = viewport }
         func canvasFitRect() -> PixelRect { model.contentBounds ?? PixelRect(x: -8, y: -8, width: 16, height: 16) }
+        func canvasPencilDetected() { onPencilDetected() }
+        func canvasPencilAction(_ action: PencilAction) { onPencilAction(action) }
     }
 }
 
@@ -62,15 +78,29 @@ protocol InfiniteCanvasViewDelegate: AnyObject {
     func canvasViewportChanged(_ viewport: Viewport)
     /// World rectangle to show when fitting (the art).
     func canvasFitRect() -> PixelRect
+    /// An Apple Pencil touched the canvas.
+    func canvasPencilDetected()
+    func canvasPencilAction(_ action: PencilAction)
 }
 
 /// An endless checkerboard you can draw on. Positions are in world pixels; `viewport` says how
 /// many points one pixel takes on screen and which world point is in the middle.
-final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
+final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
     weak var delegate: InfiniteCanvasViewDelegate?
     var drawingEnabled = true {
         didSet { drawRecognizer.isEnabled = drawingEnabled }
     }
+    /// Pencil draws; one finger pans, two pinch. Turned on automatically the first time a Pencil
+    /// is used (in the Studio), and switchable in the sprite menu.
+    var pencilOnly = false {
+        didSet {
+            guard pencilOnly != oldValue else { return }
+            drawRecognizer.pencilOnly = pencilOnly
+            panRecognizer.minimumNumberOfTouches = pencilOnly ? 1 : 2
+        }
+    }
+    /// The pixel under a hovering Apple Pencil or pointer.
+    private var hoverPixel: PixelPoint?
 
     private(set) var viewport = Viewport.initial
     private var needsInitialFit = false
@@ -96,6 +126,12 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
     private lazy var pinchRecognizer = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
     private lazy var panRecognizer = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
     private lazy var fitTapRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleFitTap(_:)))
+    /// Trackpad two-finger scrolling and mouse wheels: pan the canvas.
+    private lazy var scrollRecognizer = UIPanGestureRecognizer(target: self, action: #selector(handlePan(_:)))
+    /// Apple Pencil hover (M2 iPads and later) and pointer hover: preview the pixel.
+    private lazy var hoverRecognizer = UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:)))
+    private let hoverLayer = CAShapeLayer()
+    private let hoverUnderLayer = CAShapeLayer()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -137,13 +173,32 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
         layer.addSublayer(selectionUnderLayer)
         layer.addSublayer(selectionLayer)
 
+        let fingers = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
         panRecognizer.minimumNumberOfTouches = 2
         panRecognizer.maximumNumberOfTouches = 2
+        panRecognizer.allowedTouchTypes = fingers          // the Pencil and mouse never pan
         fitTapRecognizer.numberOfTouchesRequired = 2
-        for g in [drawRecognizer, pinchRecognizer, panRecognizer, fitTapRecognizer] as [UIGestureRecognizer] {
+        fitTapRecognizer.allowedTouchTypes = fingers
+        scrollRecognizer.allowedScrollTypesMask = .all
+        scrollRecognizer.allowedTouchTypes = []            // scroll events only, no touches
+        drawRecognizer.onPencil = { [weak self] in self?.delegate?.canvasPencilDetected() }
+        for g in [drawRecognizer, pinchRecognizer, panRecognizer, fitTapRecognizer, scrollRecognizer, hoverRecognizer] as [UIGestureRecognizer] {
             g.delegate = self
             addGestureRecognizer(g)
         }
+
+        hoverUnderLayer.fillColor = nil
+        hoverUnderLayer.strokeColor = Theme.uiInk.cgColor
+        hoverUnderLayer.lineWidth = 3
+        hoverLayer.fillColor = nil
+        hoverLayer.strokeColor = Theme.uiCream.cgColor
+        hoverLayer.lineWidth = 1.5
+        layer.addSublayer(hoverUnderLayer)
+        layer.addSublayer(hoverLayer)
+
+        let pencil = UIPencilInteraction()
+        pencil.delegate = self
+        addInteraction(pencil)
 
         isAccessibilityElement = true
         accessibilityTraits = .allowsDirectInteraction
@@ -176,6 +231,15 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
 
     /// Fits the art (or the area around the origin on a blank canvas) at the largest whole-point
     /// pixel size that leaves a margin.
+    func perform(_ action: FitCommand.Action) {
+        let centre = CGPoint(x: bounds.midX, y: bounds.midY)
+        switch action {
+        case .fit: fitToArt()
+        case .zoomIn: zoom(to: (s * 2).rounded(), about: centre)
+        case .zoomOut: zoom(to: max(1, (s / 2).rounded()), about: centre)
+        }
+    }
+
     func fitToArt() {
         guard bounds.width > 0, bounds.height > 0 else { needsInitialFit = true; return }
         let r = delegate?.canvasFitRect() ?? state?.bounds ?? SpriteProject.initialBounds
@@ -315,6 +379,15 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
             selectionLayer.removeAnimation(forKey: "ants")
         }
 
+        if let h = hoverPixel, drawingEnabled {
+            let path = CGPath(rect: viewRect(PixelRect(x: h.x, y: h.y, width: 1, height: 1)), transform: nil)
+            hoverLayer.path = path
+            hoverUnderLayer.path = path
+        } else {
+            hoverLayer.path = nil
+            hoverUnderLayer.path = nil
+        }
+
         if let points = st.motionPath, points.count > 1 {
             let p = CGMutablePath()
             p.addLines(between: points.map { viewPoint($0.x, $0.y) })
@@ -327,11 +400,19 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
     // MARK: Gestures
 
     @objc private func handleDraw(_ g: DrawGestureRecognizer) {
-        let p = worldPoint(g.location(in: self))
         switch g.state {
-        case .began: delegate?.canvasTouchBegan(at: p)
-        case .changed: delegate?.canvasTouchMoved(to: p)
-        case .ended: delegate?.canvasTouchEnded()
+        case .began:
+            hoverPixel = nil
+            let samples = g.drainSamples()
+            delegate?.canvasTouchBegan(at: worldPoint(samples.first ?? g.location(in: self)))
+            for p in samples.dropFirst() { delegate?.canvasTouchMoved(to: worldPoint(p)) }
+        case .changed:
+            // Every sample since the last update (Apple Pencil reports up to 240 a second), so
+            // fast curves keep their shape.
+            for p in g.drainSamples() { delegate?.canvasTouchMoved(to: worldPoint(p)) }
+        case .ended:
+            for p in g.drainSamples() { delegate?.canvasTouchMoved(to: worldPoint(p)) }
+            delegate?.canvasTouchEnded()
         case .cancelled, .failed: delegate?.canvasTouchCancelled()
         default: break
         }
@@ -374,6 +455,45 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
         report()
     }
 
+    @objc private func handleHover(_ g: UIHoverGestureRecognizer) {
+        switch g.state {
+        case .began, .changed: hoverPixel = worldPoint(g.location(in: self)).pixel
+        default: hoverPixel = nil
+        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        if let st = state { layoutOverlays(st) }
+        CATransaction.commit()
+    }
+
+    // MARK: Apple Pencil double-tap and squeeze
+
+    /// iPadOS before 17.5.
+    func pencilInteractionDidTap(_ interaction: UIPencilInteraction) {
+        perform(pencil: UIPencilInteraction.preferredTapAction)
+    }
+
+    @available(iOS 17.5, *)
+    func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveTap tap: UIPencilInteraction.Tap) {
+        perform(pencil: UIPencilInteraction.preferredTapAction)
+    }
+
+    @available(iOS 17.5, *)
+    func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveSqueeze squeeze: UIPencilInteraction.Squeeze) {
+        if squeeze.phase == .ended { perform(pencil: UIPencilInteraction.preferredSqueezeAction) }
+    }
+
+    /// Follows the user's choice in Settings › Apple Pencil.
+    private func perform(pencil action: UIPencilPreferredAction) {
+        if #available(iOS 17.5, *), action == .runSystemShortcut { return }   // the system handles it
+        switch action {
+        case .ignore: break
+        case .switchEraser: delegate?.canvasPencilAction(.toggleEraser)
+        case .switchPrevious: delegate?.canvasPencilAction(.previousTool)
+        default: delegate?.canvasPencilAction(.showColorPicker)            // colour / contextual palette
+        }
+    }
+
     @objc private func handleFitTap(_ g: UITapGestureRecognizer) {
         if g.state == .ended, CACurrentMediaTime() - lastTransformTime > 0.4 { fitToArt() }
     }
@@ -383,29 +503,59 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
     }
 }
 
-/// Starts the instant one finger lands, so single taps paint a pixel. When a second finger arrives
-/// the stroke stops so the view can pinch/pan: within 0.25 s it's treated as the start of a pinch
-/// and cancelled (the stray stroke is undone); later, the stroke so far is kept.
+/// Starts the instant a finger or Pencil lands, so single taps paint a pixel. When a second finger
+/// arrives the stroke stops so the view can pinch/pan: within 0.25 s it's treated as the start of a
+/// pinch and cancelled (the stray stroke is undone); later, the stroke so far is kept.
+///
+/// With `pencilOnly`, fingers are ignored (they pan and zoom instead), and nothing interrupts a
+/// Pencil stroke — a resting palm can't draw or cut it short.
 final class DrawGestureRecognizer: UIGestureRecognizer {
+    var pencilOnly = false
+    /// Called when an Apple Pencil touches the view.
+    var onPencil: (() -> Void)?
     private var tracked: UITouch?
     private var startTime: TimeInterval = 0
     private let handOffWindow: TimeInterval = 0.25
+    /// Locations since the last update, in the view's coordinates, including coalesced samples.
+    private var samples: [CGPoint] = []
+
+    func drainSamples() -> [CGPoint] {
+        defer { samples.removeAll(keepingCapacity: true) }
+        return samples
+    }
+
+    private func isFinger(_ t: UITouch) -> Bool { t.type == .direct }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
+        if touches.contains(where: { $0.type == .pencil }) { onPencil?() }
+
         if tracked == nil {
-            // Only fingers on the canvas count (a thumb resting on the dock mustn't block drawing).
-            let active = event.allTouches?.filter { $0.view === view && $0.phase != .ended && $0.phase != .cancelled }.count ?? touches.count
-            guard touches.count == 1, active <= 1, let t = touches.first else {
+            if pencilOnly {
+                for t in touches where isFinger(t) { ignore(t, for: event) }
+            }
+            let candidates = touches.filter { !(pencilOnly && isFinger($0)) }
+            guard !candidates.isEmpty else { return }
+            // Only touches on the canvas count (a thumb resting on the dock mustn't block drawing).
+            let active = event.allTouches?.filter {
+                $0.view === view && $0.phase != .ended && $0.phase != .cancelled && !(pencilOnly && isFinger($0))
+            }.count ?? candidates.count
+            guard candidates.count == 1, active <= 1, let t = candidates.first else {
                 state = .failed
                 return
             }
             tracked = t
             startTime = t.timestamp
+            samples = [t.location(in: view)]
             state = .began
             return
         }
-        // Another finger joined.
+
+        // Another touch joined. A Pencil stroke carries on regardless (palm rejection).
+        if pencilOnly || tracked?.type == .pencil {
+            for t in touches where t !== tracked { ignore(t, for: event) }
+            return
+        }
         let quick = (touches.first?.timestamp ?? startTime) - startTime < handOffWindow
         if state == .began || state == .changed {
             state = quick ? .cancelled : .ended
@@ -415,6 +565,8 @@ final class DrawGestureRecognizer: UIGestureRecognizer {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesMoved(touches, with: event)
         guard let t = tracked, touches.contains(t), state == .began || state == .changed else { return }
+        let coalesced = event.coalescedTouches(for: t) ?? [t]
+        samples.append(contentsOf: coalesced.map { $0.location(in: view) })
         state = .changed
     }
 
@@ -426,11 +578,13 @@ final class DrawGestureRecognizer: UIGestureRecognizer {
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesCancelled(touches, with: event)
+        guard let t = tracked, touches.contains(t) else { return }
         state = (state == .began || state == .changed) ? .cancelled : .failed
     }
 
     override func reset() {
         super.reset()
         tracked = nil
+        samples.removeAll(keepingCapacity: true)
     }
 }

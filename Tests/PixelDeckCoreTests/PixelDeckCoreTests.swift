@@ -597,3 +597,42 @@ final class LayerTests: XCTestCase {
         XCTAssertEqual(p.frames[0].layers.count, 1)
     }
 }
+
+final class ToolSwitchTests: XCTestCase {
+    func testEraserToggleAndPreviousTool() {
+        let m = makeModel()
+        m.tool = .fill
+        m.toggleEraser()
+        XCTAssertEqual(m.tool, .eraser)
+        m.toggleEraser()
+        XCTAssertEqual(m.tool, .fill, "back to the tool before the eraser")
+        m.tool = .shape
+        m.switchToPreviousTool()
+        XCTAssertEqual(m.tool, .fill)
+        m.switchToPreviousTool()
+        XCTAssertEqual(m.tool, .shape)
+    }
+
+    func testStepFrameWraps() {
+        let m = makeModel()
+        m.addKeyframe(); m.addKeyframe()
+        XCTAssertEqual(m.currentIndex, 2)
+        m.stepFrame(1)
+        XCTAssertEqual(m.currentIndex, 0)
+        m.stepFrame(-1)
+        XCTAssertEqual(m.currentIndex, 2)
+    }
+
+    func testCoalescedSamplesDrawAContinuousLine() {
+        // The canvas feeds every Pencil sample; sub-pixel steps must still join up.
+        let m = makeModel()
+        m.touchBegan(at: Vec2(x: 0.2, y: 0.5))
+        var x = 0.2
+        while x < 10 { x += 0.37; m.touchMoved(to: Vec2(x: x, y: 0.5 + x * 0.3)) }
+        m.touchEnded()
+        // No gaps: every column from start to end has a painted pixel.
+        for x in 0..<10 {
+            XCTAssertTrue((-2..<8).contains { m.pixel(P(x, $0)) == .black }, "column \(x) painted")
+        }
+    }
+}

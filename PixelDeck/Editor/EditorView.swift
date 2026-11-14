@@ -16,6 +16,10 @@ struct EditorView: View {
     @State private var renameText = ""
     @State private var editingSwatch: SwatchEdit?
     @State private var showingLayers = false
+    /// Apple Pencil draws and fingers move the canvas. Switched on the first time a Pencil is used.
+    @AppStorage("pencilOnly") private var pencilOnly = false
+    @AppStorage("pencilDetected") private var pencilDetected = false
+    @State private var pencilNotice = false
     /// Chosen from the space the Studio actually has — never from device type or orientation.
     @State private var sidePanel = false
 
@@ -69,6 +73,23 @@ struct EditorView: View {
         .proUpgradeSheet($upgrade)
         .sheet(isPresented: $showingTween) { TweenSheet(model: model) }
         .sheet(isPresented: $showingLayers) { LayersSheet(model: model) }
+        .background { KeyboardShortcuts(model: model, canvas: canvas, onExport: openExport,
+                                        onNewCanvas: newCanvas, onLayers: { showingLayers = true }) }
+        .overlay(alignment: .top) {
+            if pencilNotice {
+                Text("Apple Pencil draws. Fingers now move and zoom the canvas.")
+                    .font(AppFont.body(14, .medium, relativeTo: .subheadline))
+                    .foregroundStyle(Theme.onAccent)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Theme.accent2)
+                    .padding(.top, 60)
+                    .padding(.horizontal, 24)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .accessibilityAddTraits(.isStaticText)
+            }
+        }
         .fullScreenCover(isPresented: $showingExport) { ExportView(project: model.project) }
         .sheet(item: $editingSwatch) { edit in
             SwatchEditor(initial: model.palette[edit.index],
@@ -89,11 +110,7 @@ struct EditorView: View {
     private var dock: some View {
         StudioDock(model: model,
                    onGallery: { dismiss() },
-                   onExport: {
-                       model.isPlaying = false
-                       model.commitSelection()
-                       showingExport = true
-                   },
+                   onExport: openExport,
                    onEditSwatch: { editingSwatch = SwatchEdit(index: $0) })
     }
 
@@ -125,9 +142,14 @@ struct EditorView: View {
                 ? Int((ctx.date.timeIntervalSinceReferenceDate * Double(model.project.fps)).rounded(.down)) % max(model.frameCount, 1)
                 : nil
             PixelCanvas(state: model.canvasState(playingFrame: frame), model: model, fit: fit,
-                        drawingEnabled: !swipeAnywhere && !model.isPlaying)
+                        drawingEnabled: !swipeAnywhere && !model.isPlaying,
+                        pencilOnly: pencilOnly,
+                        onPencilDetected: pencilFirstSeen,
+                        onPencilAction: pencilAction)
                 .accessibilityLabel(Text("Canvas, frame \(model.currentIndex + 1) of \(model.frameCount)"))
-                .accessibilityHint("Draw with one finger. Pinch to change the pixel size, drag with two fingers to move, tap with two fingers to fit the art.")
+                .accessibilityHint(pencilOnly
+                    ? Text("Draw with Apple Pencil. Drag with one finger to move, pinch to change the pixel size, tap with two fingers to fit the art.")
+                    : Text("Draw with one finger. Pinch to change the pixel size, drag with two fingers to move, tap with two fingers to fit the art."))
         }
     }
 
@@ -142,9 +164,14 @@ struct EditorView: View {
                 renameText = model.project.name
                 showingRename = true
             } label: { Label("Rename", systemImage: "pencil") }
-            Button { fit.nonce += 1 } label: { Label("Fit art to screen", systemImage: "arrow.down.right.and.arrow.up.left") }
+            Button { canvas(.fit) } label: { Label("Fit art to screen", systemImage: "arrow.down.right.and.arrow.up.left") }
             Toggle(isOn: Binding(get: { model.showGrid }, set: { model.showGrid = $0 })) {
                 Label("Pixel grid", systemImage: "grid")
+            }
+            if pencilDetected {
+                Toggle(isOn: $pencilOnly) {
+                    Label("Draw with Apple Pencil only", systemImage: "applepencil")
+                }
             }
             Toggle(isOn: $swipeAnywhere) {
                 Label("Swipe anywhere", systemImage: "hand.draw")
@@ -316,11 +343,41 @@ struct EditorView: View {
 
     // MARK: Actions
 
+    private func canvas(_ action: FitCommand.Action) {
+        fit = FitCommand(action: action, nonce: fit.nonce + 1)
+    }
+
+    private func openExport() {
+        model.isPlaying = false
+        model.commitSelection()
+        showingExport = true
+    }
+
+    /// The first Pencil touch switches to Pencil-only drawing, like other iPad drawing apps,
+    /// and says so once. It can be turned off in the sprite menu.
+    private func pencilFirstSeen() {
+        guard !pencilDetected else { return }
+        pencilDetected = true
+        pencilOnly = true
+        withAnimation { pencilNotice = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) { withAnimation { pencilNotice = false } }
+    }
+
+    private func pencilAction(_ action: PencilAction) {
+        switch action {
+        case .toggleEraser: model.toggleEraser()
+        case .previousTool: model.switchToPreviousTool()
+        case .showColorPicker:
+            let i = model.palette.firstIndex(of: model.color) ?? 0
+            editingSwatch = SwatchEdit(index: i)
+        }
+    }
+
     private func newCanvas() {
         model.isPlaying = false
         model.commitSelection()
         store.save(model.project)
         model.load(store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it")))
-        fit.nonce += 1
+        canvas(.fit)
     }
 }

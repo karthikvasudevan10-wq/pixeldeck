@@ -60,8 +60,13 @@ final class EditorModel {
     private(set) var currentIndex = 0
 
     var tool: Tool = .pencil {
-        didSet { if tool != .select { commitSelection() } }
+        didSet {
+            if tool != .select { commitSelection() }
+            if tool != oldValue { previousTool = oldValue }
+        }
     }
+    /// For Apple Pencil's "switch to previous tool" and toggling the eraser.
+    private(set) var previousTool: Tool = .pencil
     /// Mirror drawing across world x = 0 (pencil, eraser, fill and shapes).
     var mirror = false
     var shapeKind: ShapeKind = .rectangle
@@ -217,6 +222,29 @@ final class EditorModel {
         return CanvasState(bounds: bounds, grid: current.grid, gridVersion: current.version,
                            onion: previous?.grid, onionVersion: previous?.version,
                            onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect, motionPath: path, mirror: mirror)
+    }
+
+    // MARK: Tool switching (Apple Pencil double-tap / squeeze, keyboard)
+
+    /// Eraser on, or back to the tool you were using.
+    func toggleEraser() {
+        if tool == .eraser {
+            tool = previousTool == .eraser ? .pencil : previousTool
+        } else {
+            tool = .eraser
+        }
+    }
+
+    func switchToPreviousTool() {
+        let p = previousTool
+        if p != tool { tool = p }
+    }
+
+    /// Previous/next frame, wrapping around (arrow keys).
+    func stepFrame(_ delta: Int) {
+        guard frameCount > 1 else { return }
+        isPlaying = false
+        selectFrame(((currentIndex + delta) % frameCount + frameCount) % frameCount)
     }
 
     // MARK: Colour

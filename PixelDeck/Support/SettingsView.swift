@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @State private var showingUpgrade = false
     @State private var showingSwipes = false
+    @AppStorage("pencilOnly") private var pencilOnly = false
 
     var body: some View {
         NavigationStack {
@@ -21,6 +22,24 @@ struct SettingsView: View {
                                 row(icon: .plus, title: "Unlock Pro", tint: Theme.accent) { showingUpgrade = true }
                             }
                             row(icon: .undo, title: "Restore purchases") { Task { await purchases.restore() } }
+                        }
+
+                        group("Drawing") {
+                            Toggle(isOn: $pencilOnly) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Draw with Apple Pencil only")
+                                        .font(AppFont.body(15, .medium, relativeTo: .body))
+                                        .foregroundStyle(Theme.text)
+                                    Text("Fingers move and zoom the canvas, and a resting palm can't draw. Turns on by itself the first time you use a Pencil.")
+                                        .font(AppFont.body(12, relativeTo: .caption))
+                                        .foregroundStyle(Theme.muted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .tint(Theme.accent)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Theme.surface)
                         }
 
                         group("Help") {

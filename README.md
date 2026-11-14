@@ -33,6 +33,39 @@ The look follows the design handoff: a dark "night" palette, square corners, Sil
   - Free: art up to 64 × 64 px, 12 frames per sprite, every tool including mirror and tweening, and PNG or sprite sheet export up to 4×.
   - Pro: art up to 512 × 512, up to 999 frames (fewer for very large sprites, to protect memory), GIF and video export, and exports up to 16×.
   - All the limits are in `Core/FeatureAccess.swift`.
+- **iPad and Apple Pencil**:
+  - **Pencil-only drawing** (palm rejection): the first Pencil touch switches it on. The Pencil draws while one finger pans and two fingers pinch, and a resting palm can't draw or interrupt a stroke. You can switch it in the sprite menu or Settings.
+  - Strokes use every Pencil sample (up to 240 a second), so fast curves keep their shape.
+  - **Double-tap and squeeze** follow your Settings › Apple Pencil choice: switch to the eraser, switch to the previous tool, or open the colour picker.
+  - **Hover preview**: a hovering Pencil (M2 iPads and later) or pointer outlines the pixel it will paint.
+  - **Trackpad and mouse**: click to draw, two-finger scroll to pan, pinch to zoom, and right-click for the frame and layer menus.
+  - **Keyboard shortcuts** (hold ⌘ to see the ⌘ ones):
+
+    | Key | Action |
+    |---|---|
+    | B | Pencil |
+    | E | Eraser |
+    | X | Toggle eraser |
+    | G | Fill |
+    | I | Colour picker |
+    | U | Shapes |
+    | M | Select |
+    | Y | Mirror |
+    | O | Onion skin |
+    | 1–0 | Palette colours |
+    | ← / → | Previous / next frame |
+    | N | New frame |
+    | Space | Play / pause |
+    | Esc | Deselect |
+    | ⌘Z / ⇧⌘Z | Undo / redo |
+    | ⌘= / ⌘− / ⌘0 | Zoom in / zoom out / fit |
+    | ⌘D | Duplicate frame |
+    | ⌘N | New canvas |
+    | ⌘L | Layers |
+    | ⌘E | Export |
+    | ⌘' | Pixel grid |
+  - **Layout**: the gallery adds columns as the window widens, and the welcome and export screens stay at a readable width.
+  - **Drag and drop**: drag the export preview into another app in Split View or Stage Manager to drop the file.
 - **Adaptive layout**: when there's room, such as an unfolded iPhone Duo, an iPad or landscape, the dock becomes a side panel. Your zoom and position survive folding, rotating and resizing.
 - **Localisation-ready**: the text uses a String Catalog with English plurals, and the layout mirrors for right-to-left languages.
 - **Accessibility**: Reduce Motion pauses the decorative animations (stars, swipe hints and gallery previews). Controls have VoiceOver labels, and body text scales with Dynamic Type.

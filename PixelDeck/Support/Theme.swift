@@ -424,3 +424,11 @@ private enum SpriteImageCache {
         return c
     }
 }
+
+extension View {
+    /// Keeps phone-shaped content (welcome text, export options) at a comfortable width on iPad,
+    /// centred, instead of stretching across a 13-inch screen.
+    func readableWidth(_ max: CGFloat = 560) -> some View {
+        frame(maxWidth: max).frame(maxWidth: .infinity)
+    }
+}

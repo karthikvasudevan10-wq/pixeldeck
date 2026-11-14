@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import StoreKit
+import UniformTypeIdentifiers
 
 /// Export: a looping preview, scale chips with the live output size, a format list, then
 /// Save (to Photos) or Share (Files, AirDrop, other apps — including the sheet's JSON).
@@ -53,6 +54,7 @@ struct ExportView: View {
         .padding(.horizontal, 16)
         .padding(.top, 14)
         .padding(.bottom, 20)
+        .readableWidth(640)
         .screenBackground()
         .overlay(alignment: .top) { if savedToast { toast } }
         .onAppear(perform: chooseStartingFormat)
@@ -105,8 +107,10 @@ struct ExportView: View {
         }
         .frame(height: 260)
         .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
+        .onDrag(dragProvider)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Animation preview")
+        .accessibilityHint("Drag into another app to drop the exported file")
     }
 
     private var scaleSection: some View {
@@ -263,6 +267,34 @@ struct ExportView: View {
                 }
             }
         }
+    }
+
+    /// Dragging the preview into another app drops the file in the selected format and scale,
+    /// made when the other app asks for it. (PNG frames drop as a single sprite sheet.)
+    private func dragProvider() -> NSItemProvider {
+        var opts = options
+        if opts.format == .frames { opts.format = .spriteSheet }
+        if opts.format.needsPro && !access.allowsAnimatedExport { opts.format = .spriteSheet }
+        let src = source
+        let type: UTType = switch opts.format {
+        case .gif: .gif
+        case .video: .mpeg4Movie
+        case .spriteSheet, .frames: .png
+        }
+        let provider = NSItemProvider()
+        provider.suggestedName = project.name
+        provider.registerFileRepresentation(forTypeIdentifier: type.identifier, fileOptions: [], visibility: .all) { done in
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    let urls = try SpriteExporter.export(src, options: opts)
+                    done(urls.first, false, nil)
+                } catch {
+                    done(nil, false, error)
+                }
+            }
+            return nil
+        }
+        return provider
     }
 
     private func save() {

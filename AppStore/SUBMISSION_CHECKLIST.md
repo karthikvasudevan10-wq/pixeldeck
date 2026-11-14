@@ -80,6 +80,16 @@ You still need to do this, and no review can replace it:
 - [ ] **Pricing**: Free, with the in-app purchase. See the business model notes below.
 - [ ] Paste the text from `metadata.md` and the review notes.
 
+### iPad
+- [ ] Test on a real iPad with Apple Pencil:
+  - Draw with a palm resting on the screen.
+  - Make fast curved strokes.
+  - Double-tap the Pencil, and squeeze it on a Pencil Pro.
+  - Check the hover preview on an M2 iPad or later.
+- [ ] Test with a Magic Keyboard or trackpad: hold ⌘ to see the shortcuts, scroll to pan, pinch to zoom, and right-click a frame.
+- [ ] Use Split View and Stage Manager at several window sizes, and drag the export preview into Files or Notes.
+- [ ] Take 13" iPad screenshots that show the Pencil workflow, since editors look for it when picking apps to feature.
+
 ### iPhone Duo
 - [ ] Build with **Xcode 27.1 or later**. With the iOS 26 SDK the app is shown in a box in the middle of the inner display, with the iOS 27 SDK it nearly fills it, and from 27.1 it's fully optimised (Apple, "Prepare your apps for iPhone Duo").
 - [ ] In Xcode's **Device Hub**, check every pose (folded, open like a book, tent, propped) in both orientations. Fold and unfold mid-stroke and while zoomed in: the canvas should keep its zoom and position, and the editor should switch between stacked and side-by-side.

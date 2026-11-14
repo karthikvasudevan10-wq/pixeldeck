@@ -86,6 +86,7 @@ private struct WelcomeView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 24)
         .padding(.top, 28)
+        .readableWidth()
     }
 
     private var actions: some View {
@@ -102,6 +103,7 @@ private struct WelcomeView: View {
         .padding(.horizontal, 24)
         .padding(.top, 6)          // room for the button's press-in shadow
         .padding(.bottom, 32)
+        .readableWidth()
     }
 
     private var logo: some View {
@@ -231,6 +233,7 @@ private struct GesturesView: View {
         .padding(.horizontal, 20)
         .padding(.top, 12)
         .padding(.bottom, 22)
+        .readableWidth()
     }
 
     private func gestureCard(demo: AnyView, icon: PixelIcon, iconFill: Color,

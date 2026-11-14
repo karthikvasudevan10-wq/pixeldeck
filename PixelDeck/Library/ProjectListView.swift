@@ -37,7 +37,8 @@ struct ProjectListView: View {
             VStack(spacing: 0) {
                 header
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                    // Two columns on iPhone (as designed); more on iPad as the width allows.
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 165, maximum: 260), spacing: 12)], spacing: 12) {
                         newCanvasTile
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { i, project in
                             NavigationLink(value: project.id) {
