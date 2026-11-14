@@ -6,15 +6,6 @@ enum Easing: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var title: String {
-        switch self {
-        case .linear: "Linear"
-        case .easeIn: "Ease in"
-        case .easeOut: "Ease out"
-        case .easeInOut: "Ease in & out"
-        }
-    }
-
     func apply(_ t: Double) -> Double {
         let t = min(max(t, 0), 1)
         switch self {
@@ -140,7 +131,6 @@ struct MotionPath: Hashable, Sendable {
 enum TweenPathStyle: String, CaseIterable, Identifiable, Sendable {
     case traced, straight
     var id: String { rawValue }
-    var title: String { self == .traced ? "Follow my drag" : "Straight line" }
 }
 
 /// Where generated in-between frames go.
@@ -150,7 +140,6 @@ enum TweenMode: String, CaseIterable, Identifiable, Sendable {
     /// Re-draw the selection into the frames that already follow the current one.
     case spreadAcrossFollowing
     var id: String { rawValue }
-    var title: String { self == .insertFrames ? "Insert new frames" : "Use existing next frames" }
 }
 
 /// Moves a patch of pixels along a path, one position per frame.

@@ -244,3 +244,16 @@ final class FeatureAccessTests: XCTestCase {
         try? FileManager.default.removeItem(at: dir)
     }
 }
+
+final class LocalisableNamesTests: XCTestCase {
+    func testStoreUsesCallerProvidedNames() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = ProjectStore(directory: dir)
+        let a = store.create(size: 8, baseName: "Lutin")
+        XCTAssertEqual(a.name, "Lutin 1")
+        XCTAssertEqual(store.create(size: 8, baseName: "Lutin").name, "Lutin 2")
+        store.duplicate(id: a.id) { "Copie de \($0)" }
+        XCTAssertTrue(store.projects.contains { $0.name == "Copie de Lutin 1" })
+        try? FileManager.default.removeItem(at: dir)
+    }
+}

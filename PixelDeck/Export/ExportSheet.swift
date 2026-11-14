@@ -19,16 +19,20 @@ struct ExportSheet: View {
 
     private var scales: [Int] { SpriteExporter.allowedScales(for: project, options: options) }
 
-    private var outputDescription: String {
+    /// Whole sentences with placeholders, so translators can reorder them.
+    private var outputDescription: Text {
         let s = options.scale
+        let side = project.size * s
         switch options.format {
         case .spriteSheet:
             let size = SpriteSheet.pixelSize(canvas: project.size, frameCount: project.frames.count, scale: s, layout: options.layout)
-            return "One \(size.width) × \(size.height) PNG" + (options.includeMetadata ? " + JSON frame data" : "")
+            return options.includeMetadata
+                ? Text("One \(size.width) × \(size.height) PNG plus JSON frame data")
+                : Text("One \(size.width) × \(size.height) PNG")
         case .gif:
-            return "Looping \(project.size * s) × \(project.size * s) GIF at \(project.fps) fps"
+            return Text("Looping \(side) × \(side) GIF at \(project.fps) fps")
         case .frames:
-            return "\(project.frames.count) PNG file\(project.frames.count == 1 ? "" : "s"), \(project.size * s) × \(project.size * s)"
+            return Text("\(project.frames.count) PNG files, each \(side) × \(side)", comment: "Export summary (plural on the first number)")
         }
     }
 
@@ -38,7 +42,14 @@ struct ExportSheet: View {
                 Section {
                     Picker("Format", selection: formatBinding) {
                         ForEach(ExportFormat.allCases) { format in
-                            Text(format == .gif && !purchases.access.allowsGIF ? "GIF · Pro" : format.title).tag(format)
+                            Group {
+                                if format == .gif && !purchases.access.allowsGIF {
+                                    Text("\(Text(format.title)) · Pro", comment: "A locked option; the placeholder is the option name")
+                                } else {
+                                    Text(format.title)
+                                }
+                            }
+                            .tag(format)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -56,13 +67,20 @@ struct ExportSheet: View {
                 Section {
                     Picker("Scale", selection: scaleBinding) {
                         ForEach(scales, id: \.self) { s in
-                            Text(s > purchases.access.maxExportScale ? "\(s)× · Pro" : "\(s)×").tag(s)
+                            Group {
+                                if s > purchases.access.maxExportScale {
+                                    Text("\(s)× · Pro", comment: "Export scale that needs Pro")
+                                } else {
+                                    Text("\(s)×", comment: "Export scale, e.g. 4×")
+                                }
+                            }
+                            .tag(s)
                         }
                     }
                 } header: {
                     Text("Size")
                 } footer: {
-                    Text(outputDescription)
+                    outputDescription
                 }
 
                 Section {

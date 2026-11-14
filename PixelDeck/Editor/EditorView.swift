@@ -13,36 +13,64 @@ struct EditorView: View {
     @State private var showingPlayback = false
     @State private var showingRename = false
     @State private var renameText = ""
+    /// Canvas beside a tool panel, rather than stacked. Chosen from the space the editor actually
+    /// has — never from device type or orientation — so it adapts when iPhone Duo folds or
+    /// unfolds, in iPad multitasking, and in landscape.
+    @State private var sidePanel = false
 
     init(project: SpriteProject) {
         _model = State(initialValue: EditorModel(project: project))
     }
 
+    static let sidePanelWidth: CGFloat = 320
+
+    /// Side-by-side when there's clearly more width than height and room for the panel plus a
+    /// usefully large canvas.
+    static func prefersSidePanel(_ size: CGSize) -> Bool {
+        size.width > size.height * 1.15 && size.width >= sidePanelWidth + 300
+    }
+
     var body: some View {
-        VStack(spacing: 8) {
-            toolRow
+        Group {
+            if sidePanel {
+                HStack(alignment: .top, spacing: 4) {
+                    deck
+                    ScrollView {
+                        VStack(spacing: 12) {
+                            HStack(spacing: 4) { toolButtons }
+                            HStack(spacing: 4) { zoomButtons }
+                            if model.tool == .select { selectionBar }
+                            ColorBar(model: model)
+                            FilmStrip(model: model)
+                        }
+                        .padding(.vertical, 8)
+                    }
+                    .frame(width: Self.sidePanelWidth)
+                    .scrollBounceBehavior(.basedOnSize)
+                }
+            } else {
+                VStack(spacing: 8) {
+                    HStack(spacing: 4) {
+                        toolButtons
+                        Spacer(minLength: 4)
+                        zoomButtons
+                    }
+                    .padding(.horizontal, 12)
 
-            SwipeDeck(title: "Frame \(model.currentIndex + 1) of \(model.frameCount)",
-                      dragAnywhere: deckMode,
-                      onSwipeLeft: { model.addKeyframe() },
-                      onSwipeRight: { showingNewCanvas = true }) {
-                PixelCanvas(state: model.canvasState, model: model, zoom: zoom)
-                    .allowsHitTesting(!deckMode)
-                    .accessibilityElement()
-                    .accessibilityLabel("Canvas, \(model.size) by \(model.size) pixels, frame \(model.currentIndex + 1) of \(model.frameCount)")
-                    .accessibilityHint("Drawing on the canvas needs touch. Use the frame strip and menus for other actions.")
+                    deck
+
+                    if model.tool == .select {
+                        selectionBar
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+
+                    ColorBar(model: model)
+                    FilmStrip(model: model)
+                }
             }
-            .frame(maxHeight: .infinity)
-
-            if model.tool == .select {
-                selectionBar
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-
-            ColorBar(model: model)
-            FilmStrip(model: model)
         }
         .padding(.top, 4)
+        .onGeometryChange(for: Bool.self) { Self.prefersSidePanel($0.size) } action: { sidePanel = $0 }
         .animation(.snappy(duration: 0.2), value: model.tool == .select)
         .background(Color(.systemGroupedBackground))
         .navigationTitle(model.project.name)
@@ -63,7 +91,7 @@ struct EditorView: View {
             NewCanvasSheet { size in
                 model.commitSelection()
                 store.save(model.project)
-                model.load(store.create(size: size))
+                model.load(store.create(size: size, baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it")))
                 zoom = ZoomCommand(action: .fit, nonce: zoom.nonce + 1)
             }
         }
@@ -77,49 +105,62 @@ struct EditorView: View {
         }
     }
 
-    // MARK: Tools
-
-    private var toolRow: some View {
-        HStack(spacing: 4) {
-            ForEach(Tool.allCases) { tool in
-                Button {
-                    deckMode = false
-                    model.tool = tool
-                } label: {
-                    Image(systemName: tool.symbol)
-                        .font(.system(size: 17, weight: .medium))
-                        .frame(width: 40, height: 36)
-                        .background(model.tool == tool && !deckMode ? Color.accentColor.opacity(0.18) : .clear,
-                                    in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                        .foregroundStyle(model.tool == tool && !deckMode ? Color.accentColor : Color.primary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(tool.title)
-                .accessibilityAddTraits(model.tool == tool ? .isSelected : [])
-            }
-
-            Button { deckMode.toggle() } label: {
-                Image(systemName: "rectangle.stack")
-                    .font(.system(size: 17, weight: .medium))
-                    .frame(width: 40, height: 36)
-                    .background(deckMode ? Color.accentColor.opacity(0.18) : .clear,
-                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    .foregroundStyle(deckMode ? Color.accentColor : Color.primary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Swipe mode")
-            .accessibilityHint("Lets you swipe the whole canvas card")
-
-            Spacer(minLength: 4)
-
-            zoomButton("minus.magnifyingglass", .zoomOut, "Zoom out")
-            zoomButton("arrow.down.right.and.arrow.up.left", .fit, "Fit canvas")
-            zoomButton("plus.magnifyingglass", .zoomIn, "Zoom in")
+    private var deck: some View {
+        SwipeDeck(title: Text("Frame \(model.currentIndex + 1) of \(model.frameCount)"),
+                  dragAnywhere: deckMode,
+                  onSwipeLeft: { model.addKeyframe() },
+                  onSwipeRight: { showingNewCanvas = true }) {
+            PixelCanvas(state: model.canvasState, model: model, zoom: zoom)
+                .allowsHitTesting(!deckMode)
+                .accessibilityElement()
+                .accessibilityLabel("Canvas, \(model.size) by \(model.size) pixels, frame \(model.currentIndex + 1) of \(model.frameCount)")
+                .accessibilityHint("Drawing on the canvas needs touch. Use the frame strip and menus for other actions.")
         }
-        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private func zoomButton(_ symbol: String, _ action: ZoomAction, _ label: String) -> some View {
+    // MARK: Tools
+
+    @ViewBuilder
+    private var toolButtons: some View {
+        ForEach(Tool.allCases) { tool in
+            Button {
+                deckMode = false
+                model.tool = tool
+            } label: {
+                Image(systemName: tool.symbol)
+                    .font(.system(size: 17, weight: .medium))
+                    .frame(width: 40, height: 36)
+                    .background(model.tool == tool && !deckMode ? Color.accentColor.opacity(0.18) : .clear,
+                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                    .foregroundStyle(model.tool == tool && !deckMode ? Color.accentColor : Color.primary)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(tool.title))
+            .accessibilityAddTraits(model.tool == tool ? .isSelected : [])
+        }
+
+        Button { deckMode.toggle() } label: {
+            Image(systemName: "rectangle.stack")
+                .font(.system(size: 17, weight: .medium))
+                .frame(width: 40, height: 36)
+                .background(deckMode ? Color.accentColor.opacity(0.18) : .clear,
+                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+                .foregroundStyle(deckMode ? Color.accentColor : Color.primary)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Swipe mode")
+        .accessibilityHint("Lets you swipe the whole canvas card")
+    }
+
+    @ViewBuilder
+    private var zoomButtons: some View {
+        zoomButton("minus.magnifyingglass", .zoomOut, "Zoom out")
+        zoomButton("arrow.down.right.and.arrow.up.left", .fit, "Fit canvas")
+        zoomButton("plus.magnifyingglass", .zoomIn, "Zoom in")
+    }
+
+    private func zoomButton(_ symbol: String, _ action: ZoomAction, _ label: LocalizedStringKey) -> some View {
         Button {
             zoom = ZoomCommand(action: action, nonce: zoom.nonce + 1)
         } label: {

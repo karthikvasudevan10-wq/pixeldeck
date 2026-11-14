@@ -9,17 +9,19 @@ struct OnboardingView: View {
     private struct Tip: Identifiable {
         let id = UUID()
         let symbol: String
-        let title: String
-        let text: String
+        let title: LocalizedStringResource
+        let text: LocalizedStringResource
     }
 
     private let tips = [
         Tip(symbol: "square.grid.3x3.fill", title: "Draw pixel by pixel",
             text: "Pick a canvas from 8×8 to 256×256. One finger draws. Pinch with two fingers to zoom and drag with two fingers to move around."),
-        Tip(symbol: "hand.draw", title: "Swipe left for a new frame",
-            text: "Drag the card's top strip to the left. A fresh frame appears with the previous one faintly underneath, ready to trace."),
-        Tip(symbol: "rectangle.stack.badge.plus", title: "Swipe right for a new canvas",
-            text: "Drag the card to the right to start a brand-new sprite. Your work is saved automatically."),
+        Tip(symbol: "hand.draw",
+            title: LocalizedStringResource("Swipe left for a new frame", comment: "Onboarding. In right-to-left languages the swipe is mirrored, so say 'right' here."),
+            text: LocalizedStringResource("Drag the card's top strip to the left. A fresh frame appears with the previous one faintly underneath, ready to trace.", comment: "Onboarding. In right-to-left languages say 'to the right'.")),
+        Tip(symbol: "rectangle.stack.badge.plus",
+            title: LocalizedStringResource("Swipe right for a new canvas", comment: "Onboarding. In right-to-left languages the swipe is mirrored, so say 'left' here."),
+            text: LocalizedStringResource("Drag the card to the right to start a brand-new sprite. Your work is saved automatically.", comment: "Onboarding. In right-to-left languages say 'to the left'.")),
         Tip(symbol: "point.topleft.down.to.point.bottomright.curvepath", title: "Move it, and it animates",
             text: "Use Select to grab some pixels and drag them along any path. Tap Tween and Pixel Deck draws every frame in between."),
         Tip(symbol: "square.and.arrow.up", title: "Export sprites",

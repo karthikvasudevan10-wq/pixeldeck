@@ -30,7 +30,7 @@ struct PlaybackSheet: View {
                 .padding(.horizontal, 32)
 
                 VStack {
-                    Text("\(Int(fps)) frames per second")
+                    Text("\(Int(fps)) frames per second", comment: "Playback speed (plural)")
                         .font(.headline.monospacedDigit())
                     Slider(value: $fps, in: 1...30, step: 1) {
                         Text("Speed")

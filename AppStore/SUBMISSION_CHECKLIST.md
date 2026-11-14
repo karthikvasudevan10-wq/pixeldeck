@@ -22,6 +22,8 @@ as of 13 Nov 2026.
 | Every gesture also has a visible button | ••• menu → New frame / New canvas; frame strip "+" |
 | No hidden or dormant features (2.5.19) | Everything gated is listed on the paywall |
 | Runs on iPad (2.4.1) | Universal target, all iPad orientations |
+| iPhone Duo and other resizable windows | The layout is chosen from the space available, never from the device type or orientation (`EditorView.prefersSidePanel`). Zoom and position survive a fold or unfold mid-session (`Viewport`). All orientations are allowed on iPhone, and there are no `UIScreen.main` or device-orientation checks. |
+| Localisation-ready | All UI text is extractable into `Localizable.xcstrings`, and English plurals are set up. Text is whole sentences with placeholders. Dates and numbers use the user's locale formats. Swipes and labels mirror in right-to-left languages. |
 | Reduce Motion respected, VoiceOver labels on controls | `SwipeDeck`, tool buttons, swatches |
 
 ## You need to do these
@@ -45,6 +47,20 @@ as of 13 Nov 2026.
 - [ ] **Category**: Graphics & Design (primary). Entertainment or Productivity are possible secondaries.
 - [ ] **Pricing**: Free, with the in-app purchase. See the business model notes below.
 - [ ] Paste the text from `metadata.md` and the review notes.
+
+### iPhone Duo
+- [ ] Build with **Xcode 27.1 or later**. With the iOS 26 SDK the app is shown in a box in the middle of the inner display, with the iOS 27 SDK it nearly fills it, and from 27.1 it's fully optimised (Apple, "Prepare your apps for iPhone Duo").
+- [ ] In Xcode's **Device Hub**, check every pose (folded, open like a book, tent, propped) in both orientations. Fold and unfold mid-stroke and while zoomed in: the canvas should keep its zoom and position, and the editor should switch between stacked and side-by-side.
+- [ ] Check that system toolbars still fit when iOS shows them vertically below the status bar.
+- [ ] Take Duo screenshots: outer display 1398 × 2034 and inner display 2007 × 2853 (portrait). Apple says these will be required for submissions from April 2027, and they earn an "optimised for iPhone Duo" badge.
+- [ ] Apple's Duo design guidelines page didn't load when this was written. Read it for any advice on the fold crease.
+
+### Localisation
+- [ ] Build once in Xcode 26+. Xcode then fills `Localizable.xcstrings` with every string. English plurals are already defined for the frame counts.
+- [ ] Add languages under Project → Info → Localizations, then translate in the catalog. Suggested first languages: Japanese, German, Simplified Chinese, Spanish, Brazilian Portuguese. Each string has a comment to help translators, including notes about mirroring the swipe directions for right-to-left languages.
+- [ ] Test with the scheme's pseudo-languages (Edit Scheme → Run → Options → App Language): *Double-Length* catches cut-off text, and *Right-to-Left* checks mirroring, including that the card swipes follow the finger.
+- [ ] Translate the App Store listing (name, subtitle, keywords, description and screenshots) for the same markets. Keywords are searched per storefront, so this alone can raise downloads.
+- [ ] Translate the hosted privacy policy if you localise the app.
 
 ### Testing (guideline 2.1: crashes and bugs are the top rejection reason)
 - [ ] In Xcode, go to Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration and choose `PixelDeck.storekit`. Then test buying, cancelling, restoring, and Ask to Buy (pending) in the simulator.
@@ -78,7 +94,6 @@ Ideas for later versions:
 - iCloud sync
 - Custom palettes, including .hex and .gpl palette files
 - Apple Pencil hover preview
-- Localisation (start with Japanese, German, Spanish and Brazilian Portuguese)
 - A seasonal discount using a promotional offer
 
 ## Review notes (paste into App Store Connect → App Review Information)

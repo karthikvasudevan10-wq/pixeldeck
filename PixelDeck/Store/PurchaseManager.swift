@@ -65,10 +65,10 @@ final class PurchaseManager {
                     await transaction.finish()
                     await refreshEntitlements()
                 case .unverified:
-                    errorMessage = "The App Store couldn't verify this purchase. Please try again."
+                    errorMessage = String(localized: "The App Store couldn't verify this purchase. Please try again.")
                 }
             case .pending:
-                errorMessage = "Your purchase is waiting for approval. Pro unlocks as soon as it's approved."
+                errorMessage = String(localized: "Your purchase is waiting for approval. Pro unlocks as soon as it's approved.", comment: "Shown for Ask to Buy / pending purchases")
             case .userCancelled:
                 break
             @unknown default:
@@ -84,7 +84,7 @@ final class PurchaseManager {
         do {
             try await AppStore.sync()
             await refreshEntitlements()
-            if !isPro { errorMessage = "No previous Pixel Deck Pro purchase was found for this Apple Account." }
+            if !isPro { errorMessage = String(localized: "No previous Pixel Deck Pro purchase was found for this Apple Account.") }
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -1,0 +1,141 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld new frames": {
+      "comment": "Tween frame count (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld new frame"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld new frames"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld frames per second": {
+      "comment": "Playback speed (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld frame per second"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld frames per second"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Moves the selection through the next %lld frames, keeping everything else in them.": {
+      "comment": "Tween into existing frames (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Moves the selection through the next frame, keeping everything else in it."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Moves the selection through the next %lld frames, keeping everything else in them."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld×%lld · %lld frames": {
+      "comment": "Sprite card: canvas size and frame count (plural)",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld×%2$lld · %#@frames@"
+          },
+          "substitutions": {
+            "frames": {
+              "argNum": 3,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg frame"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg frames"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld PNG files, each %lld × %lld": {
+      "comment": "Export summary (plural on the first number)",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@files@, each %2$lld × %3$lld"
+          },
+          "substitutions": {
+            "files": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg PNG file"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg PNG files"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

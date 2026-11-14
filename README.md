@@ -22,6 +22,8 @@ A native SwiftUI pixel-art and sprite-animation app for iPhone (and iPad).
 - **Export**: a sprite sheet PNG (in a row or a grid) with an optional JSON file of frame positions for game engines, an animated GIF, or one PNG per frame, at 1×–32× scale. Files go to the share sheet, so you can save them to Files or Photos, AirDrop them, and so on.
 - **Saving**: everything saves automatically to the app's Documents folder.
 - **Pixel Deck Pro** (one-time in-app purchase, StoreKit 2): 64–256 px canvases, up to 999 frames, GIF export and exports above 4×. Free users get 8–32 px canvases, 12 frames per sprite, every tool including tweening, and PNG / sprite-sheet export up to 4×. All limits are in `Core/FeatureAccess.swift`.
+- **Adaptive layout**: the editor puts the canvas beside a tool panel whenever it has the room, for example on an unfolded iPhone Duo in landscape, an iPad, or an iPhone in landscape. Otherwise it stacks them. Zoom and position survive folding, rotation and resizing.
+- **Localisation-ready**: every string is in a String Catalog (`Localizable.xcstrings`) with English plurals, and the layout mirrors for right-to-left languages.
 - **Also**: first-launch tips, Settings (restore purchases, privacy policy, support links), the system review prompt after a few exports, and Reduce Motion support.
 
 ## Selling it on the App Store
@@ -30,7 +32,7 @@ See [`AppStore/SUBMISSION_CHECKLIST.md`](AppStore/SUBMISSION_CHECKLIST.md) for w
 
 ## Building
 
-Requirements: **Xcode 26 or newer** (App Store uploads have required the iOS 26 SDK since April 2026; Xcode 16 still builds it for testing) and **iOS 17+** on devices.
+Requirements: **Xcode 26 or newer** (27.1+ for full iPhone Duo support) (App Store uploads have required the iOS 26 SDK since April 2026; Xcode 16 still builds it for testing) and **iOS 17+** on devices.
 
 1. Open `iOS/PixelDeck.xcodeproj`.
 2. Select the **PixelDeck** target. Under *Signing & Capabilities*, pick your team. A free Apple ID works for running on your own phone. Change the bundle identifier (`com.example.pixeldeck`) to something unique.

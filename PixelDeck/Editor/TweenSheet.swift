@@ -44,9 +44,11 @@ struct TweenSheet: View {
                         ForEach(TweenMode.allCases) { Text($0.title).tag($0) }
                     }
                     if mode == .insertFrames {
-                        Stepper("\(frameCount) new frame\(frameCount == 1 ? "" : "s")", value: $frameCount, in: 1...60)
+                        Stepper(value: $frameCount, in: 1...60) {
+                            Text("\(frameCount) new frames", comment: "Tween frame count (plural)")
+                        }
                         if !model.access.isPro && frameCount > model.remainingFrameAllowance {
-                            Label("Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. \(model.remainingFrameAllowance) left.",
+                            Label("Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames (\(model.remainingFrameAllowance) left).",
                                   systemImage: "info.circle")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
@@ -55,7 +57,7 @@ struct TweenSheet: View {
                         Text("There are no frames after this one yet.")
                             .foregroundStyle(.secondary)
                     } else {
-                        Text("Moves the selection through the next \(model.followingFrameCount) frame\(model.followingFrameCount == 1 ? "" : "s"), keeping everything else in them.")
+                        Text("Moves the selection through the next \(model.followingFrameCount) frames, keeping everything else in them.", comment: "Tween into existing frames (plural)")
                             .foregroundStyle(.secondary)
                     }
                 } footer: {

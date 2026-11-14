@@ -5,13 +5,6 @@ import UniformTypeIdentifiers
 enum ExportFormat: String, CaseIterable, Identifiable {
     case spriteSheet, gif, frames
     var id: String { rawValue }
-    var title: String {
-        switch self {
-        case .spriteSheet: "Sprite sheet"
-        case .gif: "GIF"
-        case .frames: "PNG frames"
-        }
-    }
 }
 
 struct ExportOptions {
@@ -25,7 +18,7 @@ enum ExportError: LocalizedError {
     case couldNotWrite(String)
     var errorDescription: String? {
         switch self {
-        case .couldNotWrite(let name): "Couldn't write \(name)."
+        case .couldNotWrite(let name): String(localized: "Couldn't write \(name).", comment: "Export error; the placeholder is a file name")
         }
     }
 }

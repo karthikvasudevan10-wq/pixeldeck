@@ -3,12 +3,12 @@ import SwiftUI
 /// In-app copy of the privacy policy (App Review 5.1.1 requires one to be reachable in the app).
 /// Keep in sync with AppStore/privacy-policy.html.
 struct PrivacyPolicyView: View {
-    static let lastUpdated = "13 November 2026"
+    static let lastUpdated = DateComponents(calendar: Calendar(identifier: .gregorian), year: 2026, month: 11, day: 13).date ?? .now
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Last updated \(Self.lastUpdated)")
+                Text("Last updated \(Self.lastUpdated, format: .dateTime.day().month(.wide).year())")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
@@ -39,7 +39,7 @@ struct PrivacyPolicyView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func section(_ title: String, _ body: String) -> some View {
+    private func section(_ title: LocalizedStringKey, _ body: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.headline)
             Text(body)

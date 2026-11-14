@@ -5,8 +5,12 @@ import SwiftUI
 /// Swipe right: start a whole new canvas.
 ///
 /// The card's top strip can always be dragged. With `dragAnywhere` on, the whole card can.
+///
+/// Right-to-left languages: the drag is measured in the deck's own coordinate space, which SwiftUI
+/// mirrors along with the layout, so "toward the leading edge" (new frame) becomes a swipe to the
+/// right there, and the stamps and header labels flip to match.
 struct SwipeDeck<Content: View>: View {
-    var title: String
+    var title: Text
     var dragAnywhere: Bool
     var onSwipeLeft: () -> Void
     var onSwipeRight: () -> Void
@@ -16,6 +20,8 @@ struct SwipeDeck<Content: View>: View {
     @State private var offset: CGSize = .zero
     @State private var swipeCount = 0
     @State private var flying = false
+    /// Width of the deck, so fly-off distances work on every screen (iPhone Duo inner display, iPad…).
+    @State private var deckWidth: CGFloat = 400
     private let threshold: CGFloat = 110
 
     var body: some View {
@@ -36,6 +42,8 @@ struct SwipeDeck<Content: View>: View {
                 .rotationEffect(.degrees(reduceMotion ? 0 : Double(offset.width / 22)), anchor: .bottom)
         }
         .padding(.horizontal, 12)
+        .coordinateSpace(.named(Self.space))
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { deckWidth = max($0, 1) }
         .sensoryFeedback(.impact(weight: .medium), trigger: swipeCount)
     }
 
@@ -58,8 +66,12 @@ struct SwipeDeck<Content: View>: View {
         .background(Color(.secondarySystemBackground), in: cardShape)
         .clipShape(cardShape)
         .overlay(cardShape.strokeBorder(dragAnywhere ? Color.accentColor : Color(.separator), lineWidth: dragAnywhere ? 2 : 0.5))
-        .overlay(alignment: .topTrailing) { stamp("NEW FRAME", color: .green, angle: 12).opacity(leftProgress) }
-        .overlay(alignment: .topLeading) { stamp("NEW CANVAS", color: .orange, angle: -12).opacity(rightProgress) }
+        .overlay(alignment: .topTrailing) {
+            stamp(LocalizedStringKey("NEW FRAME"), color: .green, angle: 12).opacity(newFrameProgress)
+        }
+        .overlay(alignment: .topLeading) {
+            stamp(LocalizedStringKey("NEW CANVAS"), color: .orange, angle: -12).opacity(newCanvasProgress)
+        }
         .shadow(color: .black.opacity(0.12), radius: 10, y: 4)
     }
 
@@ -70,7 +82,7 @@ struct SwipeDeck<Content: View>: View {
             Spacer()
             VStack(spacing: 3) {
                 Capsule().fill(.secondary.opacity(0.5)).frame(width: 36, height: 4)
-                Text(title).font(.caption.weight(.semibold).monospacedDigit())
+                title.font(.caption.weight(.semibold).monospacedDigit())
             }
             Spacer()
             HStack(spacing: 4) {
@@ -89,10 +101,12 @@ struct SwipeDeck<Content: View>: View {
         .accessibilityAction(named: "New canvas") { onSwipeRight() }
     }
 
-    private var leftProgress: Double { Double(min(max(-offset.width / threshold, 0), 1)) }
-    private var rightProgress: Double { Double(min(max(offset.width / threshold, 0), 1)) }
+    private static var space: String { "SwipeDeck" }
+    /// Negative x = toward the leading edge (left in LTR) = new frame.
+    private var newFrameProgress: Double { Double(min(max(-offset.width / threshold, 0), 1)) }
+    private var newCanvasProgress: Double { Double(min(max(offset.width / threshold, 0), 1)) }
 
-    private func stamp(_ text: String, color: Color, angle: Double) -> some View {
+    private func stamp(_ text: LocalizedStringKey, color: Color, angle: Double) -> some View {
         Text(text)
             .font(.system(.title3, design: .rounded).weight(.heavy))
             .foregroundStyle(color)
@@ -105,7 +119,8 @@ struct SwipeDeck<Content: View>: View {
     }
 
     private var drag: some Gesture {
-        DragGesture(minimumDistance: 8, coordinateSpace: .global)
+        // Measured in the stationary deck (not the moving card) so the drag doesn't feed back on itself.
+        DragGesture(minimumDistance: 8, coordinateSpace: .named(Self.space))
             .onChanged { value in
                 guard !flying else { return }
                 offset = CGSize(width: value.translation.width, height: value.translation.height * 0.25)
@@ -127,14 +142,14 @@ struct SwipeDeck<Content: View>: View {
         flying = true
         swipeCount += 1
         withAnimation(.easeIn(duration: 0.18)) {
-            offset = CGSize(width: direction * 650, height: offset.height)
+            offset = CGSize(width: direction * (deckWidth + 120), height: offset.height)
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.19) {
             if direction < 0 { onSwipeLeft() } else { onSwipeRight() }
             // The next card comes in from the opposite side.
             var t = Transaction()
             t.disablesAnimations = true
-            withTransaction(t) { offset = CGSize(width: -direction * 450, height: 0) }
+            withTransaction(t) { offset = CGSize(width: -direction * deckWidth * 0.8, height: 0) }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.02) {
                 withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) { offset = .zero }
                 flying = false

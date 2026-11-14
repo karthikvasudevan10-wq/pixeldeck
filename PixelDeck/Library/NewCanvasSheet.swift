@@ -37,7 +37,7 @@ struct NewCanvasSheet: View {
                             }
                         }
                         .buttonStyle(.plain)
-                        .accessibilityLabel("\(size) by \(size) pixels\(locked ? ", requires Pro" : "")")
+                        .accessibilityLabel(locked ? Text("\(size) by \(size) pixels, requires Pro") : Text("\(size) by \(size) pixels"))
                     }
                 }
                 .padding()

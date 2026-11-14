@@ -7,7 +7,6 @@ enum SpriteSheetLayout: String, CaseIterable, Identifiable, Sendable {
     case grid
 
     var id: String { rawValue }
-    var title: String { self == .strip ? "Row" : "Grid" }
 
     func columns(forFrameCount n: Int) -> Int {
         switch self {

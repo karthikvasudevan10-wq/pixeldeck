@@ -1,6 +1,7 @@
 import Foundation
 
 /// Features unlocked by the one-time "Pixel Deck Pro" purchase.
+/// Display text is localised in the app layer (LocalizedTitles.swift).
 enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case largeCanvas
     case unlimitedFrames
@@ -9,23 +10,6 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var title: String {
-        switch self {
-        case .largeCanvas: "64, 128 & 256 px canvases"
-        case .unlimitedFrames: "Up to 999 frames per sprite"
-        case .gifExport: "Animated GIF export"
-        case .largeExport: "Export up to 32× size"
-        }
-    }
-
-    var detail: String {
-        switch self {
-        case .largeCanvas: "Room for detailed sprites, tiles and scenes."
-        case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames."
-        case .gifExport: "Share looping animations anywhere."
-        case .largeExport: "Crisp, large images for stores, social posts and print."
-        }
-    }
 
     /// SF Symbol name.
     var symbol: String {

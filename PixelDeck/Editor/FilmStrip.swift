@@ -51,12 +51,12 @@ struct FilmStrip: View {
             .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .strokeBorder(current ? Color.accentColor : Color.primary.opacity(0.15), lineWidth: current ? 3 : 1))
             .overlay(alignment: .bottomTrailing) {
-                Text("\(index + 1)")
+                Text(index + 1, format: .number)
                     .font(.system(size: 10, weight: .bold).monospacedDigit())
                     .padding(.horizontal, 4)
                     .background(.ultraThinMaterial, in: Capsule())
                     .padding(3)
             }
-            .accessibilityLabel("Frame \(index + 1)\(current ? ", selected" : "")")
+            .accessibilityLabel(current ? Text("Frame \(index + 1), selected") : Text("Frame \(index + 1)"))
     }
 }

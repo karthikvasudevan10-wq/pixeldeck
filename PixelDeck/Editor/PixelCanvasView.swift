@@ -22,6 +22,9 @@ struct PixelCanvas: UIViewRepresentable {
     func makeUIView(context: Context) -> PixelCanvasView {
         let view = PixelCanvasView()
         view.delegate = context.coordinator
+        // A new view (e.g. after switching between stacked and side-by-side layouts) picks up
+        // where the old one left off.
+        view.pendingViewport = model.viewport
         return view
     }
 
@@ -43,6 +46,7 @@ struct PixelCanvas: UIViewRepresentable {
         func canvasTouchMoved(to p: Vec2) { model.touchMoved(to: p) }
         func canvasTouchEnded() { model.touchEnded() }
         func canvasTouchCancelled() { model.touchCancelled() }
+        func canvasViewportChanged(_ viewport: Viewport) { model.viewport = viewport }
     }
 }
 
@@ -51,6 +55,7 @@ protocol PixelCanvasViewDelegate: AnyObject {
     func canvasTouchMoved(to p: Vec2)
     func canvasTouchEnded()
     func canvasTouchCancelled()
+    func canvasViewportChanged(_ viewport: Viewport)
 }
 
 final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDelegate {
@@ -71,6 +76,9 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
     private var pixelCount = 0
     private var boardSide: CGFloat = 0
     private var laidOutSize: CGSize = .zero
+    /// Applied at the next layout (set before the view has a size).
+    var pendingViewport: Viewport?
+    private var isRelayouting = false
 
     private var cellSize: CGFloat { pixelCount > 0 ? boardSide / CGFloat(pixelCount) : 1 }
 
@@ -130,10 +138,20 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
         layoutBoard(force: false)
     }
 
+    /// Re-fits the canvas to the view. Runs whenever the view's size changes — rotation, iPad
+    /// multitasking, or folding/unfolding iPhone Duo mid-session — and keeps the user's zoom and
+    /// position unless the canvas itself changed.
     private func layoutBoard(force: Bool) {
         guard bounds.width > 0, bounds.height > 0, pixelCount > 0 else { return }
         guard force || bounds.size != laidOutSize else { return }
+        let keep: Viewport? = (boardSide > 0 && !force) ? currentViewport : pendingViewport
+        pendingViewport = nil
         laidOutSize = bounds.size
+        isRelayouting = true
+        defer {
+            isRelayouting = false
+            reportViewport()
+        }
 
         let margin: CGFloat = 16
         // Whole points per pixel where possible, so the fitted canvas looks even.
@@ -157,6 +175,40 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
         updateOverlays()
         CATransaction.commit()
         centerBoard()
+        if let keep, keep != .fit { apply(keep) }
+    }
+
+    // MARK: Viewport
+
+    private var currentViewport: Viewport {
+        let centre = CGPoint(x: scrollView.bounds.midX, y: scrollView.bounds.midY)
+        let p = scrollView.convert(centre, to: board)
+        let side = max(boardSide, 1)
+        return Viewport(zoom: Double(scrollView.zoomScale),
+                        focusX: Double(min(max(p.x / side, 0), 1)),
+                        focusY: Double(min(max(p.y / side, 0), 1)))
+    }
+
+    private func apply(_ v: Viewport) {
+        let z = min(max(CGFloat(v.zoom), scrollView.minimumZoomScale), scrollView.maximumZoomScale)
+        scrollView.zoomScale = z
+        centerBoard()
+        let inset = scrollView.contentInset
+        let target = CGPoint(x: CGFloat(v.focusX) * boardSide * z - scrollView.bounds.width / 2,
+                             y: CGFloat(v.focusY) * boardSide * z - scrollView.bounds.height / 2)
+        let maxX = max(-inset.left, scrollView.contentSize.width - scrollView.bounds.width + inset.right)
+        let maxY = max(-inset.top, scrollView.contentSize.height - scrollView.bounds.height + inset.bottom)
+        scrollView.contentOffset = CGPoint(x: min(max(target.x, -inset.left), maxX),
+                                           y: min(max(target.y, -inset.top), maxY))
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        updateOverlays()
+        CATransaction.commit()
+    }
+
+    private func reportViewport() {
+        guard !isRelayouting, boardSide > 0 else { return }
+        delegate?.canvasViewportChanged(currentViewport)
     }
 
     private func gridPath() -> CGPath {
@@ -261,8 +313,13 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
 
     func viewForZooming(in scrollView: UIScrollView) -> UIView? { board }
 
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        reportViewport()
+    }
+
     func scrollViewDidZoom(_ scrollView: UIScrollView) {
         centerBoard()
+        reportViewport()
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         selectionLayer.removeAnimation(forKey: "ants")

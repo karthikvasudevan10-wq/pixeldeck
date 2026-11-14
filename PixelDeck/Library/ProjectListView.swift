@@ -63,7 +63,7 @@ struct ProjectListView: View {
         }
         .sheet(isPresented: $showingNewCanvas) {
             NewCanvasSheet { size in
-                let project = store.create(size: size)
+                let project = store.create(size: size, baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it"))
                 path = [project.id]
             }
         }
@@ -97,7 +97,9 @@ struct ProjectListView: View {
             renameText = project.name
             renamingID = project.id
         } label: { Label("Rename", systemImage: "pencil") }
-        Button { store.duplicate(id: project.id) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+        Button {
+            store.duplicate(id: project.id) { String(localized: "\($0) copy", comment: "Name for a duplicated sprite; the placeholder is the original name") }
+        } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
         Button(role: .destructive) { deletingID = project.id } label: { Label("Delete", systemImage: "trash") }
     }
 }
@@ -113,7 +115,7 @@ private struct ProjectCard: View {
             Text(project.name)
                 .font(.headline)
                 .lineLimit(1)
-            Text("\(project.size)×\(project.size) · \(project.frames.count) frame\(project.frames.count == 1 ? "" : "s")")
+            Text("\(project.size)×\(project.size) · \(project.frames.count) frames", comment: "Sprite card: canvas size and frame count (plural)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

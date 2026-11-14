@@ -35,9 +35,10 @@ final class ProjectStore {
         projects.first { $0.id == id }
     }
 
+    /// `baseName` is localised by the app, e.g. "Sprite" → "Sprite 3".
     @discardableResult
-    func create(size: Int) -> SpriteProject {
-        let p = SpriteProject(name: nextName(), size: size)
+    func create(size: Int, baseName: String = "Sprite") -> SpriteProject {
+        let p = SpriteProject(name: nextName(base: baseName), size: size)
         save(p)
         return p
     }
@@ -68,9 +69,10 @@ final class ProjectStore {
         }
     }
 
-    func duplicate(id: UUID) {
+    /// `name` builds the copy's name from the original's (localised by the app).
+    func duplicate(id: UUID, name: (String) -> String = { "\($0) copy" }) {
         guard let p = project(id: id) else { return }
-        save(p.duplicated(name: p.name + " copy"))
+        save(p.duplicated(name: name(p.name)))
     }
 
     func rename(id: UUID, to name: String) {
@@ -98,10 +100,10 @@ final class ProjectStore {
         directory.appendingPathComponent(id.uuidString).appendingPathExtension("json")
     }
 
-    private func nextName() -> String {
+    private func nextName(base: String) -> String {
         let names = Set(projects.map(\.name))
         var n = projects.count + 1
-        while names.contains("Sprite \(n)") { n += 1 }
-        return "Sprite \(n)"
+        while names.contains("\(base) \(n)") { n += 1 }
+        return "\(base) \(n)"
     }
 }

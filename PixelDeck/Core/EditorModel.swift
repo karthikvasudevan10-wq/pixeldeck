@@ -6,17 +6,7 @@ enum Tool: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    var title: String {
-        switch self {
-        case .pencil: "Pencil"
-        case .eraser: "Eraser"
-        case .fill: "Fill"
-        case .eyedropper: "Pick colour"
-        case .select: "Select & move"
-        }
-    }
-
-    /// SF Symbol name.
+    /// SF Symbol name. (Display names are localised in the app layer: LocalizedTitles.swift.)
     var symbol: String {
         switch self {
         case .pencil: "pencil.tip"
@@ -39,6 +29,16 @@ struct CanvasState: Equatable {
     var selection: PixelRect?
     /// Path the selection's centre has travelled, in canvas pixels.
     var motionPath: [Vec2]?
+}
+
+/// Where the user is looking: zoom relative to "fit", and the canvas point at the centre of the
+/// view as a fraction (0…1) of the canvas. Kept across folds, rotations and layout changes.
+struct Viewport: Equatable, Sendable {
+    var zoom: Double
+    var focusX: Double
+    var focusY: Double
+
+    static let fit = Viewport(zoom: 1, focusX: 0.5, focusY: 0.5)
 }
 
 /// The editing session for one sprite. Platform-independent so it can be unit-tested.
@@ -75,6 +75,9 @@ final class EditorModel {
     /// Called after every finished edit with the project to save.
     @ObservationIgnored var onChange: ((SpriteProject) -> Void)?
 
+    /// Last reported canvas viewport. Not observed: it changes on every scroll.
+    @ObservationIgnored var viewport: Viewport?
+
     /// What the user has unlocked. Set by the app from the purchase state.
     var access: FeatureAccess = .free
     /// Called when an action needs Pro, so the app can offer the upgrade.
@@ -97,6 +100,7 @@ final class EditorModel {
         commitSelection()
         self.project = project
         currentIndex = 0
+        viewport = nil
         marquee = nil
         floating = nil
         undoStack = []
