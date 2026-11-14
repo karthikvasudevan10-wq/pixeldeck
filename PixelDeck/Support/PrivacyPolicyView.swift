@@ -3,21 +3,21 @@ import SwiftUI
 /// In-app copy of the privacy policy (App Review 5.1.1 requires one to be reachable in the app).
 /// Keep in sync with AppStore/privacy-policy.html.
 struct PrivacyPolicyView: View {
-    static let lastUpdated = DateComponents(calendar: Calendar(identifier: .gregorian), year: 2026, month: 11, day: 13).date ?? .now
+    static let lastUpdated = DateComponents(calendar: Calendar(identifier: .gregorian), year: 2026, month: 11, day: 14).date ?? .now
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Last updated \(Self.lastUpdated, format: .dateTime.day().month(.wide).year())")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(AppFont.pixel(11))
+                    .foregroundStyle(Theme.muted)
 
                 section("The short version",
                         "Pixel Deck does not collect, store or share any personal information. There are no accounts, no ads, no analytics and no tracking.")
                 section("Your artwork",
                         "Sprites you create are saved only on your device, inside the app's own storage. They're included in your device backups (iCloud or computer) the same way as other app data, under your control. Pixel Deck never uploads them.")
                 section("Exports and sharing",
-                        "When you export, Pixel Deck creates image files and opens the standard iOS share sheet. Where those files go next — Photos, Files, Messages, another app — is your choice, and is handled by iOS or that app, not by Pixel Deck.")
+                        "When you export, Pixel Deck creates image or video files on your device. If you choose Save to Photos, iOS asks whether Pixel Deck may add items to your photo library; it can only add, never read your photos. If you choose Share, the standard iOS share sheet opens, and where the files go next is your choice, handled by iOS or the app you pick.")
                 section("Purchases",
                         "The optional Pixel Deck Pro upgrade is processed by Apple through the App Store. Pixel Deck receives only a confirmation that the purchase is valid; it never sees your payment details or Apple Account information.")
                 section("Children",
@@ -35,14 +35,18 @@ struct PrivacyPolicyView: View {
             .frame(maxWidth: 700, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
+        .foregroundStyle(Theme.text)
+        .tint(Theme.accent2)
+        .screenBackground()
         .navigationTitle("Privacy Policy")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 
     private func section(_ title: LocalizedStringKey, _ body: LocalizedStringKey) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title).font(.headline)
-            Text(body)
+            Text(title).font(AppFont.body(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.cream)
+            Text(body).font(AppFont.body(15, relativeTo: .body)).foregroundStyle(Theme.text)
         }
     }
 }

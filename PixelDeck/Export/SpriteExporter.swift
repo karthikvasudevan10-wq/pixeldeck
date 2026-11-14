@@ -3,62 +3,103 @@ import ImageIO
 import UniformTypeIdentifiers
 
 enum ExportFormat: String, CaseIterable, Identifiable {
-    case spriteSheet, gif, frames
+    case gif, spriteSheet, frames, video
     var id: String { rawValue }
+
+    /// GIF and video are part of Pro.
+    var needsPro: Bool { self == .gif || self == .video }
+    /// Video is always 1080 × 1080, so it has no scale choice.
+    var hasScale: Bool { self != .video }
 }
 
 struct ExportOptions {
-    var format: ExportFormat = .spriteSheet
+    var format: ExportFormat = .gif
     var layout: SpriteSheetLayout = .strip
-    var scale = 1
+    var scale = 4
     var includeMetadata = true
 }
 
 enum ExportError: LocalizedError {
     case couldNotWrite(String)
+    case empty
     var errorDescription: String? {
         switch self {
         case .couldNotWrite(let name): String(localized: "Couldn't write \(name).", comment: "Export error; the placeholder is a file name")
+        case .empty: String(localized: "There's nothing to export yet. Draw something first.")
         }
     }
 }
 
-/// Writes PNG / GIF / JSON files to a temporary folder for sharing.
-enum SpriteExporter {
-    /// Largest output side. A 4096² RGBA image is 64 MB; 8192² (256 MB, plus a copy) can get the
-    /// app terminated for memory on older iPhones.
-    static let maxSide = 4096
-    /// Total decoded size of all GIF frames.
-    static let gifMemoryBudget = 512 * 1024 * 1024
+/// What gets exported: every frame cropped to the art (the union of all frames), so the empty
+/// space of the infinite canvas isn't included.
+struct ExportSource {
+    let name: String
+    let fps: Int
+    let grids: [PixelGrid]
+    let width: Int
+    let height: Int
 
-    static func allowedScales(for project: SpriteProject, options: ExportOptions) -> [Int] {
-        [1, 2, 4, 8, 16, 32].filter { scale in
+    init(_ project: SpriteProject) {
+        let rect = project.contentBounds ?? project.bounds
+        name = project.name
+        fps = project.fps
+        grids = project.grids(croppedTo: rect)
+        width = rect.width
+        height = rect.height
+    }
+
+    var isBlank: Bool { grids.allSatisfy(\.isBlank) }
+}
+
+/// Writes PNG / GIF / MP4 / JSON files to a temporary folder for saving or sharing.
+enum SpriteExporter {
+    /// Largest image side. A 4096² RGBA image is 64 MB; 8192² can get the app terminated for
+    /// memory on older iPhones.
+    static let maxSide = 4096
+    /// Total decoded size of all GIF frames (ImageIO keeps them until the GIF is finalised).
+    static let gifMemoryBudget = 512 * 1024 * 1024
+    static let scales = [1, 4, 8, 16]
+
+    /// Output size in pixels for a format and scale.
+    static func outputSize(_ src: ExportSource, options: ExportOptions) -> (width: Int, height: Int) {
+        switch options.format {
+        case .spriteSheet:
+            return SpriteSheet.pixelSize(frameWidth: src.width, frameHeight: src.height, frameCount: src.grids.count,
+                                         scale: options.scale, layout: options.layout)
+        case .gif, .frames:
+            return (src.width * options.scale, src.height * options.scale)
+        case .video:
+            return (VideoExporter.side, VideoExporter.side)
+        }
+    }
+
+    /// Scales whose output fits the memory limits (ignoring Pro, which the UI handles).
+    static func feasibleScales(_ src: ExportSource, options: ExportOptions) -> [Int] {
+        scales.filter { scale in
+            var o = options
+            o.scale = scale
+            let size = outputSize(src, options: o)
             switch options.format {
-            case .spriteSheet:
-                let s = SpriteSheet.pixelSize(canvas: project.size, frameCount: project.frames.count, scale: scale, layout: options.layout)
-                return max(s.width, s.height) <= maxSide
-            case .frames:
-                return project.size * scale <= 2048
-            case .gif:
-                // ImageIO keeps every frame until the GIF is finalised, so cap the total too.
-                let side = project.size * scale
-                return side <= 2048 && project.frames.count * side * side * 4 <= gifMemoryBudget
+            case .spriteSheet: return max(size.width, size.height) <= maxSide
+            case .frames: return max(size.width, size.height) <= 2048
+            case .gif: return max(size.width, size.height) <= 2048 && src.grids.count * size.width * size.height * 4 <= gifMemoryBudget
+            case .video: return true
             }
         }
     }
 
-    static func export(_ project: SpriteProject, options: ExportOptions) throws -> [URL] {
+    static func export(_ src: ExportSource, options: ExportOptions) throws -> [URL] {
+        guard !src.isBlank else { throw ExportError.empty }
         removePreviousExports()
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("Export-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let base = fileSafe(project.name)
-        let grids = project.frames.map(\.grid)
+        let base = fileSafe(src.name)
         let scale = max(1, options.scale)
 
         switch options.format {
         case .spriteSheet:
-            let sheet = SpriteSheet(grids: grids, scale: scale, layout: options.layout)
+            let sheet = SpriteSheet(grids: src.grids, scale: scale, layout: options.layout)
             let name = "\(base)_sheet.png"
             let png = dir.appendingPathComponent(name)
             try writePNG(width: sheet.width, height: sheet.height, rgba: sheet.bytes, to: png)
@@ -67,27 +108,31 @@ enum SpriteExporter {
                 let json = dir.appendingPathComponent("\(base)_sheet.json")
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                try encoder.encode(sheet.metadata(fps: project.fps, imageName: name)).write(to: json)
+                try encoder.encode(sheet.metadata(fps: src.fps, imageName: name)).write(to: json)
                 urls.append(json)
             }
             return urls
 
         case .gif:
             let url = dir.appendingPathComponent("\(base).gif")
-            try writeGIF(grids: grids, scale: scale, fps: project.fps, to: url)
+            try writeGIF(grids: src.grids, scale: scale, fps: src.fps, to: url)
             return [url]
 
         case .frames:
-            return try grids.enumerated().map { i, grid in
+            return try src.grids.enumerated().map { i, grid in
                 let url = dir.appendingPathComponent(String(format: "%@_%03d.png", base, i + 1))
-                let side = grid.size * scale
-                try writePNG(width: side, height: side, rgba: grid.rgbaBytes(scale: scale), to: url)
+                try writePNG(width: grid.width * scale, height: grid.height * scale, rgba: grid.rgbaBytes(scale: scale), to: url)
                 return url
             }
+
+        case .video:
+            let url = dir.appendingPathComponent("\(base).mp4")
+            try VideoExporter.write(grids: src.grids, fps: src.fps, to: url)
+            return [url]
         }
     }
 
-    /// Earlier exports are only needed until their share sheet closes; don't let them pile up.
+    /// Earlier exports are only needed until they've been saved or shared; don't let them pile up.
     static func removePreviousExports() {
         let tmp = FileManager.default.temporaryDirectory
         let items = (try? FileManager.default.contentsOfDirectory(at: tmp, includingPropertiesForKeys: nil)) ?? []

@@ -1,105 +1,75 @@
 import SwiftUI
 
+/// The Studio: an endless canvas filling the screen above a dock of controls. On wide spaces
+/// (an unfolded iPhone Duo, iPad, landscape) the dock becomes a side panel.
 struct EditorView: View {
     @Environment(ProjectStore.self) private var store
     @Environment(PurchaseManager.self) private var purchases
-    @State private var upgrade: ProFeature?
+    @Environment(\.dismiss) private var dismiss
     @State private var model: EditorModel
-    @State private var zoom = ZoomCommand()
-    @State private var deckMode = false
-    @State private var showingNewCanvas = false
+    @State private var fit = FitCommand()
+    @State private var swipeAnywhere = false
+    @State private var upgrade: ProFeature?
     @State private var showingTween = false
     @State private var showingExport = false
-    @State private var showingPlayback = false
     @State private var showingRename = false
     @State private var renameText = ""
-    /// Canvas beside a tool panel, rather than stacked. Chosen from the space the editor actually
-    /// has — never from device type or orientation — so it adapts when iPhone Duo folds or
-    /// unfolds, in iPad multitasking, and in landscape.
+    @State private var editingSwatch: SwatchEdit?
+    /// Chosen from the space the Studio actually has — never from device type or orientation.
     @State private var sidePanel = false
 
     init(project: SpriteProject) {
         _model = State(initialValue: EditorModel(project: project))
     }
 
-    static let sidePanelWidth: CGFloat = 320
+    static let sidePanelWidth: CGFloat = 340
 
-    /// Side-by-side when there's clearly more width than height and room for the panel plus a
-    /// usefully large canvas.
     nonisolated static func prefersSidePanel(_ size: CGSize) -> Bool {
-        size.width > size.height * 1.15 && size.width >= sidePanelWidth + 300
+        size.width > size.height * 1.15 && size.width >= sidePanelWidth + 320
     }
 
     var body: some View {
-        // A VStack (not a Group): modifiers on a Group apply to each branch separately, so
-        // switching layout would fire onDisappear (dropping the selection) and dismiss open sheets.
+        // A VStack (not a Group) so the modifiers below attach once and survive layout switches.
         VStack(spacing: 0) {
             if sidePanel {
-                HStack(alignment: .top, spacing: 4) {
-                    deck
+                HStack(spacing: 0) {
+                    canvasArea
                     ScrollView {
-                        VStack(spacing: 12) {
-                            HStack(spacing: 2) { toolButtons }
-                            HStack(spacing: 2) { zoomButtons }
-                            if model.tool == .select { selectionBar }
-                            ColorBar(model: model)
-                            FilmStrip(model: model)
-                        }
-                        .padding(.vertical, 8)
+                        dock
                     }
-                    .frame(width: Self.sidePanelWidth)
                     .scrollBounceBehavior(.basedOnSize)
+                    .frame(width: Self.sidePanelWidth)
+                    .background(Theme.surface.ignoresSafeArea())
+                    .overlay(alignment: .leading) { Theme.line.frame(width: 2).ignoresSafeArea() }
                 }
             } else {
-                VStack(spacing: 8) {
-                    HStack(spacing: 2) {
-                        toolButtons
-                        Spacer(minLength: 4)
-                        zoomButtons
-                    }
-                    .padding(.horizontal, 12)
-
-                    deck
-
-                    if model.tool == .select {
-                        selectionBar
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-
-                    ColorBar(model: model)
-                    FilmStrip(model: model)
-                }
+                canvasArea
+                dock
+                    .background(Theme.surface.ignoresSafeArea(edges: .bottom))
+                    .overlay(alignment: .top) { Theme.line.frame(height: 2) }
             }
         }
-        .padding(.top, 4)
+        .screenBackground()
+        .toolbar(.hidden, for: .navigationBar)
         .onGeometryChange(for: Bool.self) { Self.prefersSidePanel($0.size) } action: { sidePanel = $0 }
-        .animation(.snappy(duration: 0.2), value: model.tool == .select)
-        .background(Color(.systemGroupedBackground))
-        .navigationTitle(model.project.name)
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar { toolbarContent }
         .onAppear {
             model.onChange = { [store] project in store.save(project) }
             model.access = purchases.access
             model.onProRequired = { feature in upgrade = feature }
         }
         .onChange(of: purchases.isPro) { _, _ in model.access = purchases.access }
-        .proUpgradeSheet($upgrade)
         .onDisappear {
+            model.isPlaying = false
             model.commitSelection()
             store.save(model.project)
         }
-        .sheet(isPresented: $showingNewCanvas) {
-            NewCanvasSheet { size in
-                model.commitSelection()
-                store.save(model.project)
-                model.load(store.create(size: size, baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it")))
-                zoom = ZoomCommand(action: .fit, nonce: zoom.nonce + 1)
-            }
-        }
+        .proUpgradeSheet($upgrade)
         .sheet(isPresented: $showingTween) { TweenSheet(model: model) }
-        .sheet(isPresented: $showingExport) { ExportSheet(project: model.project) }
-        .sheet(isPresented: $showingPlayback) { PlaybackSheet(model: model) }
+        .fullScreenCover(isPresented: $showingExport) { ExportView(project: model.project) }
+        .sheet(item: $editingSwatch) { edit in
+            SwatchEditor(initial: model.palette[edit.index]) { model.setPaletteColor($0, at: edit.index) }
+                .presentationDetents([.medium, .large])
+        }
         .alert("Rename sprite", isPresented: $showingRename) {
             TextField("Name", text: $renameText)
             Button("Save") { model.rename(renameText) }
@@ -107,153 +77,170 @@ struct EditorView: View {
         }
     }
 
-    private var deck: some View {
-        SwipeDeck(title: Text("Frame \(model.currentIndex + 1) of \(model.frameCount)"),
-                  dragAnywhere: deckMode,
-                  onSwipeLeft: { model.addKeyframe() },
-                  onSwipeRight: { showingNewCanvas = true }) {
-            PixelCanvas(state: model.canvasState, model: model, zoom: zoom)
-                .allowsHitTesting(!deckMode)
-                .accessibilityElement()
-                .accessibilityLabel("Canvas, \(model.size) by \(model.size) pixels, frame \(model.currentIndex + 1) of \(model.frameCount)")
-                .accessibilityHint("Drawing on the canvas needs touch. Use the frame strip and menus for other actions.")
+    private var dock: some View {
+        StudioDock(model: model,
+                   onGallery: { dismiss() },
+                   onExport: {
+                       model.isPlaying = false
+                       model.commitSelection()
+                       showingExport = true
+                   },
+                   onEditSwatch: { editingSwatch = SwatchEdit(index: $0) })
+    }
+
+    // MARK: Canvas
+
+    private var canvasArea: some View {
+        SwipeCanvas(swipeAnywhere: swipeAnywhere,
+                    onNewFrame: { model.addKeyframe() },
+                    onNewCanvas: newCanvas) {
+            canvas
+        }
+        .overlay(alignment: .topLeading) { chip.padding(.leading, 12).padding(.top, 14) }
+        .overlay(alignment: .bottom) {
+            VStack(spacing: 10) {
+                if model.tool == .select && !model.isPlaying { selectionStrip }
+                frameDots
+            }
+            .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: Tools
+    /// While playing, the canvas shows each frame in turn at the sprite's frame rate.
+    private var canvas: some View {
+        TimelineView(.animation(minimumInterval: 1 / Double(model.project.fps), paused: !model.isPlaying)) { ctx in
+            let frame: Int? = model.isPlaying
+                ? Int((ctx.date.timeIntervalSinceReferenceDate * Double(model.project.fps)).rounded(.down)) % max(model.frameCount, 1)
+                : nil
+            PixelCanvas(state: model.canvasState(playingFrame: frame), model: model, fit: fit,
+                        drawingEnabled: !swipeAnywhere && !model.isPlaying)
+                .accessibilityLabel(Text("Canvas, frame \(model.currentIndex + 1) of \(model.frameCount)"))
+                .accessibilityHint("Draw with one finger. Pinch to change the pixel size, drag with two fingers to move, tap with two fingers to fit the art.")
+        }
+    }
 
-    @ViewBuilder
-    private var toolButtons: some View {
-        ForEach(Tool.allCases) { tool in
+    private var frameLabel: String {
+        String(format: "%02d/%02d", model.currentIndex + 1, model.frameCount)
+    }
+
+    /// Project name and frame counter. Tap for the sprite's menu.
+    private var chip: some View {
+        Menu {
             Button {
-                deckMode = false
-                model.tool = tool
-            } label: {
-                Image(systemName: tool.symbol)
-                    .font(.system(size: 17, weight: .medium))
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-                    .background(model.tool == tool && !deckMode ? Color.accentColor.opacity(0.18) : .clear,
-                                in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                    .foregroundStyle(model.tool == tool && !deckMode ? Color.accentColor : Color.primary)
+                renameText = model.project.name
+                showingRename = true
+            } label: { Label("Rename", systemImage: "pencil") }
+            Button { fit.nonce += 1 } label: { Label("Fit art to screen", systemImage: "arrow.down.right.and.arrow.up.left") }
+            Toggle(isOn: Binding(get: { model.showGrid }, set: { model.showGrid = $0 })) {
+                Label("Pixel grid", systemImage: "grid")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text(tool.title))
-            .accessibilityAddTraits(model.tool == tool ? .isSelected : [])
-        }
-
-        Button { deckMode.toggle() } label: {
-            Image(systemName: "rectangle.stack")
-                .font(.system(size: 17, weight: .medium))
-                .frame(width: 36, height: 36)
-                .contentShape(Rectangle())
-                .background(deckMode ? Color.accentColor.opacity(0.18) : .clear,
-                            in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-                .foregroundStyle(deckMode ? Color.accentColor : Color.primary)
-        }
-        .buttonStyle(.plain)
-        .accessibilityLabel("Swipe mode")
-        .accessibilityHint("Lets you swipe the whole canvas card")
-    }
-
-    @ViewBuilder
-    private var zoomButtons: some View {
-        zoomButton("minus.magnifyingglass", .zoomOut, "Zoom out")
-        zoomButton("arrow.down.right.and.arrow.up.left", .fit, "Fit canvas")
-        zoomButton("plus.magnifyingglass", .zoomIn, "Zoom in")
-    }
-
-    private func zoomButton(_ symbol: String, _ action: ZoomAction, _ label: LocalizedStringKey) -> some View {
-        Button {
-            zoom = ZoomCommand(action: action, nonce: zoom.nonce + 1)
+            Toggle(isOn: $swipeAnywhere) {
+                Label("Swipe anywhere", systemImage: "hand.draw")
+            }
+            Picker(selection: Binding(get: { model.onionOpacity }, set: { model.onionOpacity = $0 })) {
+                ForEach([0.2, 0.38, 0.6], id: \.self) { v in Text(v, format: .percent).tag(v) }
+            } label: {
+                Label("Onion skin strength", systemImage: "square.2.layers.3d")
+            }
+            .pickerStyle(.menu)
+            Divider()
+            Button { model.duplicateFrame(at: model.currentIndex) } label: { Label("Duplicate frame", systemImage: "plus.square.on.square") }
+            Button(role: .destructive) { model.clearCurrentFrame() } label: { Label("Clear frame", systemImage: "xmark.square") }
+            Button(role: .destructive) { model.deleteFrame(at: model.currentIndex) } label: { Label("Delete frame", systemImage: "trash") }
         } label: {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .medium))
-                .frame(width: 32, height: 36)
-                .contentShape(Rectangle())
+            HStack(spacing: 8) {
+                Text(model.project.name)
+                    .font(AppFont.body(12, .medium, relativeTo: .caption))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
+                Text(verbatim: frameLabel)
+                    .font(AppFont.pixel(11))
+                    .foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Theme.chip)
+            .frame(maxWidth: 240, alignment: .leading)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(label)
+        .accessibilityLabel(Text("\(model.project.name), frame \(model.currentIndex + 1) of \(model.frameCount). Sprite menu"))
     }
 
-    private var selectionBar: some View {
-        HStack(spacing: 12) {
-            if model.floating != nil {
-                Button {
-                    showingTween = true
-                } label: {
-                    Label("Tween", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+    /// One 4×4 dot per frame; the current one is a 12×4 accent bar.
+    @ViewBuilder
+    private var frameDots: some View {
+        if model.frameCount > 1 && model.frameCount <= 30 {
+            HStack(spacing: 4) {
+                ForEach(0..<model.frameCount, id: \.self) { i in
+                    let current = i == model.currentIndex
+                    Rectangle()
+                        .fill(current ? Theme.accent : Theme.muted)
+                        .frame(width: current ? 12 : 4, height: 4)
                 }
-                .buttonStyle(.borderedProminent)
+            }
+            .accessibilityHidden(true)
+            .allowsHitTesting(false)
+        }
+    }
+
+    /// Selection actions, shown only while the Select tool is in use.
+    private var selectionStrip: some View {
+        HStack(spacing: 8) {
+            if model.floating != nil {
+                Button { showingTween = true } label: {
+                    HStack(spacing: 6) {
+                        PixelIcon.tween.view(size: 16)
+                        Text("Tween").font(AppFont.pixel(12))
+                    }
+                    .padding(.horizontal, 12)
+                    .frame(height: 36)
+                }
+                .buttonStyle(PrimaryButtonStyle(depth: 3))
                 .disabled(!model.canTween)
 
-                Button(role: .destructive) { model.deleteSelection() } label: {
-                    Image(systemName: "trash")
+                Button { model.deleteSelection() } label: {
+                    PixelIcon.trash.view(size: 18).frame(width: 36, height: 36)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(TileButtonStyle())
                 .accessibilityLabel("Delete selection")
 
-                Spacer()
-                Button("Drop") { model.commitSelection() }
-                    .buttonStyle(.bordered)
+                Button { model.commitSelection() } label: {
+                    Text("Drop").font(AppFont.pixel(12)).padding(.horizontal, 12).frame(height: 36)
+                }
+                .buttonStyle(TileButtonStyle())
             } else if model.marquee != nil {
-                Text("Drag inside the selection to move it")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button(role: .destructive) { model.deleteSelection() } label: { Image(systemName: "trash") }
-                    .buttonStyle(.bordered)
-                    .accessibilityLabel("Delete selected pixels")
-                Button("Deselect") { model.commitSelection() }
-                    .buttonStyle(.bordered)
+                Text("Drag inside to move")
+                    .font(AppFont.body(13, .medium, relativeTo: .footnote))
+                    .foregroundStyle(Theme.text)
+                Button { model.deleteSelection() } label: {
+                    PixelIcon.trash.view(size: 18).frame(width: 36, height: 36)
+                }
+                .buttonStyle(TileButtonStyle())
+                .accessibilityLabel("Delete selected pixels")
+                Button { model.commitSelection() } label: {
+                    Text("Deselect").font(AppFont.pixel(12)).padding(.horizontal, 12).frame(height: 36)
+                }
+                .buttonStyle(TileButtonStyle())
             } else {
                 Text("Drag over pixels to select them")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                Spacer()
+                    .font(AppFont.body(13, .medium, relativeTo: .footnote))
+                    .foregroundStyle(Theme.text)
+                    .padding(.horizontal, 6)
+                    .frame(height: 36)
             }
         }
-        .controlSize(.small)
-        .padding(.horizontal, 12)
-        .frame(minHeight: 34)
+        .padding(6)
+        .background(Theme.chip)
+        .padding(.bottom, 3)
     }
 
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }
-                .disabled(!model.canUndo)
-                .accessibilityLabel("Undo")
-            Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }
-                .disabled(!model.canRedo)
-                .accessibilityLabel("Redo")
-            Menu {
-                Button { showingPlayback = true } label: { Label("Play animation", systemImage: "play.fill") }
-                Button { model.addKeyframe() } label: { Label("New frame", systemImage: "plus.rectangle.on.rectangle") }
-                Button { showingNewCanvas = true } label: { Label("New canvas", systemImage: "doc.badge.plus") }
-                Button { showingExport = true } label: { Label("Export sprites", systemImage: "square.and.arrow.up") }
-                Divider()
-                Toggle(isOn: $model.showGrid) { Label("Pixel grid", systemImage: "grid") }
-                Toggle(isOn: $model.onionSkinEnabled) { Label("Onion skin", systemImage: "square.2.layers.3d") }
-                Picker(selection: $model.onionOpacity) {
-                    ForEach([0.15, 0.3, 0.5, 0.7], id: \.self) { v in
-                        Text(v, format: .percent).tag(v)
-                    }
-                } label: {
-                    Label("Onion opacity", systemImage: "circle.lefthalf.filled")
-                }
-                .pickerStyle(.menu)
-                Divider()
-                Button {
-                    renameText = model.project.name
-                    showingRename = true
-                } label: { Label("Rename", systemImage: "pencil") }
-                Button(role: .destructive) { model.clearCurrentFrame() } label: { Label("Clear frame", systemImage: "xmark.square") }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-            }
-            .accessibilityLabel("More")
-        }
+    // MARK: Actions
+
+    private func newCanvas() {
+        model.isPlaying = false
+        model.commitSelection()
+        store.save(model.project)
+        model.load(store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it")))
+        fit.nonce += 1
     }
 }

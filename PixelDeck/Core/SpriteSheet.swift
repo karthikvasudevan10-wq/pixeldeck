@@ -18,38 +18,42 @@ enum SpriteSheetLayout: String, CaseIterable, Identifiable, Sendable {
 
 /// Frames packed into one RGBA image, left to right then top to bottom.
 struct SpriteSheet: Sendable {
-    let frameSize: Int
+    let frameWidth: Int
+    let frameHeight: Int
     let columns: Int
     let rows: Int
     let frameCount: Int
     let bytes: [UInt8]
 
-    var width: Int { columns * frameSize }
-    var height: Int { rows * frameSize }
+    var width: Int { columns * frameWidth }
+    var height: Int { rows * frameHeight }
 
-    static func pixelSize(canvas: Int, frameCount: Int, scale: Int, layout: SpriteSheetLayout) -> (width: Int, height: Int) {
+    static func pixelSize(frameWidth: Int, frameHeight: Int, frameCount: Int, scale: Int, layout: SpriteSheetLayout) -> (width: Int, height: Int) {
         let cols = layout.columns(forFrameCount: frameCount)
-        let rows = Int((Double(frameCount) / Double(cols)).rounded(.up))
-        return (cols * canvas * scale, max(1, rows) * canvas * scale)
+        let rows = max(1, Int((Double(frameCount) / Double(cols)).rounded(.up)))
+        return (cols * frameWidth * scale, rows * frameHeight * scale)
     }
 
+    /// All grids must be the same size.
     init(grids: [PixelGrid], scale: Int, layout: SpriteSheetLayout) {
         let s = max(1, scale)
-        let side = (grids.first?.size ?? 1) * s
+        let fw = (grids.first?.width ?? 1) * s
+        let fh = (grids.first?.height ?? 1) * s
         let cols = layout.columns(forFrameCount: grids.count)
         let rows = max(1, Int((Double(grids.count) / Double(cols)).rounded(.up)))
-        let width = cols * side
-        var out = [UInt8](repeating: 0, count: width * rows * side * 4)
-        for (i, grid) in grids.enumerated() {
+        let width = cols * fw
+        var out = [UInt8](repeating: 0, count: width * rows * fh * 4)
+        for (i, grid) in grids.enumerated() where grid.width * s == fw && grid.height * s == fh {
             let frame = grid.rgbaBytes(scale: s)
-            let ox = (i % cols) * side, oy = (i / cols) * side
-            for y in 0..<side {
-                let src = y * side * 4
+            let ox = (i % cols) * fw, oy = (i / cols) * fh
+            for y in 0..<fh {
+                let src = y * fw * 4
                 let dst = ((oy + y) * width + ox) * 4
-                out.replaceSubrange(dst..<(dst + side * 4), with: frame[src..<(src + side * 4)])
+                out.replaceSubrange(dst..<(dst + fw * 4), with: frame[src..<(src + fw * 4)])
             }
         }
-        frameSize = side
+        frameWidth = fw
+        frameHeight = fh
         columns = cols
         self.rows = rows
         frameCount = grids.count
@@ -62,12 +66,12 @@ struct SpriteSheet: Sendable {
             image: imageName,
             width: width,
             height: height,
-            frameWidth: frameSize,
-            frameHeight: frameSize,
+            frameWidth: frameWidth,
+            frameHeight: frameHeight,
             fps: fps,
             frames: (0..<frameCount).map { i in
-                .init(index: i, x: (i % columns) * frameSize, y: (i / columns) * frameSize,
-                      w: frameSize, h: frameSize, durationMs: duration)
+                .init(index: i, x: (i % columns) * frameWidth, y: (i / columns) * frameHeight,
+                      w: frameWidth, h: frameHeight, durationMs: duration)
             }
         )
     }

@@ -9,42 +9,53 @@ struct ProUpgradeView: View {
     @Environment(PurchaseManager.self) private var purchases
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @State private var showingPrivacy = false
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+                Button("Not now") { dismiss() }
+                    .font(AppFont.body(15, .medium, relativeTo: .callout))
+                    .foregroundStyle(Theme.accent2)
+                    .frame(minHeight: 44)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+
             ScrollView {
-                VStack(spacing: 24) {
-                    header
-                    VStack(spacing: 14) {
-                        ForEach(orderedFeatures) { feature in
-                            row(feature)
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(alignment: .center, spacing: 14) {
+                        AnimatedSprite(key: "coin", pixel: 6)
+                            .frame(width: 64, height: 64)
+                            .background(Color(hex: 0x3A321C))
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Pixel Deck Pro").font(AppFont.pixel(26)).foregroundStyle(Theme.cream)
+                            Text("One purchase. No subscription.")
+                                .font(AppFont.body(15, relativeTo: .subheadline))
+                                .foregroundStyle(Theme.muted)
                         }
                     }
-                    .padding(.horizontal)
+                    VStack(spacing: 8) {
+                        ForEach(orderedFeatures) { row($0) }
+                    }
+                    Text("Free forever: every tool, mirror, onion skin, motion tweening, the infinite canvas up to 64 × 64 and PNG / sprite sheet export up to 4×.")
+                        .font(AppFont.body(13, relativeTo: .footnote))
+                        .foregroundStyle(Theme.muted)
+                }
+                .padding(16)
+            }
 
-                    Text("Free forever: every drawing tool, onion skin, motion tweening, and PNG / sprite sheet export up to 4×.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                .padding(.vertical, 24)
-            }
-            .safeAreaInset(edge: .bottom) { purchaseArea }
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Not now") { dismiss() }
-                }
-            }
-            .onChange(of: purchases.isPro) { _, pro in
-                if pro { dismiss() }
-            }
-            .alert("Pixel Deck Pro", isPresented: Binding(get: { purchases.errorMessage != nil },
-                                                          set: { if !$0 { purchases.errorMessage = nil } })) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(purchases.errorMessage ?? "")
-            }
+            purchaseArea
+        }
+        .screenBackground()
+        .onChange(of: purchases.isPro) { _, pro in if pro { dismiss() } }
+        .sheet(isPresented: $showingPrivacy) { NavigationStack { PrivacyPolicyView() } }
+        .alert("Pixel Deck Pro", isPresented: Binding(get: { purchases.errorMessage != nil },
+                                                      set: { if !$0 { purchases.errorMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(purchases.errorMessage ?? "")
         }
     }
 
@@ -53,85 +64,84 @@ struct ProUpgradeView: View {
         return [highlight] + ProFeature.allCases.filter { $0 != highlight }
     }
 
-    private var header: some View {
-        VStack(spacing: 10) {
-            Image(systemName: "sparkles.rectangle.stack.fill")
-                .font(.system(size: 52))
-                .foregroundStyle(Color.accentColor)
-                .accessibilityHidden(true)
-            Text("Pixel Deck Pro")
-                .font(.largeTitle.bold())
-            Text("One purchase. No subscription. Yours on all your devices.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.horizontal)
-    }
-
-    private func row(_ feature: ProFeature) -> some View {
-        HStack(alignment: .top, spacing: 14) {
-            Image(systemName: feature.symbol)
-                .font(.title2)
-                .foregroundStyle(Color.accentColor)
-                .frame(width: 34)
-                .accessibilityHidden(true)
+    private func row(_ f: ProFeature) -> some View {
+        let on = f == highlight
+        return HStack(alignment: .top, spacing: 14) {
+            f.icon.view(size: 22)
+                .foregroundStyle(on ? Theme.onAccent : Theme.accent)
+                .frame(width: 40, height: 40)
+                .background(on ? Theme.accent : Theme.tool)
             VStack(alignment: .leading, spacing: 2) {
-                Text(feature.title).font(.headline)
-                Text(feature.detail).font(.subheadline).foregroundStyle(.secondary)
+                Text(f.title).font(AppFont.body(15, .bold, relativeTo: .headline)).foregroundStyle(Theme.cream)
+                Text(f.detail).font(AppFont.body(13, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
         }
-        .padding(14)
-        .background(feature == highlight ? Color.accentColor.opacity(0.12) : Color(.secondarySystemBackground),
-                    in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(12)
+        .background(Theme.surface)
+        .overlay(Rectangle().strokeBorder(on ? Theme.accent : Theme.line, lineWidth: 2))
         .accessibilityElement(children: .combine)
     }
 
     private var purchaseArea: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 12) {
             if purchases.isPro {
-                Label("Pro is unlocked. Thank you!", systemImage: "checkmark.seal.fill")
-                    .font(.headline)
-                    .foregroundStyle(.green)
+                Text("Pro is unlocked. Thank you!").font(AppFont.pixel(14)).foregroundStyle(Theme.accent2)
             } else if let product = purchases.product {
                 Button {
                     Task { await purchases.purchase() }
                 } label: {
-                    Group {
+                    ZStack {
                         if purchases.isPurchasing {
-                            ProgressView()
+                            ProgressView().tint(Theme.onAccent)
                         } else {
-                            Text("Unlock for \(product.displayPrice)")
+                            Text("Unlock for \(product.displayPrice)").font(AppFont.pixel(18))
                         }
                     }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, minHeight: 30)
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(PrimaryButtonStyle())
                 .disabled(purchases.isPurchasing)
                 Text("One-time purchase of \(product.displayPrice). Family Sharing supported.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(AppFont.body(12, relativeTo: .caption))
+                    .foregroundStyle(Theme.muted)
             } else if purchases.loadFailed {
                 VStack(spacing: 6) {
                     Text("The App Store isn't reachable right now.")
-                        .font(.subheadline)
+                        .font(AppFont.body(14, relativeTo: .subheadline))
+                        .foregroundStyle(Theme.text)
                     Button("Try again") { Task { await purchases.loadProduct() } }
+                        .foregroundStyle(Theme.accent2)
                 }
             } else {
-                ProgressView()
+                ProgressView().tint(Theme.muted)
             }
 
             HStack(spacing: 18) {
                 Button("Restore Purchases") { Task { await purchases.restore() } }
                 Button("Terms of Use") { openURL(AppConfig.termsOfUseURL) }
-                NavigationLink("Privacy") { PrivacyPolicyView() }
+                Button("Privacy") { showingPrivacy = true }
             }
-            .font(.footnote)
+            .font(AppFont.body(13, .medium, relativeTo: .footnote))
+            .foregroundStyle(Theme.accent2)
         }
-        .padding()
-        .background(.bar)
+        .padding(16)
+        .padding(.bottom, 4)
+        .background(Theme.surface.ignoresSafeArea(edges: .bottom))
+        .overlay(alignment: .top) { Theme.line.frame(height: 2) }
+    }
+}
+
+extension ProFeature {
+    var icon: PixelIcon {
+        switch self {
+        case .largeCanvas: .select
+        case .unlimitedFrames: .gallery
+        case .gifExport: .play
+        case .largeExport: .export
+        }
     }
 }
 
@@ -147,12 +157,12 @@ extension View {
 /// Small "PRO" badge for locked options.
 struct ProBadge: View {
     var body: some View {
-        Text("PRO")
-            .font(.system(size: 9, weight: .heavy, design: .rounded))
+        Text(verbatim: "PRO")
+            .font(AppFont.pixel(9))
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
-            .foregroundStyle(.white)
-            .background(Color.accentColor, in: Capsule())
+            .foregroundStyle(Theme.onAccent)
+            .background(Theme.accent2)
             .accessibilityLabel("Requires Pro")
     }
 }

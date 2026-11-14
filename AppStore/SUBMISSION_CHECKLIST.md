@@ -14,9 +14,9 @@ How Pixel Deck holds up:
 | Concern | Status | Evidence |
 |---|---|---|
 | **2.5.2 running code** | Not applicable | No web views, JavaScript, scripting, plug-ins or downloaded content. The app makes no network requests apart from StoreKit. Tweening creates pixel data, not code. |
-| **Hidden permissions** | None | The app asks for no runtime permissions: no camera, microphone, location, contacts, tracking or network access. There is one usage string, Photos *add-only*, which iOS shows only if the user picks "Save Image" in the share sheet; without it, that action would crash. `PrivacyInfo.xcprivacy` declares the only required-reason API used (UserDefaults). |
+| **Hidden permissions** | One, explained | The only permission is Photos **add-only**. It's asked for the first time the user taps **Save** on the export screen, never at launch, and it can't read the photo library. There is no camera, microphone, location, contacts, tracking or network access. `PrivacyInfo.xcprivacy` declares the only required-reason API used (UserDefaults). |
 | **Hidden features (2.5.19)** | None | Every paid feature is listed on the paywall and in the review notes. There are no feature flags, remote config or debug unlocks. |
-| **Code bloat** | Small | About 3,700 lines of Swift with no third-party dependencies or SDKs. Unused code was removed in an audit. |
+| **Code bloat** | Small | About 5,000 lines of Swift with no third-party dependencies or SDKs. The only bundled assets are two open-licence fonts (OFL, licence shown in Settings) and a 7 KB sprite data file. |
 | **Original functionality (4.2, 4.3)** | Original | The swipe-to-keyframe deck, path-traced tweening with jitter removal and smoothing, and the sprite-sheet and JSON exporter are original features, not a template or a wrapped website. |
 | **Crashes (2.1)** | Mitigated, but needs device testing | See the hardening list below. 25 unit tests run on Linux. **The iOS interface has not yet been built or run, so TestFlight testing is essential.** |
 
@@ -49,7 +49,7 @@ You still need to do this, and no review can replace it:
 | Privacy manifest with required-reason APIs | `PixelDeck/PrivacyInfo.xcprivacy` (UserDefaults, CA92.1) |
 | No tracking, so no App Tracking Transparency prompt needed | — |
 | Export compliance | `ITSAppUsesNonExemptEncryption = NO` in build settings |
-| Photo-library usage string, for "Save Image" from the share sheet | Build settings |
+| Photo-library add-only usage string, for Save on the export screen | Build settings (`NSPhotoLibraryAddUsageDescription`) |
 | Ratings are requested only through the system API (no custom prompt, 5.6.1) | `ExportSheet.exportSucceeded()` |
 | Every gesture also has a visible button | ••• menu → New frame / New canvas; frame strip "+" |
 | No hidden or dormant features (2.5.19) | Everything gated is listed on the paywall |
@@ -102,18 +102,18 @@ You still need to do this, and no review can replace it:
 - [ ] Use a sandbox Apple Account to buy and restore on a TestFlight build.
 
 ### Assets
-- [ ] **App icon**: the included heart is a placeholder. A distinctive icon matters a lot for downloads. Make one in Icon Composer, which Xcode 26+ uses for Liquid Glass icons with light, dark and tinted versions. Or replace `AppIcon.png` (1024×1024, no transparency).
-- [ ] **Screenshots**: take them from the simulator or a device, showing the app in use, not just a title card (2.3.3). You need iPhone 6.9" (1320 × 2868) and, because the app runs on iPad, iPad 13" (2064 × 2752). Good shots: drawing, the swipe for a new frame with onion skin, the tween path, the GIF/sheet export, and the gallery. Apple says that from April 2027 every submission must also include iPhone Duo screenshots.
+- [ ] **App icon**: now the slime on ember orange, from the brand kit. For iOS 26+, consider rebuilding it in Icon Composer with dark and tinted versions.
+- [ ] **Screenshots**: take them from the simulator or a device, showing the app in use, not just a title card (2.3.3). You need iPhone 6.9" (1320 × 2868) and, because the app runs on iPad, iPad 13" (2064 × 2752). Good shots: the welcome scene, the Studio with onion skin, a tween path, the gallery's live previews, and export. The design's sprite sheets (`sprites/*_sheet_8x.png` in the handoff) also suit marketing artwork. Apple says that from April 2027 every submission must also include iPhone Duo screenshots.
 - [ ] Optional: a 15–30 s App Preview video of a swipe and a tween, which is the most persuasive thing you can show.
 
 ## Business model (what's implemented)
 
 The app is free to download, with **Pixel Deck Pro** as a one-time non-consumable purchase. The code suggests 4.99 USD. Each line below, free tier then Pro:
 
-- **Canvases**: free gets 8, 16 and 32 px; Pro adds 64, 128 and 256 px.
-- **Frames per sprite**: free allows 12; Pro allows 999 (256 at 256×256, a memory budget for older iPhones).
-- **Drawing tools, onion skin, motion tweening**: all included free.
-- **Export**: free gets PNG frames and sprite sheets with JSON at up to 4×; Pro adds GIF and up to 32×.
+- **Art size** on the infinite canvas: free allows up to 64 × 64 px; Pro allows up to 512 × 512.
+- **Frames per sprite**: free allows 12; Pro allows 999, or fewer for very large sprites to stay within memory on older iPhones.
+- **Drawing tools, mirror, onion skin, motion tweening**: all included free.
+- **Export**: free gets PNG frames and sprite sheets with JSON at up to 4×; Pro adds animated GIF, MP4 video and up to 16×.
 
 Why this model:
 - A one-time unlock suits an offline tool with no running costs. A subscription needs continuing value to justify it (3.1.2), and reviewers and users push back when there isn't any.
@@ -133,10 +133,13 @@ Ideas for later versions:
 > Pixel Deck is an offline pixel-art and sprite-animation editor. No account or login is needed.
 >
 > Key interactions:
-> - Draw with one finger. Pinch with two fingers to zoom, and drag with two fingers to pan.
-> - Drag the canvas card's top strip **left** to add a frame (the previous frame shows as an onion skin), or **right** to start a new canvas. The same actions are in the ••• menu.
-> - To tween: choose the Select tool (the dashed square) and drag over pixels to select them. Then drag the selection along any path and tap **Tween**.
+> - Draw with one finger. Pinch with two fingers to change the pixel size, drag with two fingers to move, and tap with two fingers to fit the art. The canvas has no fixed size; it grows as you draw.
+> - Swipe **left** starting at the right edge of the canvas (marked by a small orange chevron) to add a frame. The previous frame shows as an orange onion skin. Swipe **right** from the left edge (yellow chevron) to start a new canvas. The **+** after the frame thumbnails also adds a frame, and the gallery has a **New canvas** tile.
+> - To tween: choose the Select tool (the dashed square), drag over pixels to select them, drag the selection along any path, then tap **Tween**.
+> - Long-press a palette colour to change it.
 >
-> In-app purchase: "Pixel Deck Pro" (non-consumable) unlocks 64–256 px canvases, more than 12 frames, GIF export and exports above 4×. To see the paywall, tap New Canvas → 64 × 64, or go to Settings → Unlock Pro. Restore Purchases is in Settings and on the paywall.
+> In-app purchase: "Pixel Deck Pro" (non-consumable) unlocks art larger than 64 × 64, more than 12 frames, GIF and video export, and exports above 4×. To see the paywall, go to Settings (the icon at the top of the gallery) → Unlock Pro, or pick GIF on the export screen. Restore Purchases is in Settings and on the paywall.
+>
+> **Save** on the export screen asks for add-only Photos access; **Share** uses the share sheet.
 >
 > The app collects no data.

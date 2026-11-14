@@ -40,8 +40,8 @@ final class ProjectStore {
 
     /// `baseName` is localised by the app, e.g. "Sprite" → "Sprite 3".
     @discardableResult
-    func create(size: Int, baseName: String = "Sprite") -> SpriteProject {
-        let p = SpriteProject(name: nextName(base: baseName), size: size)
+    func create(baseName: String = "Sprite") -> SpriteProject {
+        let p = SpriteProject(name: nextName(base: baseName))
         save(p)
         return p
     }
@@ -84,6 +84,15 @@ final class ProjectStore {
     }
 
     /// `name` builds the copy's name from the original's (localised by the app).
+    /// Adds ready-made sprites (the starter examples), oldest first so they sort after new work.
+    func add(_ newProjects: [SpriteProject]) {
+        for (i, var p) in newProjects.enumerated() {
+            p.modifiedAt = Date(timeIntervalSinceNow: -Double(newProjects.count - i))
+            save(p)
+        }
+        projects.sort { $0.modifiedAt > $1.modifiedAt }
+    }
+
     func duplicate(id: UUID, name: (String) -> String = { "\($0) copy" }) {
         guard let p = project(id: id) else { return }
         save(p.duplicated(name: name(p.name)))

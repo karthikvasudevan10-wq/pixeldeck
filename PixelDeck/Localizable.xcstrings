@@ -24,29 +24,6 @@
         }
       }
     },
-    "%lld frames per second": {
-      "comment": "Playback speed (plural)",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld frame per second"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld frames per second"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "Moves the selection through the next %lld frames, keeping everything else in them.": {
       "comment": "Tween into existing frames (plural)",
       "localizations": {
@@ -70,17 +47,63 @@
         }
       }
     },
-    "%lld×%lld · %lld frames": {
-      "comment": "Sprite card: canvas size and frame count (plural)",
+    "%lld animations": {
+      "comment": "Gallery count (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld animation"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld animations"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld stills": {
+      "comment": "Gallery count of single-frame sprites (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld still"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld stills"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld frames · %@": {
+      "comment": "Gallery tile: frame count (plural) and art size",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld×%2$lld · %#@frames@"
+            "value": "%#@frames@ · %2$@"
           },
           "substitutions": {
             "frames": {
-              "argNum": 3,
+              "argNum": 1,
               "formatSpecifier": "lld",
               "variations": {
                 "plural": {
@@ -103,30 +126,30 @@
         }
       }
     },
-    "%lld PNG files, each %lld × %lld": {
-      "comment": "Export summary (plural on the first number)",
+    "%@ · %lld×%lld px · %lld frames · %lld fps": {
+      "comment": "Export summary: name, art size, frame count (plural), frame rate",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%#@files@, each %2$lld × %3$lld"
+            "value": "%1$@ · %2$lld×%3$lld px · %#@frames@ · %5$lld fps"
           },
           "substitutions": {
-            "files": {
-              "argNum": 1,
+            "frames": {
+              "argNum": 4,
               "formatSpecifier": "lld",
               "variations": {
                 "plural": {
                   "one": {
                     "stringUnit": {
                       "state": "translated",
-                      "value": "%arg PNG file"
+                      "value": "%arg frame"
                     }
                   },
                   "other": {
                     "stringUnit": {
                       "state": "translated",
-                      "value": "%arg PNG files"
+                      "value": "%arg frames"
                     }
                   }
                 }

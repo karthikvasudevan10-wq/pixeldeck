@@ -4,27 +4,36 @@ A native SwiftUI pixel-art and sprite-animation app for iPhone (and iPad).
 
 ## Features
 
-- **Canvas sizes**: 8×8, 16×16, 32×32, 64×64, 128×128 and 256×256, scaled up crisply with no smoothing.
-- **Zoom**: pinch with two fingers (drag with two fingers to pan), or use the zoom out / fit / zoom in buttons.
-- **Pixel grid**: shown whenever pixels are big enough on screen. You can turn it off in the ••• menu.
-- **Colours**: black by default. Use the system colour picker, a 16-colour starter palette, recent colours, or the eyedropper.
-- **Tools**: pencil, eraser, flood fill, eyedropper, select & move, and undo/redo.
-- **Swipe the card**:
-  - **Swipe left** to add a keyframe after the current one. The new frame is blank and shows the previous frame underneath as an onion skin you can trace. The opacity can be set to 15–70% in the ••• menu.
-  - **Swipe right** to start a whole new canvas. The current sprite is saved first.
-  - You can always drag the card by its top strip. Tap the stack icon in the tool row to make the whole card swipeable.
-- **Motion tweening**: select a group of pixels and drag it to a new spot. The app records the route your finger took, removes the jitter (Ramer–Douglas–Peucker), smooths it into a curve (Catmull–Rom), and shows it as a pink dotted line. Then tap **Tween** to choose:
-  - *Follow my drag* or *Straight line*
-  - Linear, ease in, ease out, or ease in & out
-  - *Insert new frames*: you pick how many, with a suggestion based on distance. Or *Use existing next frames*: the selection moves through the frames you've already drawn and everything else in them is kept.
-  - A live looping preview before you commit.
-- **Frames**: a film strip to jump between frames. Long-press a frame to duplicate, reorder or delete it. You can also play the animation at 1–30 fps.
-- **Export**: a sprite sheet PNG (in a row or a grid) with an optional JSON file of frame positions for game engines, an animated GIF, or one PNG per frame, at 1×–32× scale. Files go to the share sheet, so you can save them to Files or Photos, AirDrop them, and so on.
-- **Saving**: everything saves automatically to the app's Documents folder.
-- **Pixel Deck Pro** (one-time in-app purchase, StoreKit 2): 64–256 px canvases, up to 999 frames (256 at 256×256, to stay within memory on older iPhones), GIF export and exports above 4×. Free users get 8–32 px canvases, 12 frames per sprite, every tool including tweening, and PNG / sprite-sheet export up to 4×. All limits are in `Core/FeatureAccess.swift`.
-- **Adaptive layout**: the editor puts the canvas beside a tool panel whenever it has the room, for example on an unfolded iPhone Duo in landscape, an iPad, or an iPhone in landscape. Otherwise it stacks them. Zoom and position survive folding, rotation and resizing.
-- **Localisation-ready**: every string is in a String Catalog (`Localizable.xcstrings`) with English plurals, and the layout mirrors for right-to-left languages.
-- **Also**: first-launch tips, Settings (restore purchases, privacy policy, support links), the system review prompt after a few exports, and Reduce Motion support.
+The look follows the design handoff: a dark "night" palette, square corners, Silkscreen and Space Grotesk fonts, and buttons with a solid drop shadow that press in.
+
+- **Infinite canvas**: there is no size to pick. Draw anywhere and the canvas grows. Pinch to change how big pixels look; zooming snaps to whole points so pixels stay crisp. Drag with two fingers to move around, and tap with two fingers to fit the art. The checkerboard and pixel grid go on forever. Saved sprites and exports are trimmed to the art.
+- **Swipes**:
+  - **Swipe left** from the right edge of the canvas to add a keyframe. The previous frame shows underneath as a flat orange onion skin at 38%.
+  - **Swipe right** from the left edge to start a new canvas.
+  - Small pulsing pixel chevrons mark both edges. "Swipe anywhere", in the sprite menu, lets you drag the whole canvas instead. Both actions also have buttons.
+- **Dock**:
+  - Row 1: play/pause (the animation plays in place on the canvas), the frame thumbnails and a button to add a frame.
+  - Row 2: a 10-colour palette that each sprite keeps its own copy of. Long-press a swatch to change it.
+  - Row 3: the tools, which are pencil, eraser, fill, colour picker, **mirror** and select. Mirror draws on both sides of the centre line and works with the pencil, eraser and fill.
+  - Row 4: gallery, undo, redo, onion skin, frame rate and export.
+- **Sprite menu**: tap the name chip at the top left to rename, fit the art, turn the pixel grid on or off, use swipe-anywhere, set the onion skin strength, or duplicate, clear or delete the frame.
+- **Motion tweening**: select pixels and drag them along any path. The app removes the jitter from your drag (Ramer–Douglas–Peucker), smooths it into a curve (Catmull–Rom) and draws it as a dotted line. Tap **Tween** to fill in the frames between, with a choice of path, timing and frame count and a live preview.
+- **Gallery**: a grid of every sprite, each looping its animation live, with a Moving / Stills filter. It starts with six example sprites (slime, campfire, coin, ghost, sprout and moon). You can also swipe right anywhere in the gallery for a new canvas.
+- **Welcome screens**: an animated pixel night scene, then a two-step tutorial on the swipes. Both can be opened again from Settings.
+- **Export**: a looping preview, scale choices of 1×, 4×, 8× and 16× with the output size shown, and four formats:
+  - Animated GIF
+  - Sprite sheet, as a row or a grid, with an optional JSON file of frame positions for game engines
+  - PNG frames
+  - **MP4 video** at 1080 × 1080 for Reels, Shorts and TikTok
+  
+  **Save** adds the files to Photos, asking only for permission to add. **Share** opens the share sheet.
+- **Pixel Deck Pro** (a one-time in-app purchase, StoreKit 2):
+  - Free: art up to 64 × 64 px, 12 frames per sprite, every tool including mirror and tweening, and PNG or sprite sheet export up to 4×.
+  - Pro: art up to 512 × 512, up to 999 frames (fewer for very large sprites, to protect memory), GIF and video export, and exports up to 16×.
+  - All the limits are in `Core/FeatureAccess.swift`.
+- **Adaptive layout**: when there's room, such as an unfolded iPhone Duo, an iPad or landscape, the dock becomes a side panel. Your zoom and position survive folding, rotating and resizing.
+- **Localisation-ready**: the text uses a String Catalog with English plurals, and the layout mirrors for right-to-left languages.
+- **Accessibility**: Reduce Motion pauses the decorative animations (stars, swipe hints and gallery previews). Controls have VoiceOver labels, and body text scales with Dynamic Type.
 
 ## Selling it on the App Store
 
@@ -56,10 +65,11 @@ swift test
 PixelDeck/
   PixelDeckApp.swift      App entry point
   Core/                   Platform-independent model and logic (unit-tested)
-  Editor/                 Editor screen, UIKit canvas, swipe deck, colours, film strip, tween, playback
-  Library/                Sprite gallery and new-canvas picker
-  Export/                 PNG/GIF/JSON export and share sheet
+  Editor/                 Studio: infinite UIKit canvas, swipe container, dock, tween
+  Library/                Gallery
+  Export/                 PNG/GIF/MP4/JSON export, Photos saving and the share sheet
   Store/                  In-app purchase (StoreKit 2) and paywall
-  Support/                Rendering, settings, onboarding, privacy policy, AppConfig
+  Resources/              Bundled fonts (with their OFL licence) and the starter sprites (sprites.json)
+  Support/                Theme (colours, fonts, buttons, icons), rendering, welcome, settings, privacy, AppConfig
 Tests/                    Unit tests for Core
 ```

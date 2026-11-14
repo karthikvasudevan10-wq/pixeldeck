@@ -30,7 +30,8 @@ struct RGBA: Hashable, Codable, Sendable {
     }
 }
 
-/// Integer pixel coordinate. Origin is the top-left of the canvas.
+/// Integer pixel coordinate. In the editor these are world coordinates on an unbounded canvas:
+/// (0, 0) is just right of and below the centre of a new canvas, and negatives are fine.
 struct PixelPoint: Hashable, Codable, Sendable {
     var x: Int
     var y: Int
@@ -40,9 +41,9 @@ struct PixelPoint: Hashable, Codable, Sendable {
     static func + (l: PixelPoint, r: PixelPoint) -> PixelPoint { PixelPoint(x: l.x + r.x, y: l.y + r.y) }
     static func - (l: PixelPoint, r: PixelPoint) -> PixelPoint { PixelPoint(x: l.x - r.x, y: l.y - r.y) }
 
-    func clamped(toCanvas size: Int) -> PixelPoint {
-        PixelPoint(x: min(max(x, 0), size - 1), y: min(max(y, 0), size - 1))
-    }
+    /// Mirror image across the vertical line between world x = -1 and x = 0 (the centre of a
+    /// new canvas), used by the mirror tool.
+    var mirrored: PixelPoint { PixelPoint(x: -1 - x, y: y) }
 }
 
 /// Continuous 2D vector, measured in canvas pixels.
@@ -102,11 +103,32 @@ struct PixelRect: Hashable, Codable, Sendable {
         PixelRect(x: x + d.x, y: y + d.y, width: width, height: height)
     }
 
-    /// The part of this rectangle that lies on a canvas of the given size.
-    func clipped(toCanvas size: Int) -> PixelRect {
-        let nx = max(x, 0), ny = max(y, 0)
-        let mx = min(maxX, size), my = min(maxY, size)
+    func contains(_ r: PixelRect) -> Bool {
+        r.isEmpty || (r.x >= x && r.y >= y && r.maxX <= maxX && r.maxY <= maxY)
+    }
+
+    /// Smallest rectangle containing both. An empty rectangle contributes nothing.
+    func union(_ r: PixelRect) -> PixelRect {
+        if r.isEmpty { return self }
+        if isEmpty { return r }
+        let nx = min(x, r.x), ny = min(y, r.y)
+        return PixelRect(x: nx, y: ny, width: max(maxX, r.maxX) - nx, height: max(maxY, r.maxY) - ny)
+    }
+
+    func union(_ p: PixelPoint) -> PixelRect {
+        union(PixelRect(x: p.x, y: p.y, width: 1, height: 1))
+    }
+
+    /// Overlap of the two rectangles (empty, with zero size, if they don't meet).
+    func intersection(_ r: PixelRect) -> PixelRect {
+        let nx = max(x, r.x), ny = max(y, r.y)
+        let mx = min(maxX, r.maxX), my = min(maxY, r.maxY)
         return PixelRect(x: nx, y: ny, width: max(0, mx - nx), height: max(0, my - ny))
+    }
+
+    /// Grown (positive) or shrunk (negative) by `d` on every side.
+    func insetBy(_ d: Int) -> PixelRect {
+        PixelRect(x: x + d, y: y + d, width: max(0, width - 2 * d), height: max(0, height - 2 * d))
     }
 }
 

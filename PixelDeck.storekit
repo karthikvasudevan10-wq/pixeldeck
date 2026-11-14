@@ -10,7 +10,7 @@
       "internalID" : "6740000001",
       "localizations" : [
         {
-          "description" : "Large canvases, up to 999 frames, GIF export and big exports.",
+          "description" : "Art up to 512×512, up to 999 frames, GIF and video export, exports up to 16×.",
           "displayName" : "Pixel Deck Pro",
           "locale" : "en_US"
         }

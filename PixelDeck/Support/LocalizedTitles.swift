@@ -10,7 +10,7 @@ extension Tool {
         case .pencil: "Pencil"
         case .eraser: "Eraser"
         case .fill: "Fill"
-        case .eyedropper: LocalizedStringResource("Pick colour", comment: "Eyedropper tool")
+        case .eyedropper: LocalizedStringResource("Colour picker", comment: "Eyedropper tool")
         case .select: LocalizedStringResource("Select & move", comment: "Selection tool")
         }
     }
@@ -57,9 +57,37 @@ extension SpriteSheetLayout {
 extension ExportFormat {
     var title: LocalizedStringResource {
         switch self {
+        case .gif: "Animated GIF"
         case .spriteSheet: "Sprite sheet"
-        case .gif: LocalizedStringResource("GIF", comment: "Animated GIF file format")
         case .frames: "PNG frames"
+        case .video: "Video"
+        }
+    }
+
+    var detail: LocalizedStringResource {
+        switch self {
+        case .gif: "Loops anywhere you post it"
+        case .spriteSheet: "All frames in one image, for game engines"
+        case .frames: "One image per frame"
+        case .video: "For Reels, Shorts and TikTok"
+        }
+    }
+
+    /// The export button's label.
+    var action: LocalizedStringResource {
+        switch self {
+        case .gif: "Save GIF"
+        case .spriteSheet: "Save sheet"
+        case .frames: "Save frames"
+        case .video: "Save video"
+        }
+    }
+
+    var fileExtension: String {
+        switch self {
+        case .gif: ".gif"
+        case .spriteSheet, .frames: ".png"
+        case .video: ".mp4"
         }
     }
 }
@@ -67,18 +95,18 @@ extension ExportFormat {
 extension ProFeature {
     var title: LocalizedStringResource {
         switch self {
-        case .largeCanvas: "64, 128 & 256 px canvases"
+        case .largeCanvas: "Art up to \(FeatureAccess.proMaxArtSide) × \(FeatureAccess.proMaxArtSide)"
         case .unlimitedFrames: "Up to \(FeatureAccess.absoluteFrameLimit) frames per sprite"
-        case .gifExport: "Animated GIF export"
-        case .largeExport: "Export up to 32× size"
+        case .gifExport: "Animated GIF & video export"
+        case .largeExport: "Export up to 16× size"
         }
     }
 
     var detail: LocalizedStringResource {
         switch self {
-        case .largeCanvas: "Room for detailed sprites, tiles and scenes."
-        case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. 256 × 256 sprites can have up to \(FeatureAccess.maxFrames(forCanvas: 256))."
-        case .gifExport: "Share looping animations anywhere."
+        case .largeCanvas: "Free art on the infinite canvas can be up to \(FeatureAccess.freeMaxArtSide) × \(FeatureAccess.freeMaxArtSide) pixels. Pro gives you room for detailed scenes and tilesets."
+        case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. Very large sprites have a lower limit to protect your device's memory."
+        case .gifExport: "Share looping GIFs and MP4 videos for Reels, Shorts and TikTok."
         case .largeExport: "Crisp, large images for stores, social posts and print."
         }
     }

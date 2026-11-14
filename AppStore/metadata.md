@@ -10,38 +10,40 @@ Apple's character limits are in brackets. Don't use other apps' names in keyword
 `pixel,sprite,animation,8bit,16bit,retro,gamedev,drawing,gif,tween,onion skin,editor,sheet,indie` (95 characters)
 
 **Promotional text** (170, can be changed without a new review):
-Swipe left for a new frame, move a few pixels, and watch Pixel Deck draw the in-between frames for you.
+Draw it. Flip it. Make it move. Swipe left for a new frame and watch your pixels come alive.
 
 **Description** (4000):
 
 Pixel Deck is a pocket-sized pixel art studio made for animation.
 
-DRAW EVERY PIXEL
-• Canvases from 8×8 to 256×256, always razor sharp
-• Pencil, eraser, fill, colour picker and undo/redo
-• Pinch to zoom right in; a pixel grid appears when you need it
-• Colour picker, a hand-picked palette and your recent colours
+DRAW IT
+• An infinite canvas: no size to pick, just draw and it grows
+• Pinch to make pixels bigger or smaller, always razor sharp
+• Pencil, eraser, fill, colour picker, mirror and select, with undo/redo
+• A 10-colour palette per sprite; long-press any colour to change it
 
-ANIMATE BY SWIPING
-• Swipe the canvas card left to add the next keyframe
-• The previous frame shows through as an onion skin, so you can trace motion
-• Swipe right to start a fresh canvas — your work saves automatically
-• Reorder, duplicate and preview frames at up to 30 fps
+FLIP IT
+• Swipe left for the next frame; the last one stays underneath as an orange onion skin
+• Swipe right to start a fresh canvas whenever an idea hits
+• Play the animation in place, from 1 to 30 fps
 
-LET IT DRAW THE IN-BETWEENS
-Select some pixels and drag them anywhere: across the canvas, in an arc, around a loop. Pixel Deck smooths out the path your finger took and draws every frame along it, with easing. Add new frames, or move the pixels through frames you've already drawn while keeping everything else in them.
+MAKE IT MOVE
+Select some pixels and drag them anywhere: across the canvas, in an arc, around a loop. Pixel Deck smooths out the path your finger took and draws every frame in between, with easing.
 
-EXPORT FOR GAMES AND SOCIAL
-• Sprite sheets in a row or a grid, with JSON frame data for game engines
-• Individual PNG frames
-• Looping animated GIFs (Pro)
-• Scale up to 32× (Pro) with no blurring
+SHARE IT
+• Sprite sheets with JSON frame data for game engines
+• PNG frames
+• Looping GIFs and 1080×1080 MP4 videos for Reels, Shorts and TikTok (Pro)
+• Scale up to 16× (Pro) with no blurring
+
+STARTER CAST
+A slime, a campfire, a coin, a ghost, a sprout and a moon are waiting in your gallery to study, remix or animate further.
 
 PRIVATE BY DESIGN
 No account, no ads, no tracking. Your art stays on your device.
 
 PIXEL DECK PRO
-One purchase, no subscription: 64, 128 and 256 px canvases, up to 999 frames per sprite (256 at 256×256), GIF export and exports up to 32×. Family Sharing supported.
+One purchase, no subscription: art up to 512×512, up to 999 frames per sprite, GIF and video export, and exports up to 16×. Family Sharing supported.
 
 **What's New** (first version): First release. Happy pixelling!
 

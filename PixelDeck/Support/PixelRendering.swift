@@ -5,8 +5,8 @@ enum PixelRenderer {
     static let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
 
     static func cgImage(_ grid: PixelGrid, scale: Int = 1) -> CGImage? {
-        let side = grid.size * max(1, scale)
-        return cgImage(width: side, height: side, rgba: grid.rgbaBytes(scale: scale))
+        let s = max(1, scale)
+        return cgImage(width: grid.width * s, height: grid.height * s, rgba: grid.rgbaBytes(scale: s))
     }
 
     /// Pixels are either fully opaque or fully transparent (0,0,0,0), so premultiplied alpha is exact.
@@ -19,17 +19,13 @@ enum PixelRenderer {
                        provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
     }
 
-    /// Transparency checkerboard with one square per canvas pixel (coarser on big canvases).
-    static func checkerboard(size: Int) -> CGImage? {
-        var grid = PixelGrid(size: size)
-        let block = max(1, size / 32)
-        let light = RGBA(hex: 0xF2F2F2), dark = RGBA(hex: 0xDCDCDC)
-        for y in 0..<size {
-            for x in 0..<size {
-                grid[x, y] = ((x / block) + (y / block)) % 2 == 0 ? light : dark
-            }
+    /// The onion skin look: every opaque pixel becomes one flat colour.
+    static func tinted(_ grid: PixelGrid, with color: RGBA) -> PixelGrid {
+        var out = PixelGrid(width: grid.width, height: grid.height)
+        for y in 0..<grid.height {
+            for x in 0..<grid.width where !grid[x, y].isClear { out[x, y] = color }
         }
-        return cgImage(grid)
+        return out
     }
 }
 
@@ -101,22 +97,11 @@ struct PixelImage: View {
                     .resizable()
             }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .aspectRatio(image.map { CGFloat($0.width) / CGFloat(max($0.height, 1)) } ?? 1, contentMode: .fit)
     }
 }
 
+/// Checkerboard behind thumbnails, in the design's checker colours.
 struct CheckerBackground: View {
-    var body: some View {
-        Canvas { ctx, size in
-            let n = 8
-            let s = size.width / CGFloat(n)
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(white: 0.95)))
-            for y in 0..<n {
-                for x in 0..<n where (x + y) % 2 == 1 {
-                    ctx.fill(Path(CGRect(x: CGFloat(x) * s, y: CGFloat(y) * s, width: s, height: s)),
-                             with: .color(Color(white: 0.86)))
-                }
-            }
-        }
-    }
+    var body: some View { Checkerboard(cell: 6) }
 }
