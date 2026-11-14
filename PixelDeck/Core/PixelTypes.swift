@@ -119,6 +119,4 @@ struct PixelPatch: Hashable, Sendable {
     subscript(x: Int, y: Int) -> RGBA {
         pixels[y * width + x]
     }
-
-    var isEmpty: Bool { pixels.allSatisfy(\.isClear) }
 }

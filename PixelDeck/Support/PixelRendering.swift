@@ -51,16 +51,28 @@ extension RGBA {
     }
 }
 
-/// Caches frame thumbnails until the frame's pixels change.
+/// Caches frame thumbnails until the frame's pixels change. NSCache evicts under memory
+/// pressure and is capped at ~48 MB.
 final class ThumbnailCache {
     static let shared = ThumbnailCache()
-    private var entries: [UUID: (version: Int, image: CGImage)] = [:]
+
+    private final class Entry {
+        let version: Int
+        let image: CGImage
+        init(version: Int, image: CGImage) { self.version = version; self.image = image }
+    }
+
+    private let cache: NSCache<NSUUID, Entry> = {
+        let c = NSCache<NSUUID, Entry>()
+        c.totalCostLimit = 48 * 1024 * 1024
+        return c
+    }()
 
     func image(for frame: Frame) -> CGImage? {
-        if let e = entries[frame.id], e.version == frame.version { return e.image }
+        let key = frame.id as NSUUID
+        if let e = cache.object(forKey: key), e.version == frame.version { return e.image }
         guard let img = PixelRenderer.cgImage(frame.grid) else { return nil }
-        entries[frame.id] = (frame.version, img)
-        if entries.count > 2000 { entries.removeAll() }
+        cache.setObject(Entry(version: frame.version, image: img), forKey: key, cost: img.bytesPerRow * img.height)
         return img
     }
 }

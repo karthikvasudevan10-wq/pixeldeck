@@ -77,7 +77,7 @@ extension ProFeature {
     var detail: LocalizedStringResource {
         switch self {
         case .largeCanvas: "Room for detailed sprites, tiles and scenes."
-        case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames."
+        case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. 256 × 256 sprites can have up to \(FeatureAccess.maxFrames(forCanvas: 256))."
         case .gifExport: "Share looping animations anywhere."
         case .largeExport: "Crisp, large images for stores, social posts and print."
         }

@@ -5,6 +5,38 @@ What's already done in the code, and what only you can do. Checked against Apple
 16 Oct 2026) and [Upcoming Requirements](https://developer.apple.com/news/upcoming-requirements/)
 as of 13 Nov 2026.
 
+## Concerns about AI-built apps
+
+Apple has been enforcing **guideline 2.5.2** since March 2026 against "vibe coding" apps such as Replit, Vibecode and Anything. Those apps generate code and then run it inside the app. Apple says it has no rule against apps that were *built* with AI; the rule is that an app may not download, install or run code that changes what it does. Other rejections reported for AI-built apps cite the long-standing rules: 2.1 (crashes or incomplete), 4.2 (too little functionality) and 4.3 (spam or copycat).
+
+How Pixel Deck holds up:
+
+| Concern | Status | Evidence |
+|---|---|---|
+| **2.5.2 running code** | Not applicable | No web views, JavaScript, scripting, plug-ins or downloaded content. The app makes no network requests apart from StoreKit. Tweening creates pixel data, not code. |
+| **Hidden permissions** | None | The app asks for no runtime permissions: no camera, microphone, location, contacts, tracking or network access. There is one usage string, Photos *add-only*, which iOS shows only if the user picks "Save Image" in the share sheet; without it, that action would crash. `PrivacyInfo.xcprivacy` declares the only required-reason API used (UserDefaults). |
+| **Hidden features (2.5.19)** | None | Every paid feature is listed on the paywall and in the review notes. There are no feature flags, remote config or debug unlocks. |
+| **Code bloat** | Small | About 3,700 lines of Swift with no third-party dependencies or SDKs. Unused code was removed in an audit. |
+| **Original functionality (4.2, 4.3)** | Original | The swipe-to-keyframe deck, path-traced tweening with jitter removal and smoothing, and the sprite-sheet and JSON exporter are original features, not a template or a wrapped website. |
+| **Crashes (2.1)** | Mitigated, but needs device testing | See the hardening list below. 25 unit tests run on Linux. **The iOS interface has not yet been built or run, so TestFlight testing is essential.** |
+
+Crash hardening done:
+- **Damaged save files** load as something editable instead of crashing. Bad or wrong-sized frames are dropped, a project with no frames gets a blank one, and impossible sizes are rejected.
+- **Memory** is capped:
+  - Each sprite is limited to 16 million pixels across all its frames, about 64 MB. That means 256 frames at 256×256.
+  - Sprite-sheet exports are limited to 4096 px per side.
+  - The thumbnail cache is an `NSCache` capped at 48 MB, and the frame strip only draws the thumbnails on screen.
+- **Saves are run-length encoded**, so a 256×256 frame is usually under 3 KB instead of 256 KB. Writes are batched off the main thread and atomic. If the disk is full, the app shows an alert instead of silently losing work.
+- **Old export files are deleted**, so the temporary folder doesn't fill up.
+- **Undo is capped at 50 steps**, and its snapshots share unchanged frames with the current project instead of copying them.
+
+You still need to do this, and no review can replace it:
+- [ ] Build in Xcode and fix any compile errors.
+- [ ] Run the app under Instruments (Leaks and Allocations) with a 256×256 sprite of 256 frames. Export at the maximum size.
+- [ ] Turn on the Address Sanitizer and Main Thread Checker in the scheme's Diagnostics, then use the app for 10 minutes.
+- [ ] Ship to TestFlight and wait for zero crashes in Xcode Organizer → Crashes before submitting.
+- [ ] Get an experienced iOS developer to read the code if you can. AI-written code deserves the same review as a junior developer's.
+
 ## Already handled in the app
 
 | Requirement | Where |
@@ -79,7 +111,7 @@ as of 13 Nov 2026.
 The app is free to download, with **Pixel Deck Pro** as a one-time non-consumable purchase. The code suggests 4.99 USD. Each line below, free tier then Pro:
 
 - **Canvases**: free gets 8, 16 and 32 px; Pro adds 64, 128 and 256 px.
-- **Frames per sprite**: free allows 12; Pro allows 999.
+- **Frames per sprite**: free allows 12; Pro allows 999 (256 at 256×256, a memory budget for older iPhones).
 - **Drawing tools, onion skin, motion tweening**: all included free.
 - **Export**: free gets PNG frames and sprite sheets with JSON at up to 4×; Pro adds GIF and up to 32×.
 

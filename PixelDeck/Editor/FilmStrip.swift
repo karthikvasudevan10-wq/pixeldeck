@@ -7,7 +7,8 @@ struct FilmStrip: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                // Lazy, so a sprite with hundreds of frames only renders the visible thumbnails.
+                LazyHStack(spacing: 8) {
                     ForEach(Array(model.project.frames.enumerated()), id: \.element.id) { index, frame in
                         Button { model.selectFrame(index) } label: {
                             thumb(frame: frame, index: index)

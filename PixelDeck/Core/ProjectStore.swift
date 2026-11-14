@@ -5,6 +5,9 @@ import Observation
 @Observable
 final class ProjectStore {
     private(set) var projects: [SpriteProject] = []
+    /// Set when a save fails (for example, the device is full), so the app can warn the user
+    /// instead of silently losing work. Atomic writes leave the previous version intact.
+    private(set) var saveFailed = false
 
     @ObservationIgnored let directory: URL
     @ObservationIgnored private let io = DispatchQueue(label: "PixelDeck.ProjectStore", qos: .utility)
@@ -63,10 +66,21 @@ final class ProjectStore {
         let batch = pendingWrites
         pendingWrites = [:]
         let encoder = JSONEncoder()
+        var failed = false
         for (id, project) in batch {
-            guard let data = try? encoder.encode(project) else { continue }
-            try? data.write(to: fileURL(for: id), options: .atomic)
+            do {
+                try encoder.encode(project).write(to: fileURL(for: id), options: .atomic)
+            } catch {
+                failed = true
+            }
         }
+        if failed {
+            DispatchQueue.main.async { [self] in saveFailed = true }
+        }
+    }
+
+    func acknowledgeSaveFailure() {
+        saveFailed = false
     }
 
     /// `name` builds the copy's name from the original's (localised by the app).

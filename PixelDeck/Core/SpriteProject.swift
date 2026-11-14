@@ -45,6 +45,29 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         self.frames = [Frame(grid: PixelGrid(size: size))]
     }
 
+    private enum CodingKeys: String, CodingKey { case id, name, size, frames, fps, createdAt, modifiedAt }
+
+    /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
+    /// crashing the app (the editor assumes at least one frame, all the same size).
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        size = try c.decode(Int.self, forKey: .size)
+        guard size > 0, size <= PixelGrid.maxSize else {
+            throw DecodingError.dataCorruptedError(forKey: .size, in: c, debugDescription: "Unsupported canvas size")
+        }
+        let name = (try? c.decode(String.self, forKey: .name))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        self.name = name.isEmpty ? "Sprite" : name
+        // Frame by frame, so one damaged frame doesn't take the others with it.
+        let decoded = ((try? c.decode([LossyFrame].self, forKey: .frames)) ?? []).compactMap(\.frame)
+        let size = size
+        let valid = decoded.filter { $0.grid.size == size }
+        frames = valid.isEmpty ? [Frame(grid: PixelGrid(size: size))] : valid
+        fps = min(max((try? c.decode(Int.self, forKey: .fps)) ?? 8, 1), 30)
+        createdAt = (try? c.decode(Date.self, forKey: .createdAt)) ?? Date()
+        modifiedAt = (try? c.decode(Date.self, forKey: .modifiedAt)) ?? createdAt
+    }
+
     /// A copy with fresh identifiers, so caches never confuse it with the original.
     func duplicated(name: String) -> SpriteProject {
         var copy = self
@@ -55,4 +78,9 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         copy.modifiedAt = Date()
         return copy
     }
+}
+
+private struct LossyFrame: Decodable {
+    let frame: Frame?
+    init(from decoder: Decoder) throws { frame = try? Frame(from: decoder) }
 }

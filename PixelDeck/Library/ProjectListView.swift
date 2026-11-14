@@ -68,6 +68,11 @@ struct ProjectListView: View {
             }
         }
         .sheet(isPresented: $showingSettings) { SettingsView() }
+        .alert("Couldn't save your sprite", isPresented: Binding(get: { store.saveFailed }, set: { if !$0 { store.acknowledgeSaveFailure() } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your device may be out of storage. Free up some space; your last saved version is safe, and Pixel Deck will keep trying as you edit.")
+        }
         .sheet(isPresented: $showingOnboarding) { OnboardingView() }
         .onAppear {
             if !hasSeenOnboarding {

@@ -257,3 +257,63 @@ final class LocalisableNamesTests: XCTestCase {
         try? FileManager.default.removeItem(at: dir)
     }
 }
+
+final class RobustnessTests: XCTestCase {
+    func testRunLengthEncodingRoundTripAndIsSmall() throws {
+        var g = PixelGrid(size: 256)
+        g.drawLine(from: PixelPoint(x: 0, y: 0), to: PixelPoint(x: 255, y: 255), color: .black)
+        g[3, 200] = RGBA(hex: 0xABCDEF)
+        let rle = g.runLengthEncoded()
+        // A diagonal breaks every row into runs (~513 runs × 6 bytes) — still ~1% of the 262 144 raw bytes.
+        XCTAssertLessThan(rle.count, 4000)
+        XCTAssertEqual(PixelGrid(size: 256, runLengthEncoded: rle), g)
+        let json = try JSONEncoder().encode(g)
+        XCTAssertEqual(try JSONDecoder().decode(PixelGrid.self, from: json), g)
+    }
+
+    func testCorruptRunLengthDataFailsInsteadOfCrashing() {
+        XCTAssertNil(PixelGrid(size: 8, runLengthEncoded: Data([1, 0, 0, 0, 0])))      // truncated
+        XCTAssertNil(PixelGrid(size: 8, runLengthEncoded: Data([0xFF, 0xFF, 0, 0, 0, 0]))) // too many pixels
+        XCTAssertNil(PixelGrid(size: 8, runLengthEncoded: Data([0, 0, 0, 0, 0, 0])))     // zero-length run
+        XCTAssertNil(PixelGrid(size: 8, runLengthEncoded: Data()))                        // too few pixels
+    }
+
+    func testLegacyRawFormatStillLoads() throws {
+        var g = PixelGrid(size: 2); g[1, 1] = .black
+        let legacy = #"{"size":2,"rgba":"\#(Data(g.rgbaBytes()).base64EncodedString())"}"#
+        XCTAssertEqual(try JSONDecoder().decode(PixelGrid.self, from: Data(legacy.utf8)), g)
+    }
+
+    func testDamagedProjectLoadsAsEditable() throws {
+        let good = try JSONEncoder().encode(PixelGrid(size: 8))
+        let goodFrame = #"{"id":"\#(UUID().uuidString)","grid":\#(String(decoding: good, as: UTF8.self))}"#
+        let json = """
+        {"id":"\(UUID().uuidString)","name":"  ","size":8,"fps":500,
+         "frames":[{"id":"\(UUID().uuidString)","grid":{"size":16,"rle":""}}, {"garbage":true}, \(goodFrame)]}
+        """
+        let p = try JSONDecoder().decode(SpriteProject.self, from: Data(json.utf8))
+        XCTAssertEqual(p.frames.count, 1, "the bad and wrong-size frames are dropped, the good one kept")
+        XCTAssertEqual(p.fps, 30)
+        XCTAssertEqual(p.name, "Sprite")
+
+        let empty = #"{"id":"\#(UUID().uuidString)","name":"E","size":8,"frames":[]}"#
+        XCTAssertEqual(try JSONDecoder().decode(SpriteProject.self, from: Data(empty.utf8)).frames.count, 1)
+
+        let huge = #"{"id":"\#(UUID().uuidString)","name":"H","size":100000,"frames":[]}"#
+        XCTAssertThrowsError(try JSONDecoder().decode(SpriteProject.self, from: Data(huge.utf8)))
+    }
+
+    func testMemoryBudgetLimitsBigCanvases() {
+        XCTAssertEqual(FeatureAccess.pro.frameLimit(forCanvas: 256), 256)
+        XCTAssertEqual(FeatureAccess.pro.frameLimit(forCanvas: 128), 999)
+        XCTAssertEqual(FeatureAccess.free.frameLimit(forCanvas: 32), FeatureAccess.freeFrameLimit)
+
+        let m = EditorModel(project: SpriteProject(name: "Big", size: 256))
+        m.access = .pro
+        var asked = false
+        m.onProRequired = { _ in asked = true }
+        while m.addKeyframe() {}
+        XCTAssertEqual(m.frameCount, 256)
+        XCTAssertFalse(asked, "Pro users aren't offered Pro when the memory budget is the limit")
+    }
+}

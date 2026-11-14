@@ -121,8 +121,6 @@ final class EditorModel {
 
     var selectionRect: PixelRect? { floating?.currentRect ?? marquee }
 
-    var hasSelection: Bool { selectionRect != nil }
-
     var canTween: Bool { floating.map { !$0.path.isTrivial } ?? false }
 
     var followingFrameCount: Int { project.frames.count - currentIndex - 1 }
@@ -386,13 +384,16 @@ final class EditorModel {
 
     /// Whether `count` more frames fit. Asks for Pro when the free limit is the reason.
     func hasRoom(forFrames count: Int) -> Bool {
-        if project.frames.count + count <= access.frameLimit { return true }
-        if !access.isPro { onProRequired?(.unlimitedFrames) }
+        if project.frames.count + count <= access.frameLimit(forCanvas: size) { return true }
+        // Only offer Pro if Pro would actually allow it (not when the memory budget is the limit).
+        if !access.isPro, project.frames.count + count <= FeatureAccess.pro.frameLimit(forCanvas: size) {
+            onProRequired?(.unlimitedFrames)
+        }
         return false
     }
 
     /// Frames that can still be inserted under the current plan.
-    var remainingFrameAllowance: Int { max(0, access.frameLimit - project.frames.count) }
+    var remainingFrameAllowance: Int { max(0, access.frameLimit(forCanvas: size) - project.frames.count) }
 
     // MARK: Project settings
 

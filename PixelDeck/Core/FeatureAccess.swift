@@ -27,8 +27,15 @@ struct FeatureAccess: Equatable, Sendable {
     static let freeSizes: Set<Int> = [8, 16, 32]
     static let freeFrameLimit = 12
     static let freeMaxExportScale = 4
-    /// Hard ceiling for everyone, to keep memory and file sizes sane.
+    /// Hard ceiling for everyone.
     static let absoluteFrameLimit = 999
+    /// Total pixels a sprite may hold across all frames: 64 MB of RGBA in memory. Keeps big
+    /// canvases from exhausting memory on older iPhones (256×256 → 256 frames, 128×128 → 999).
+    static let pixelBudget = 16_777_216
+
+    static func maxFrames(forCanvas size: Int) -> Int {
+        min(absoluteFrameLimit, max(1, pixelBudget / max(1, size * size)))
+    }
 
     var isPro: Bool
 
@@ -39,8 +46,9 @@ struct FeatureAccess: Equatable, Sendable {
         isPro || FeatureAccess.freeSizes.contains(size)
     }
 
-    var frameLimit: Int {
-        isPro ? FeatureAccess.absoluteFrameLimit : FeatureAccess.freeFrameLimit
+    func frameLimit(forCanvas size: Int) -> Int {
+        let cap = FeatureAccess.maxFrames(forCanvas: size)
+        return isPro ? cap : min(FeatureAccess.freeFrameLimit, cap)
     }
 
     var allowsGIF: Bool { isPro }

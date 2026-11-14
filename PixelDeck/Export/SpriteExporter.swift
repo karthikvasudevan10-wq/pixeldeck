@@ -25,8 +25,9 @@ enum ExportError: LocalizedError {
 
 /// Writes PNG / GIF / JSON files to a temporary folder for sharing.
 enum SpriteExporter {
-    /// Largest output side we allow, to keep memory sane.
-    static let maxSide = 8192
+    /// Largest output side. A 4096² RGBA image is 64 MB; 8192² (256 MB, plus a copy) can get the
+    /// app terminated for memory on older iPhones.
+    static let maxSide = 4096
 
     static func allowedScales(for project: SpriteProject, options: ExportOptions) -> [Int] {
         [1, 2, 4, 8, 16, 32].filter { scale in
@@ -41,6 +42,7 @@ enum SpriteExporter {
     }
 
     static func export(_ project: SpriteProject, options: ExportOptions) throws -> [URL] {
+        removePreviousExports()
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("Export-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -76,6 +78,15 @@ enum SpriteExporter {
                 try writePNG(width: side, height: side, rgba: grid.rgbaBytes(scale: scale), to: url)
                 return url
             }
+        }
+    }
+
+    /// Earlier exports are only needed until their share sheet closes; don't let them pile up.
+    static func removePreviousExports() {
+        let tmp = FileManager.default.temporaryDirectory
+        let items = (try? FileManager.default.contentsOfDirectory(at: tmp, includingPropertiesForKeys: nil)) ?? []
+        for url in items where url.lastPathComponent.hasPrefix("Export-") {
+            try? FileManager.default.removeItem(at: url)
         }
     }
 
