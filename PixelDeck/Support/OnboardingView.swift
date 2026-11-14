@@ -6,8 +6,7 @@ struct OnboardingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var page = 0
 
-    private struct Tip: Identifiable {
-        let id = UUID()
+    private struct Tip {
         let symbol: String
         let title: LocalizedStringResource
         let text: LocalizedStringResource
@@ -31,7 +30,7 @@ struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 0) {
             TabView(selection: $page) {
-                ForEach(Array(tips.enumerated()), id: \.element.id) { index, tip in
+                ForEach(Array(tips.enumerated()), id: \.offset) { index, tip in
                     VStack(spacing: 20) {
                         Spacer()
                         Image(systemName: tip.symbol)

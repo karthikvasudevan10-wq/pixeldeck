@@ -20,6 +20,9 @@ struct SwipeDeck<Content: View>: View {
     @State private var offset: CGSize = .zero
     @State private var swipeCount = 0
     @State private var flying = false
+    /// True while a drag is in progress. Unlike `offset`, it resets on its own if the drag is
+    /// cancelled (a sheet appearing, a system interruption, swipe mode switching off).
+    @GestureState private var dragging = false
     /// Width of the deck, so fly-off distances work on every screen (iPhone Duo inner display, iPad…).
     @State private var deckWidth: CGFloat = 400
     private let threshold: CGFloat = 110
@@ -45,6 +48,15 @@ struct SwipeDeck<Content: View>: View {
         .coordinateSpace(.named(Self.space))
         .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { deckWidth = max($0, 1) }
         .sensoryFeedback(.impact(weight: .medium), trigger: swipeCount)
+        .onChange(of: dragging) { _, isDragging in
+            guard !isDragging else { return }
+            // Runs after onEnded when a drag ends normally; only acts if the drag was cancelled.
+            DispatchQueue.main.async {
+                if !flying && offset != .zero {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) { offset = .zero }
+                }
+            }
+        }
     }
 
     private var cardShape: RoundedRectangle {
@@ -121,6 +133,7 @@ struct SwipeDeck<Content: View>: View {
     private var drag: some Gesture {
         // Measured in the stationary deck (not the moving card) so the drag doesn't feed back on itself.
         DragGesture(minimumDistance: 8, coordinateSpace: .named(Self.space))
+            .updating($dragging) { _, state, _ in state = true }
             .onChanged { value in
                 guard !flying else { return }
                 offset = CGSize(width: value.translation.width, height: value.translation.height * 0.25)

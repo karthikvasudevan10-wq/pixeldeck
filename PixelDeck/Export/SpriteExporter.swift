@@ -28,6 +28,8 @@ enum SpriteExporter {
     /// Largest output side. A 4096² RGBA image is 64 MB; 8192² (256 MB, plus a copy) can get the
     /// app terminated for memory on older iPhones.
     static let maxSide = 4096
+    /// Total decoded size of all GIF frames.
+    static let gifMemoryBudget = 512 * 1024 * 1024
 
     static func allowedScales(for project: SpriteProject, options: ExportOptions) -> [Int] {
         [1, 2, 4, 8, 16, 32].filter { scale in
@@ -35,8 +37,12 @@ enum SpriteExporter {
             case .spriteSheet:
                 let s = SpriteSheet.pixelSize(canvas: project.size, frameCount: project.frames.count, scale: scale, layout: options.layout)
                 return max(s.width, s.height) <= maxSide
-            case .gif, .frames:
+            case .frames:
                 return project.size * scale <= 2048
+            case .gif:
+                // ImageIO keeps every frame until the GIF is finalised, so cap the total too.
+                let side = project.size * scale
+                return side <= 2048 && project.frames.count * side * side * 4 <= gifMemoryBudget
             }
         }
     }
@@ -109,8 +115,10 @@ enum SpriteExporter {
             kCGImagePropertyGIFUnclampedDelayTime as String: delay,
         ]]
         for grid in grids {
-            guard let image = PixelRenderer.cgImage(grid, scale: scale) else { throw ExportError.couldNotWrite(url.lastPathComponent) }
-            CGImageDestinationAddImage(dest, image, frameProps as CFDictionary)
+            try autoreleasepool {
+                guard let image = PixelRenderer.cgImage(grid, scale: scale) else { throw ExportError.couldNotWrite(url.lastPathComponent) }
+                CGImageDestinationAddImage(dest, image, frameProps as CFDictionary)
+            }
         }
         guard CGImageDestinationFinalize(dest) else { throw ExportError.couldNotWrite(url.lastPathComponent) }
     }

@@ -17,7 +17,8 @@ struct PixelCanvas: UIViewRepresentable {
     let model: EditorModel
     let zoom: ZoomCommand
 
-    func makeCoordinator() -> Coordinator { Coordinator(model: model) }
+    // Start from the current nonce so a recreated canvas doesn't replay the last zoom action.
+    func makeCoordinator() -> Coordinator { Coordinator(model: model, lastZoomNonce: zoom.nonce) }
 
     func makeUIView(context: Context) -> PixelCanvasView {
         let view = PixelCanvasView()
@@ -39,8 +40,11 @@ struct PixelCanvas: UIViewRepresentable {
 
     final class Coordinator: PixelCanvasViewDelegate {
         var model: EditorModel
-        var lastZoomNonce = 0
-        init(model: EditorModel) { self.model = model }
+        var lastZoomNonce: Int
+        init(model: EditorModel, lastZoomNonce: Int) {
+            self.model = model
+            self.lastZoomNonce = lastZoomNonce
+        }
 
         func canvasTouchBegan(at p: Vec2) { model.touchBegan(at: p) }
         func canvasTouchMoved(to p: Vec2) { model.touchMoved(to: p) }
@@ -125,7 +129,10 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
         board.layer.addSublayer(selectionLayer)
 
         drawRecognizer.delegate = self
-        board.addGestureRecognizer(drawRecognizer)
+        // On the scroll view, not the board: a second finger landing in the margin around the
+        // canvas must still reach the recognizer so it can hand over to pinch/pan. Locations are
+        // converted to the board; touches outside it are ignored by the model.
+        scrollView.addGestureRecognizer(drawRecognizer)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
@@ -175,7 +182,9 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
         updateOverlays()
         CATransaction.commit()
         centerBoard()
-        if let keep, keep != .fit { apply(keep) }
+        // Always apply: insets alone don't move contentOffset, so without this a fresh canvas
+        // would sit off-centre.
+        apply(keep ?? .fit)
     }
 
     // MARK: Viewport
@@ -305,7 +314,7 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
         case .zoomOut:
             scrollView.setZoomScale(max(scrollView.zoomScale / 2, scrollView.minimumZoomScale), animated: true)
         case .fit:
-            scrollView.setZoomScale(1, animated: true)
+            UIView.animate(withDuration: 0.25) { self.apply(.fit) }
         }
     }
 
@@ -346,8 +355,9 @@ final class PixelCanvasView: UIView, UIScrollViewDelegate, UIGestureRecognizerDe
     }
 }
 
-/// Starts the instant one finger lands, so single taps paint a pixel. If a second finger arrives
-/// quickly, the touch is treated as the start of a pinch/pan and cancelled (the stroke is undone).
+/// Starts the instant one finger lands, so single taps paint a pixel. When a second finger arrives
+/// the stroke stops so the scroll view can pinch/pan: within 0.25 s it's treated as the start of a
+/// pinch and cancelled (the stray stroke is undone); later, the stroke so far is kept.
 final class DrawGestureRecognizer: UIGestureRecognizer {
     private var tracked: UITouch?
     private var startTime: TimeInterval = 0
@@ -356,7 +366,8 @@ final class DrawGestureRecognizer: UIGestureRecognizer {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
         if tracked == nil {
-            guard touches.count == 1, let t = touches.first else {
+            let active = event.allTouches?.filter { $0.phase != .ended && $0.phase != .cancelled }.count ?? touches.count
+            guard touches.count == 1, active <= 1, let t = touches.first else {
                 state = .failed
                 return
             }
@@ -367,10 +378,8 @@ final class DrawGestureRecognizer: UIGestureRecognizer {
         }
         // Another finger joined.
         let quick = (touches.first?.timestamp ?? startTime) - startTime < handOffWindow
-        if quick {
-            state = .cancelled
-        } else {
-            for t in touches { ignore(t, for: event) }
+        if state == .began || state == .changed {
+            state = quick ? .cancelled : .ended
         }
     }
 

@@ -35,7 +35,7 @@ struct PlaybackSheet: View {
                     Slider(value: $fps, in: 1...30, step: 1) {
                         Text("Speed")
                     } onEditingChanged: { editing in
-                        if !editing { model.setFPS(Int(fps)) }
+                        if !editing, Int(fps) != model.project.fps { model.setFPS(Int(fps)) }
                     }
                 }
                 .padding(.horizontal, 32)
@@ -48,6 +48,8 @@ struct PlaybackSheet: View {
                 ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
             }
         }
-        .onDisappear { model.setFPS(Int(fps)) }
+        .onDisappear {
+            if Int(fps) != model.project.fps { model.setFPS(Int(fps)) }
+        }
     }
 }

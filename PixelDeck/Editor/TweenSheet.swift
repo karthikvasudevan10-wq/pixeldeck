@@ -52,6 +52,12 @@ struct TweenSheet: View {
                                   systemImage: "info.circle")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
+                        } else if model.access.isPro && frameCount > model.remainingFrameAllowance {
+                            // Pro, but the per-canvas memory budget is the limit.
+                            Label("This sprite can have up to \(model.access.frameLimit(forCanvas: model.size)) frames (\(model.remainingFrameAllowance) left).",
+                                  systemImage: "exclamationmark.triangle")
+                                .font(.footnote)
+                                .foregroundStyle(.orange)
                         }
                     } else if model.followingFrameCount == 0 {
                         Text("There are no frames after this one yet.")
@@ -79,7 +85,8 @@ struct TweenSheet: View {
                         model.generateTween(frameCount: frameCount, easing: easing, style: style, mode: mode)
                         dismiss()
                     }
-                    .disabled(mode == .spreadAcrossFollowing && model.followingFrameCount == 0)
+                    .disabled((mode == .spreadAcrossFollowing && model.followingFrameCount == 0)
+                              || (mode == .insertFrames && model.access.isPro && frameCount > model.remainingFrameAllowance))
                 }
             }
         }

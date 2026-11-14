@@ -80,7 +80,11 @@ struct ExportSheet: View {
                 } header: {
                     Text("Size")
                 } footer: {
-                    outputDescription
+                    if scales.isEmpty {
+                        Text("This sprite is too large to export in this format. Try PNG frames or a sprite sheet.")
+                    } else {
+                        outputDescription
+                    }
                 }
 
                 Section {
@@ -93,7 +97,7 @@ struct ExportSheet: View {
                             Spacer()
                         }
                     }
-                    .disabled(working)
+                    .disabled(working || scales.isEmpty)
                 }
             }
             .navigationTitle("Export Sprites")
@@ -101,6 +105,7 @@ struct ExportSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } }
             }
+            .onAppear { clampScale() }
             .onChange(of: options.format) { _, _ in clampScale() }
             .onChange(of: options.layout) { _, _ in clampScale() }
             .sheet(item: $shareItems) { items in
@@ -141,6 +146,10 @@ struct ExportSheet: View {
     }
 
     private func clampScale() {
+        // A long single-row sheet can be too wide at any scale: wrap it into a grid instead.
+        if scales.isEmpty, options.format == .spriteSheet, options.layout == .strip {
+            options.layout = .grid
+        }
         let usable = scales.filter { $0 <= purchases.access.maxExportScale }
         if !usable.contains(options.scale) { options.scale = usable.last ?? 1 }
     }

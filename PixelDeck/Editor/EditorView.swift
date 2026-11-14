@@ -26,19 +26,21 @@ struct EditorView: View {
 
     /// Side-by-side when there's clearly more width than height and room for the panel plus a
     /// usefully large canvas.
-    static func prefersSidePanel(_ size: CGSize) -> Bool {
+    nonisolated static func prefersSidePanel(_ size: CGSize) -> Bool {
         size.width > size.height * 1.15 && size.width >= sidePanelWidth + 300
     }
 
     var body: some View {
-        Group {
+        // A VStack (not a Group): modifiers on a Group apply to each branch separately, so
+        // switching layout would fire onDisappear (dropping the selection) and dismiss open sheets.
+        VStack(spacing: 0) {
             if sidePanel {
                 HStack(alignment: .top, spacing: 4) {
                     deck
                     ScrollView {
                         VStack(spacing: 12) {
-                            HStack(spacing: 4) { toolButtons }
-                            HStack(spacing: 4) { zoomButtons }
+                            HStack(spacing: 2) { toolButtons }
+                            HStack(spacing: 2) { zoomButtons }
                             if model.tool == .select { selectionBar }
                             ColorBar(model: model)
                             FilmStrip(model: model)
@@ -50,7 +52,7 @@ struct EditorView: View {
                 }
             } else {
                 VStack(spacing: 8) {
-                    HStack(spacing: 4) {
+                    HStack(spacing: 2) {
                         toolButtons
                         Spacer(minLength: 4)
                         zoomButtons
@@ -130,7 +132,8 @@ struct EditorView: View {
             } label: {
                 Image(systemName: tool.symbol)
                     .font(.system(size: 17, weight: .medium))
-                    .frame(width: 40, height: 36)
+                    .frame(width: 36, height: 36)
+                    .contentShape(Rectangle())
                     .background(model.tool == tool && !deckMode ? Color.accentColor.opacity(0.18) : .clear,
                                 in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                     .foregroundStyle(model.tool == tool && !deckMode ? Color.accentColor : Color.primary)
@@ -143,7 +146,8 @@ struct EditorView: View {
         Button { deckMode.toggle() } label: {
             Image(systemName: "rectangle.stack")
                 .font(.system(size: 17, weight: .medium))
-                .frame(width: 40, height: 36)
+                .frame(width: 36, height: 36)
+                .contentShape(Rectangle())
                 .background(deckMode ? Color.accentColor.opacity(0.18) : .clear,
                             in: RoundedRectangle(cornerRadius: 9, style: .continuous))
                 .foregroundStyle(deckMode ? Color.accentColor : Color.primary)
@@ -166,7 +170,8 @@ struct EditorView: View {
         } label: {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .medium))
-                .frame(width: 34, height: 36)
+                .frame(width: 32, height: 36)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
@@ -226,16 +231,15 @@ struct EditorView: View {
             Menu {
                 Button { showingPlayback = true } label: { Label("Play animation", systemImage: "play.fill") }
                 Button { model.addKeyframe() } label: { Label("New frame", systemImage: "plus.rectangle.on.rectangle") }
-                Button { showingNewCanvas = true } label: { Label("New canvas", systemImage: "square.badge.plus") }
+                Button { showingNewCanvas = true } label: { Label("New canvas", systemImage: "doc.badge.plus") }
                 Button { showingExport = true } label: { Label("Export sprites", systemImage: "square.and.arrow.up") }
                 Divider()
                 Toggle(isOn: $model.showGrid) { Label("Pixel grid", systemImage: "grid") }
                 Toggle(isOn: $model.onionSkinEnabled) { Label("Onion skin", systemImage: "square.2.layers.3d") }
                 Picker(selection: $model.onionOpacity) {
-                    Text("15%").tag(0.15)
-                    Text("30%").tag(0.3)
-                    Text("50%").tag(0.5)
-                    Text("70%").tag(0.7)
+                    ForEach([0.15, 0.3, 0.5, 0.7], id: \.self) { v in
+                        Text(v, format: .percent).tag(v)
+                    }
                 } label: {
                     Label("Onion opacity", systemImage: "circle.lefthalf.filled")
                 }
