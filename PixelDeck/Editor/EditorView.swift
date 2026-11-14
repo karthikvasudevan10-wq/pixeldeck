@@ -15,6 +15,7 @@ struct EditorView: View {
     @State private var showingRename = false
     @State private var renameText = ""
     @State private var editingSwatch: SwatchEdit?
+    @State private var showingLayers = false
     /// Chosen from the space the Studio actually has — never from device type or orientation.
     @State private var sidePanel = false
 
@@ -56,6 +57,8 @@ struct EditorView: View {
             model.onChange = { [store] project in store.save(project) }
             model.access = purchases.access
             model.onProRequired = { feature in upgrade = feature }
+            model.newLayerName = { String(localized: "Layer \($0)", comment: "Default name for a new layer") }
+            model.shapesLayerName = String(localized: "Shapes", comment: "Name of the layer created for the first shape")
         }
         .onChange(of: purchases.isPro) { _, _ in model.access = purchases.access }
         .onDisappear {
@@ -65,6 +68,7 @@ struct EditorView: View {
         }
         .proUpgradeSheet($upgrade)
         .sheet(isPresented: $showingTween) { TweenSheet(model: model) }
+        .sheet(isPresented: $showingLayers) { LayersSheet(model: model) }
         .fullScreenCover(isPresented: $showingExport) { ExportView(project: model.project) }
         .sheet(item: $editingSwatch) { edit in
             SwatchEditor(initial: model.palette[edit.index],
@@ -102,9 +106,11 @@ struct EditorView: View {
             canvas
         }
         .overlay(alignment: .topLeading) { chip.padding(.leading, 12).padding(.top, 14) }
+        .overlay(alignment: .topTrailing) { layersButton.padding(.trailing, 12).padding(.top, 14) }
         .overlay(alignment: .bottom) {
             VStack(spacing: 10) {
                 if model.tool == .select && !model.isPlaying { selectionStrip }
+                if model.tool == .shape && !model.isPlaying { shapeStrip }
                 frameDots
             }
             .padding(.bottom, 12)
@@ -151,7 +157,13 @@ struct EditorView: View {
             .pickerStyle(.menu)
             Divider()
             Button { model.duplicateFrame(at: model.currentIndex) } label: { Label("Duplicate frame", systemImage: "plus.square.on.square") }
-            Button(role: .destructive) { model.clearCurrentFrame() } label: { Label("Clear frame", systemImage: "xmark.square") }
+            Button(role: .destructive) { model.clearCurrentFrame() } label: {
+                if model.layers.count > 1 {
+                    Label("Clear layer in this frame", systemImage: "xmark.square")
+                } else {
+                    Label("Clear frame", systemImage: "xmark.square")
+                }
+            }
             Button(role: .destructive) { model.deleteFrame(at: model.currentIndex) } label: { Label("Delete frame", systemImage: "trash") }
         } label: {
             HStack(spacing: 8) {
@@ -166,9 +178,72 @@ struct EditorView: View {
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(Theme.chip)
-            .frame(maxWidth: 240, alignment: .leading)
+            .frame(maxWidth: 190, alignment: .leading)
         }
         .accessibilityLabel(Text("\(model.project.name), frame \(model.currentIndex + 1) of \(model.frameCount). Sprite menu"))
+    }
+
+    /// The active layer, and the way into the layers panel.
+    private var layersButton: some View {
+        Button { showingLayers = true } label: {
+            HStack(spacing: 6) {
+                PixelIcon.layers.view(size: 14)
+                    .foregroundStyle(Theme.accent)
+                Text(model.layers[min(model.activeLayer, model.layers.count - 1)].name)
+                    .font(AppFont.body(12, .medium, relativeTo: .caption))
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
+                if model.layers.count > 1 {
+                    Text(verbatim: "\(model.activeLayer + 1)/\(model.layers.count)")
+                        .font(AppFont.pixel(11))
+                        .foregroundStyle(Theme.muted)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Theme.chip)
+            .frame(maxWidth: 150, alignment: .trailing)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text("Layers. Drawing on \(model.layers[min(model.activeLayer, model.layers.count - 1)].name)"))
+    }
+
+    /// Shape options, shown while the shape tool is in use.
+    private var shapeStrip: some View {
+        HStack(spacing: 6) {
+            ForEach(ShapeKind.allCases) { kind in
+                let on = model.shapeKind == kind
+                Button { model.shapeKind = kind } label: {
+                    kind.icon.view(size: 18).frame(width: 40, height: 36).contentShape(Rectangle())
+                }
+                .buttonStyle(TileButtonStyle(active: on))
+                .accessibilityLabel(Text(kind.title))
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+            Theme.line.frame(width: 2, height: 28)
+            Button { model.shapeFilled.toggle() } label: {
+                (model.shapeFilled ? Text("Filled") : Text("Outline"))
+                    .font(AppFont.pixel(11))
+                    .frame(width: 70, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(TileButtonStyle(active: model.shapeFilled))
+            .disabled(model.shapeKind == .line)
+            .accessibilityLabel(model.shapeFilled ? Text("Filled shapes") : Text("Outline shapes"))
+            Button { model.lockProportions.toggle() } label: {
+                Text(verbatim: "1:1")
+                    .font(AppFont.pixel(11))
+                    .frame(width: 40, height: 36)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(TileButtonStyle(active: model.lockProportions))
+            .accessibilityLabel("Lock proportions")
+            .accessibilityAddTraits(model.lockProportions ? .isSelected : [])
+        }
+        .padding(6)
+        .background(Theme.chip)
+        .padding(.bottom, 3)
     }
 
     /// One 4×4 dot per frame; the current one is a 12×4 accent bar.

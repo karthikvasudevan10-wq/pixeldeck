@@ -192,6 +192,7 @@ enum PixelIcon {
     case gallery, undo, redo, onion, export, share, download
     case plus, play, pause, back, arrowLeft, arrowRight, create
     case settings, more, trash, tween, check
+    case line, rectangle, circle, triangle, layers, eye, eyeOff, arrowUp, arrowDown, merge
 
     fileprivate var svg: [String] {
         switch self {
@@ -219,6 +220,15 @@ enum PixelIcon {
         case .trash: ["M5 7h14", "M9 7V4h6v3", "M7 7l1 13h8l1-13"]
         case .tween: ["M4 19c4-14 12 0 16-14", "M3 18h3v3H3z", "M18 3h3v3h-3z"]
         case .check: ["M5 12l5 5 9-10"]
+        case .line: ["M5 19L19 5"]
+        case .rectangle: ["M4 6h16v12H4z"]
+        case .circle: []                                   // drawn in path()
+        case .triangle: ["M12 4l9 16H3z"]
+        case .layers: ["M12 3l9 5-9 5-9-5z", "M3 12l9 5 9-5", "M3 16l9 5 9-5"]
+        case .eye, .eyeOff: ["M10 10h4v4h-4z"]               // pupil; the lids are curves in path()
+        case .arrowUp: ["M12 20V5M6 11l6-6 6 6"]
+        case .arrowDown: ["M12 4v15M6 13l6 6 6-6"]
+        case .merge: ["M12 4v10M7 9l5 5 5-5", "M4 20h16"]
         }
     }
 
@@ -233,6 +243,15 @@ enum PixelIcon {
         // Undo/redo end in a half-circle (SVG "a6 6 0 010 12h-3"), drawn as two cubic curves.
         let k = 6 * 0.5523
         switch self {
+        case .circle:
+            p.addEllipse(in: CGRect(x: 4, y: 4, width: 16, height: 16))
+        case .eye, .eyeOff:
+            p.move(to: CGPoint(x: 2, y: 12))
+            p.addQuadCurve(to: CGPoint(x: 22, y: 12), control: CGPoint(x: 12, y: 2))
+            p.addQuadCurve(to: CGPoint(x: 2, y: 12), control: CGPoint(x: 12, y: 22))
+            if self == .eyeOff {
+                p.move(to: CGPoint(x: 4, y: 20)); p.addLine(to: CGPoint(x: 20, y: 4))
+            }
         case .undo:
             p.move(to: CGPoint(x: 14, y: 9))
             p.addCurve(to: CGPoint(x: 20, y: 15), control1: CGPoint(x: 14 + k, y: 9), control2: CGPoint(x: 20, y: 15 - k))

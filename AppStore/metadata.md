@@ -20,6 +20,8 @@ DRAW IT
 • An infinite canvas: no size to pick, just draw and it grows
 • Pinch to make pixels bigger or smaller, always razor sharp
 • Pencil, eraser, fill, colour picker, mirror and select, with undo/redo
+• Lines, rectangles, circles and triangles, outlined or filled
+• Layers: keep backgrounds, shapes and characters apart, then hide, reorder or merge them
 • A 10-colour palette per sprite; long-press any colour to change it
 
 FLIP IT

@@ -450,3 +450,150 @@ final class ReviewFixTests: XCTestCase {
         XCTAssertGreaterThan(steps, 0)
     }
 }
+
+final class ShapeTests: XCTestCase {
+    func testRectangleOutlineAndFill() {
+        let outline = ShapeRaster.points(.rectangle, from: P(0, 0), to: P(4, 3), filled: false)
+        XCTAssertEqual(Set(outline).count, 5 * 4 - 3 * 2)
+        let filled = ShapeRaster.points(.rectangle, from: P(4, 3), to: P(0, 0), filled: true)
+        XCTAssertEqual(Set(filled).count, 20)
+    }
+
+    func testEllipseIsSymmetricAndInsideItsBox() {
+        for (w, h) in [(5, 5), (8, 6), (2, 7), (11, 4)] {
+            let r = PixelRect(x: 0, y: 0, width: w, height: h)
+            let pts = Set(ShapeRaster.ellipse(r))
+            XCTAssertTrue(pts.allSatisfy { r.contains($0) }, "\(w)×\(h) stays in its box")
+            for p in pts {
+                XCTAssertTrue(pts.contains(P(w - 1 - p.x, p.y)), "\(w)×\(h) mirrors left-right")
+                XCTAssertTrue(pts.contains(P(p.x, h - 1 - p.y)), "\(w)×\(h) mirrors top-bottom")
+            }
+            // Touches all four sides.
+            XCTAssertTrue(pts.contains { $0.x == 0 } && pts.contains { $0.x == w - 1 })
+            XCTAssertTrue(pts.contains { $0.y == 0 } && pts.contains { $0.y == h - 1 })
+        }
+    }
+
+    func testFilledCircleHasNoHoles() {
+        let pts = Set(ShapeRaster.points(.ellipse, from: P(0, 0), to: P(9, 9), filled: true))
+        for y in 0..<10 {
+            let row = pts.filter { $0.y == y }.map(\.x)
+            XCTAssertEqual(row.count, (row.max()! - row.min()!) + 1)
+        }
+    }
+
+    func testTriangleIsSymmetricWithApexOnDragSide() {
+        let down = Set(ShapeRaster.points(.triangle, from: P(0, 0), to: P(7, 5), filled: false))
+        for p in down { XCTAssertTrue(down.contains(P(7 - p.x, p.y))) }
+        XCTAssertTrue(down.contains(P(3, 0)) && down.contains(P(4, 0)), "even width: 2-pixel apex at the top")
+        XCTAssertEqual(down.filter { $0.y == 5 }.count, 8, "full base at the bottom")
+        let up = Set(ShapeRaster.points(.triangle, from: P(0, 5), to: P(6, 0), filled: false))
+        XCTAssertTrue(up.contains(P(3, 5)), "dragging up puts the apex at the bottom")
+    }
+
+    func testLockedProportions() {
+        XCTAssertEqual(ShapeRaster.constrained(.line, from: P(0, 0), to: P(10, 2)), P(10, 0))
+        XCTAssertEqual(ShapeRaster.constrained(.line, from: P(0, 0), to: P(7, -6)), P(7, -7))
+        XCTAssertEqual(ShapeRaster.constrained(.rectangle, from: P(0, 0), to: P(-3, 8)), P(-8, 8))
+    }
+}
+
+final class LayerTests: XCTestCase {
+    func testFirstShapeGoesOnItsOwnLayerAboveTheArt() {
+        let m = makeModel()
+        stroke(m, [(0.5, 0.5), (5.5, 0.5)])                     // art on layer 1
+        m.tool = .shape
+        m.shapeKind = .rectangle
+        m.pickColor(.white)
+        stroke(m, [(0.5, 0.5), (3.5, 3.5)])
+        XCTAssertEqual(m.layers.count, 2)
+        XCTAssertEqual(m.layers[1].name, "Shapes")
+        XCTAssertEqual(m.activeLayer, 1)
+        XCTAssertEqual(m.pixel(P(0, 0)), .white, "shape layer is on top")
+        XCTAssertEqual(m.pixel(P(5, 0)), .black, "art underneath untouched")
+        XCTAssertEqual(m.project.frames[0].layers[0][P(0, 0) - m.bounds.origin], .black)
+
+        m.setLayerVisible(1, false)
+        XCTAssertEqual(m.pixel(P(0, 0)), .black, "hiding the shapes layer shows the art")
+    }
+
+    func testShapePreviewFollowsTheDragAndCancelLeavesNothing() {
+        let m = makeModel()
+        m.tool = .shape
+        m.shapeKind = .line
+        m.touchBegan(at: Vec2(x: 0.5, y: 0.5))
+        m.touchMoved(to: Vec2(x: 9.5, y: 0.5))
+        m.touchMoved(to: Vec2(x: 0.5, y: 9.5))                // the previous preview is replaced
+        XCTAssertEqual(m.pixel(P(0, 9)), .black)
+        XCTAssertEqual(m.pixel(P(9, 0)), .clear)
+        m.touchCancelled()
+        XCTAssertTrue(m.currentGrid.isBlank)
+    }
+
+    func testShapesGrowTheCanvasAndMirror() {
+        let m = makeModel()
+        m.tool = .shape
+        m.shapeKind = .ellipse
+        m.shapeFilled = true
+        m.mirror = true
+        stroke(m, [(20.5, 20.5), (30.5, 30.5)])
+        XCTAssertEqual(m.pixel(P(25, 25)), .black)
+        XCTAssertEqual(m.pixel(P(-26, 25)), .black, "mirrored across x = 0")
+    }
+
+    func testLayerOpsAreUndoableAndAffectEveryFrame() {
+        let m = makeModel()
+        tap(m, 0.5, 0.5)
+        m.addKeyframe()
+        m.addLayer()
+        XCTAssertEqual(m.layers.count, 2)
+        XCTAssertTrue(m.project.frames.allSatisfy { $0.layers.count == 2 })
+        tap(m, 1.5, 1.5)                                        // on the new layer, frame 2
+        m.moveLayer(1, by: -1)
+        XCTAssertEqual(m.activeLayer, 0)
+        m.selectLayer(1)
+        m.mergeLayerDown()
+        XCTAssertEqual(m.layers.count, 1)
+        XCTAssertEqual(m.pixel(P(1, 1)), .black)
+        m.undo()                                                // un-merge
+        XCTAssertEqual(m.layers.count, 2)
+        m.deleteLayer(0)
+        XCTAssertEqual(m.layers.count, 1)
+        m.deleteLayer(0)
+        XCTAssertEqual(m.layers.count, 1, "the last layer stays")
+    }
+
+    func testTweenKeepsOtherLayersInNewFrames() {
+        let m = makeModel()
+        tap(m, 10.5, 10.5)                                      // background detail, layer 1
+        m.addLayer()
+        tap(m, 0.5, 0.5)                                        // the mover, layer 2
+        m.tool = .select
+        tap(m, 0.5, 0.5)
+        stroke(m, [(0.5, 0.5), (6.5, 0.5)])
+        m.generateTween(frameCount: 3, easing: .linear, style: .straight, mode: .insertFrames)
+        XCTAssertEqual(m.frameCount, 4)
+        for i in 0..<4 { XCTAssertEqual(m.pixel(P(10, 10), frame: i), .black, "background in frame \(i)") }
+        XCTAssertEqual(m.pixel(P(6, 0), frame: 3), .black)
+        XCTAssertEqual(m.pixel(P(0, 0), frame: 3), .clear)
+    }
+
+    func testLayersPersistAndOldFilesLoadAsOneLayer() throws {
+        let m = makeModel()
+        tap(m, 0.5, 0.5)
+        m.addLayer(named: "Top")
+        tap(m, 2.5, 2.5)
+        m.setLayerVisible(0, false)
+        let back = try JSONDecoder().decode(SpriteProject.self, from: JSONEncoder().encode(m.project))
+        XCTAssertEqual(back.layers.map(\.name), ["Layer 1", "Top"])
+        XCTAssertEqual(back.layers.map(\.isVisible), [false, true])
+        XCTAssertEqual(back.frames[0].grid, m.currentGrid, "flattened image rebuilt on load")
+        XCTAssertEqual(back.frames[0].layers.count, 2)
+
+        let old = try JSONEncoder().encode(PixelGrid(size: 8))
+        let json = #"{"id":"\#(UUID().uuidString)","name":"Old","size":8,"frames":[{"id":"\#(UUID().uuidString)","grid":\#(String(decoding: old, as: UTF8.self))}]}"#
+        let p = try JSONDecoder().decode(SpriteProject.self, from: Data(json.utf8))
+        XCTAssertEqual(p.layers.count, 1)
+        XCTAssertEqual(p.frames[0].layers.count, 1)
+    }
+}

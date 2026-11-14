@@ -137,6 +137,7 @@ Ideas for later versions:
 > - Swipe **left** starting at the right edge of the canvas (marked by a small orange chevron) to add a frame. The previous frame shows as an orange onion skin. Swipe **right** from the left edge (yellow chevron) to start a new canvas. The **+** after the frame thumbnails also adds a frame, and the gallery has a **New canvas** tile.
 > - To tween: choose the Select tool (the dashed square), drag over pixels to select them, drag the selection along any path, then tap **Tween**.
 > - Long-press a palette colour to change it.
+> - The shapes tool (4th tile) draws lines, rectangles, circles and triangles; the first shape goes on its own layer. The layers button at the top right of the canvas opens the layers panel.
 >
 > In-app purchase: "Pixel Deck Pro" (non-consumable) unlocks art larger than 64 × 64, more than 12 frames, GIF and video export, and exports above 4×. To see the paywall, go to Settings (the icon at the top of the gallery) → Unlock Pro, or pick GIF on the export screen. Restore Purchases is in Settings and on the paywall.
 >

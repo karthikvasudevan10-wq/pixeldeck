@@ -12,6 +12,18 @@ extension Tool {
         case .fill: "Fill"
         case .eyedropper: LocalizedStringResource("Colour picker", comment: "Eyedropper tool")
         case .select: LocalizedStringResource("Select & move", comment: "Selection tool")
+        case .shape: LocalizedStringResource("Shapes", comment: "Shape tools: line, rectangle, circle, triangle")
+        }
+    }
+}
+
+extension ShapeKind {
+    var title: LocalizedStringResource {
+        switch self {
+        case .line: "Line"
+        case .rectangle: LocalizedStringResource("Rectangle", comment: "Shape tool; square with proportions locked")
+        case .ellipse: LocalizedStringResource("Circle", comment: "Shape tool; ellipse when proportions aren't locked")
+        case .triangle: "Triangle"
         }
     }
 }

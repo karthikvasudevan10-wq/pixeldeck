@@ -1,9 +1,21 @@
 import Foundation
 
-/// One keyframe of an animation.
-struct Frame: Identifiable, Codable, Sendable {
+/// A layer in a sprite's layer stack (the pixels live in each frame's cels).
+struct LayerInfo: Identifiable, Codable, Hashable, Sendable {
     var id = UUID()
-    var grid: PixelGrid {
+    var name: String
+    var isVisible = true
+}
+
+/// One keyframe of an animation: one cel per layer (bottom to top), plus the visible layers
+/// flattened into `grid`, which is what the canvas, thumbnails, onion skin, playback and export
+/// show. Only the cels are saved; `grid` is rebuilt on load.
+struct Frame: Identifiable, Sendable {
+    var id = UUID()
+    /// One per sprite layer, bottom first. All the size of the sprite's bounds.
+    private(set) var layers: [PixelGrid]
+    /// The visible layers flattened (kept in sync by the methods below).
+    private(set) var grid: PixelGrid {
         didSet { version = Frame.nextVersion() }
     }
     /// Changes on every pixel change, and is never reused (so restoring an undo snapshot can't
@@ -19,12 +31,100 @@ struct Frame: Identifiable, Codable, Sendable {
         return versionCounter
     }
 
+    /// A single-layer frame.
     init(id: UUID = UUID(), grid: PixelGrid) {
         self.id = id
+        self.layers = [grid]
         self.grid = grid
     }
 
-    private enum CodingKeys: String, CodingKey { case id, grid }
+    init(id: UUID = UUID(), layers: [PixelGrid], visible: [Bool]) {
+        precondition(!layers.isEmpty, "A frame needs at least one layer")
+        self.id = id
+        self.layers = layers
+        self.grid = layers[0]
+        reflatten(visible: visible)
+    }
+
+    /// A blank frame with `count` layers.
+    static func blank(width: Int, height: Int, layers count: Int) -> Frame {
+        let g = PixelGrid(width: width, height: height)
+        return Frame(layers: Array(repeating: g, count: max(1, count)), visible: Array(repeating: true, count: max(1, count)))
+    }
+
+    /// Rebuilds `grid` from the visible layers: the topmost opaque pixel wins (pixels are either
+    /// fully opaque or clear). `rect` (local) limits the work to the part that changed.
+    mutating func reflatten(visible: [Bool], in rect: PixelRect? = nil) {
+        func isVisible(_ i: Int) -> Bool { i < visible.count ? visible[i] : true }
+        if layers.count == 1 {
+            grid = isVisible(0) ? layers[0] : PixelGrid(width: layers[0].width, height: layers[0].height)
+            return
+        }
+        let full = layers[0].rect
+        var g = (rect == nil || grid.width != full.width || grid.height != full.height)
+            ? PixelGrid(width: full.width, height: full.height) : grid
+        let area = (rect ?? full).intersection(full)
+        guard !area.isEmpty else { grid = g; return }
+        for y in area.y..<area.maxY {
+            for x in area.x..<area.maxX {
+                var c = RGBA.clear
+                var i = layers.count - 1
+                while i >= 0 {
+                    if isVisible(i) {
+                        let p = layers[i][x, y]
+                        if !p.isClear { c = p; break }
+                    }
+                    i -= 1
+                }
+                g[x, y] = c
+            }
+        }
+        grid = g
+    }
+
+    /// Edits one cel, then refreshes the flattened image (only `dirty`, if given).
+    mutating func editLayer(_ index: Int, visible: [Bool], dirty: PixelRect? = nil, _ body: (inout PixelGrid) -> Void) {
+        guard layers.indices.contains(index) else { return }
+        body(&layers[index])
+        reflatten(visible: visible, in: dirty)
+    }
+
+    mutating func setLayers(_ newLayers: [PixelGrid], visible: [Bool]) {
+        guard !newLayers.isEmpty else { return }
+        layers = newLayers
+        reflatten(visible: visible)
+    }
+
+    /// Every cel (and the flattened image) moved onto a grid covering `newRect` (world).
+    mutating func reframe(from oldRect: PixelRect, to newRect: PixelRect) {
+        layers = layers.map { $0.reframed(from: oldRect, to: newRect) }
+        grid = grid.reframed(from: oldRect, to: newRect)
+    }
+}
+
+extension Frame: Codable {
+    private enum CodingKeys: String, CodingKey { case id, layers, grid }
+
+    /// Older files have a single `grid`.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        if let l = try c.decodeIfPresent([PixelGrid].self, forKey: .layers), let first = l.first {
+            let ok = l.allSatisfy { $0.width == first.width && $0.height == first.height }
+            layers = ok ? l : [first]
+            grid = first
+        } else {
+            let g = try c.decode(PixelGrid.self, forKey: .grid)
+            layers = [g]
+            grid = g
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(id, forKey: .id)
+        try c.encode(layers, forKey: .layers)
+    }
 }
 
 /// A sprite on an unbounded canvas: an ordered list of frames that all cover the same world
@@ -47,6 +147,11 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     var frames: [Frame]
     var fps: Int = 8
     var palette: [RGBA] = SpriteProject.defaultPalette
+    /// Bottom to top. Every frame has one cel per layer.
+    var layers: [LayerInfo] = [LayerInfo(name: "Layer 1")]
+    static let maxLayers = 8
+
+    var layerVisibility: [Bool] { layers.map(\.isVisible) }
     var createdAt = Date()
     var modifiedAt = Date()
 
@@ -64,8 +169,22 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         self.fps = min(max(fps, 1), 30)
     }
 
-    /// World rectangle holding every opaque pixel in every frame, or nil for a blank sprite.
+    /// World rectangle holding every opaque pixel in every frame and layer (hidden ones too, since
+    /// the canvas has to keep them), or nil for a blank sprite.
     var contentBounds: PixelRect? {
+        var result: PixelRect?
+        for f in frames {
+            for layer in f.layers {
+                guard let r = layer.opaqueBounds else { continue }
+                let w = r.offsetBy(bounds.origin)
+                result = result.map { $0.union(w) } ?? w
+            }
+        }
+        return result
+    }
+
+    /// World rectangle of what's visible (hidden layers left out): what export and the gallery use.
+    var visibleContentBounds: PixelRect? {
         var result: PixelRect?
         for f in frames {
             guard let r = f.grid.opaqueBounds else { continue }
@@ -80,7 +199,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         frames.map { $0.grid.reframed(from: bounds, to: world) }
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, palette, createdAt, modifiedAt }
+    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, palette, layers, createdAt, modifiedAt }
 
     /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
     /// crashing the app (the editor assumes at least one frame, all the same size). Files from
@@ -104,7 +223,18 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         let decoded = ((try? c.decode([LossyFrame].self, forKey: .frames)) ?? []).compactMap(\.frame)
         let w = bounds.width, h = bounds.height
         let valid = decoded.filter { $0.grid.width == w && $0.grid.height == h }
-        frames = valid.isEmpty ? [Frame(grid: PixelGrid(width: w, height: h))] : valid
+        var decodedLayers = (try? c.decode([LayerInfo].self, forKey: .layers)) ?? []
+        if decodedLayers.isEmpty { decodedLayers = [LayerInfo(name: "Layer 1")] }
+        layers = Array(decodedLayers.prefix(SpriteProject.maxLayers))
+        // Every frame gets exactly one cel per layer (padding with blanks, dropping extras).
+        let n = layers.count, visible = layers.map(\.isVisible)
+        let blank = PixelGrid(width: w, height: h)
+        let normalized = valid.map { f -> Frame in
+            var cels = Array(f.layers.prefix(n))
+            while cels.count < n { cels.append(blank) }
+            return Frame(id: f.id, layers: cels, visible: visible)
+        }
+        frames = normalized.isEmpty ? [Frame.blank(width: w, height: h, layers: n)] : normalized
         fps = min(max((try? c.decode(Int.self, forKey: .fps)) ?? 8, 1), 30)
         let pal = ((try? c.decode([RGBA].self, forKey: .palette)) ?? []).map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         palette = pal.count == SpriteProject.defaultPalette.count ? pal : SpriteProject.defaultPalette
@@ -120,6 +250,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         try c.encode(frames, forKey: .frames)
         try c.encode(fps, forKey: .fps)
         try c.encode(palette, forKey: .palette)
+        try c.encode(layers, forKey: .layers)
         try c.encode(createdAt, forKey: .createdAt)
         try c.encode(modifiedAt, forKey: .modifiedAt)
     }
@@ -129,7 +260,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         var copy = self
         copy.id = UUID()
         copy.name = name
-        copy.frames = frames.map { Frame(grid: $0.grid) }
+        copy.frames = frames.map { Frame(layers: $0.layers, visible: layerVisibility) }
         copy.createdAt = Date()
         copy.modifiedAt = Date()
         return copy

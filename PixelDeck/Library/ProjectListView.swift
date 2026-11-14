@@ -305,7 +305,7 @@ private enum ArtSizeCache {
 
     static func size(of p: SpriteProject) -> PixelRect {
         if let e = cache[p.id], e.modified == p.modifiedAt { return e.size }
-        let r = p.contentBounds ?? PixelRect(x: 0, y: 0, width: 0, height: 0)
+        let r = p.visibleContentBounds ?? PixelRect(x: 0, y: 0, width: 0, height: 0)
         cache[p.id] = (p.modifiedAt, r)
         return r
     }

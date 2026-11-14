@@ -4,7 +4,7 @@ import UIKit
 /// The Studio's bottom dock (or side panel when there's room): everything a thumb needs.
 ///   A: play/pause + frame thumbnails + add frame
 ///   B: the sprite's 10-colour palette (long-press a swatch to change it)
-///   C: tools — pencil, eraser, fill, picker, mirror, select
+///   C: tools — pencil, eraser, fill, shapes, picker, mirror, select
 ///   D: gallery, undo, redo, onion skin, frame rate, export
 struct StudioDock: View {
     let model: EditorModel
@@ -145,8 +145,10 @@ private struct ToolRow: View {
             tool(.pencil, icon: .pencil)
             tool(.eraser, icon: .eraser)
             tool(.fill, icon: .fill)
+            // One tile for all shapes; its options strip (above the dock) picks which one.
+            tool(.shape, icon: model.shapeKind.icon)
             tool(.eyedropper, icon: .picker)
-            // Mirror is a mode that works with pencil, eraser and fill.
+            // Mirror is a mode that works with pencil, eraser, fill and shapes.
             Button { model.mirror.toggle() } label: {
                 PixelIcon.mirror.view(size: 22).frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
             }
@@ -280,4 +282,15 @@ struct SwatchEditor: UIViewControllerRepresentable {
 struct SwatchEdit: Identifiable {
     let index: Int
     var id: Int { index }
+}
+
+extension ShapeKind {
+    var icon: PixelIcon {
+        switch self {
+        case .line: .line
+        case .rectangle: .rectangle
+        case .ellipse: .circle
+        case .triangle: .triangle
+        }
+    }
 }

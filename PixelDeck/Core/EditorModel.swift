@@ -4,7 +4,8 @@ import Observation
 /// Drawing tools. Mirror is a mode (`EditorModel.mirror`), not a tool. Display names are
 /// localised in the app layer (LocalizedTitles.swift).
 enum Tool: String, CaseIterable, Identifiable, Sendable {
-    case pencil, eraser, fill, eyedropper, select
+    /// `shape` draws the kind chosen in `EditorModel.shapeKind`.
+    case pencil, eraser, fill, eyedropper, select, shape
 
     var id: String { rawValue }
 }
@@ -51,8 +52,17 @@ final class EditorModel {
     var tool: Tool = .pencil {
         didSet { if tool != .select { commitSelection() } }
     }
-    /// Mirror drawing across world x = 0 (pencil, eraser and fill).
+    /// Mirror drawing across world x = 0 (pencil, eraser, fill and shapes).
     var mirror = false
+    var shapeKind: ShapeKind = .rectangle
+    var shapeFilled = false
+    /// Squares, circles, equal-sided triangles, and lines snapped to 0°/45°/90°.
+    var lockProportions = false
+    /// The layer being drawn on (index into `project.layers`, bottom first).
+    private(set) var activeLayer = 0
+    /// Names for new layers, localised by the app.
+    @ObservationIgnored var newLayerName: (Int) -> String = { "Layer \($0)" }
+    @ObservationIgnored var shapesLayerName = "Shapes"
     private(set) var color: RGBA = SpriteProject.defaultPalette[2]
     var showGrid = true
     var onionSkinEnabled = true
@@ -72,6 +82,8 @@ final class EditorModel {
         var frames: [Frame]
         var bounds: PixelRect
         var currentIndex: Int
+        var layers: [LayerInfo]
+        var activeLayer: Int
     }
     private var undoStack: [Snapshot] = []
     private var redoStack: [Snapshot] = []
@@ -96,6 +108,8 @@ final class EditorModel {
         case stroke(last: PixelPoint, color: RGBA, before: Snapshot)
         case marquee(start: PixelPoint)
         case move(start: Vec2, startOffset: Vec2, pathCount: Int)
+        /// Dragging out a shape: the layer as it was, redrawn with the shape on every move.
+        case shape(start: PixelPoint, base: PixelGrid, baseBounds: PixelRect, before: Snapshot)
         /// Fill or colour pick: applied when the finger lifts, so a touch that turns into a
         /// pinch or pan changes nothing.
         case tap(PixelPoint)
@@ -129,6 +143,7 @@ final class EditorModel {
         marquee = nil
         floating = nil
         isPlaying = false
+        activeLayer = max(0, project.layers.count - 1)
         undoStack = []
         redoStack = []
         gesture = .none
@@ -139,7 +154,11 @@ final class EditorModel {
 
     var bounds: PixelRect { project.bounds }
     var frameCount: Int { project.frames.count }
+    /// The current frame, all visible layers flattened.
     var currentGrid: PixelGrid { project.frames[currentIndex].grid }
+    /// The active layer's cel in the current frame.
+    var currentLayerGrid: PixelGrid { project.frames[currentIndex].layers[activeLayer] }
+    var layers: [LayerInfo] { project.layers }
     var palette: [RGBA] { project.palette }
 
     /// Colour at a world pixel in a frame (the current one by default); clear outside the canvas.
@@ -212,10 +231,17 @@ final class EditorModel {
         case .pencil, .eraser:
             let c: RGBA = tool == .pencil ? color : .clear
             gesture = .stroke(last: p, color: c, before: snapshot())
+            revealActiveLayer()
             paintSegment(from: p, to: p, color: c)
 
         case .fill, .eyedropper:
             gesture = .tap(p)
+
+        case .shape:
+            autoCreateShapesLayer()
+            revealActiveLayer()
+            gesture = .shape(start: p, base: currentLayerGrid, baseBounds: bounds, before: snapshot())
+            drawShape(from: p, to: p)
 
         case .select:
             if let f = floating, f.currentRect.contains(p) {
@@ -235,6 +261,8 @@ final class EditorModel {
         switch gesture {
         case .none, .tap:
             break
+        case let .shape(start, _, _, _):
+            drawShape(from: start, to: v.pixel)
         case let .stroke(last, c, before):
             let p = v.pixel
             guard p != last else { return }
@@ -265,6 +293,10 @@ final class EditorModel {
             finishEdit()
         case .move:
             finishEdit()
+        case let .shape(_, _, _, before):
+            pushUndo(before)
+            contentKnown = false
+            finishEdit()
         case let .tap(p):
             if tool == .fill {
                 fill(at: p)
@@ -284,9 +316,11 @@ final class EditorModel {
     /// The touch turned into a pinch or pan: undo whatever it did.
     func touchCancelled() {
         switch gesture {
-        case let .stroke(_, _, before):
+        case let .stroke(_, _, before), let .shape(_, _, _, before):
             project.frames = before.frames
             project.bounds = before.bounds
+            project.layers = before.layers
+            activeLayer = before.activeLayer
             contentKnown = false
         case let .move(_, startOffset, pathCount):
             if var f = floating {
@@ -326,11 +360,11 @@ final class EditorModel {
             if c.isClear {
                 // Erasing never needs to grow the canvas; there's nothing outside it.
                 let o = bounds.origin
-                mutateCurrent { $0.drawLine(from: s - o, to: e - o, color: c) }
+                mutateCurrent(dirty: r) { $0.drawLine(from: s - o, to: e - o, color: c) }
                 contentKnown = false
             } else if ensureCovers(r) {
                 let o = bounds.origin
-                mutateCurrent { $0.drawLine(from: s - o, to: e - o, color: c) }
+                mutateCurrent(dirty: r) { $0.drawLine(from: s - o, to: e - o, color: c) }
                 if contentKnown { cachedContent = cachedContent.map { $0.union(r) } ?? r }
             } else {
                 // Part of the segment is past the art-size cap: paint only the pixels that keep
@@ -339,7 +373,7 @@ final class EditorModel {
                     let one = PixelRect(x: p.x, y: p.y, width: 1, height: 1)
                     guard access.allowsArt(contentBounds.map { $0.union(one) } ?? one), ensureCovers(one) else { continue }
                     let o = bounds.origin
-                    mutateCurrent { $0[p - o] = c }
+                    mutateCurrent(dirty: one) { $0[p - o] = c }
                     cachedContent = cachedContent.map { $0.union(one) } ?? one
                 }
             }
@@ -353,7 +387,7 @@ final class EditorModel {
         var undoPushed = false
         for t in targets {
             let local = t - bounds.origin
-            let target = currentGrid[local]
+            let target = currentLayerGrid[local]
             // Transparent space is endless, so filling it is limited to the area of the art.
             var limit: PixelRect? = nil
             if target.isClear {
@@ -361,7 +395,7 @@ final class EditorModel {
                 limit = content.offsetBy(PixelPoint.zero - bounds.origin)
             }
             guard target != color else { continue }
-            if !undoPushed { pushUndo(); undoPushed = true }
+            if !undoPushed { pushUndo(); undoPushed = true; revealActiveLayer() }
             mutateCurrent { $0.floodFill(from: local, with: color, within: limit) }
             changed = true
         }
@@ -388,7 +422,7 @@ final class EditorModel {
         }
         if bounds.contains(r) { return true }
         let grown = bounds.union(r.insetBy(-growMargin))
-        guard project.frames.count <= FeatureAccess.maxFrames(forArea: grown.width * grown.height) else { return false }
+        guard project.frames.count <= FeatureAccess.maxFrames(forArea: grown.width * grown.height * project.layers.count) else { return false }
         reframe(to: grown)
         return true
     }
@@ -398,7 +432,7 @@ final class EditorModel {
         guard newBounds != bounds, newBounds.width > 0, newBounds.height > 0 else { return }
         let old = bounds
         for i in project.frames.indices {
-            project.frames[i].grid = project.frames[i].grid.reframed(from: old, to: newBounds)
+            project.frames[i].reframe(from: old, to: newBounds)
         }
         project.bounds = newBounds
         if var f = floating {
@@ -419,7 +453,7 @@ final class EditorModel {
 
     private func lift(_ rect: PixelRect) {
         pushUndo()
-        floating = FloatingSelection(lifting: rect, from: currentGrid, bounds: bounds)
+        floating = FloatingSelection(lifting: rect, from: currentLayerGrid, bounds: bounds)
         marquee = nil
     }
 
@@ -455,13 +489,17 @@ final class EditorModel {
     /// Previews a tween: the start frame followed by every generated frame.
     func tweenPreview(frameCount: Int, easing: Easing, style: TweenPathStyle, mode: TweenMode) -> [PixelGrid] {
         guard let f = floating, let plan = tweenPlan(easing: easing, style: style) else { return [] }
+        // Previews show every visible layer, with the moving pixels on the active one.
+        let current = project.frames[currentIndex]
         switch mode {
         case .insertFrames:
-            return [f.originalGrid] + plan.offsets(count: frameCount).map { plan.render(onto: f.baseGrid, offset: $0) }
+            return [flattened(current, activeCel: f.originalGrid)]
+                + plan.offsets(count: frameCount).map { flattened(current, activeCel: plan.render(onto: f.baseGrid, offset: $0)) }
         case .spreadAcrossFollowing:
-            let next = project.frames[(currentIndex + 1)...].map(\.grid)
+            let next = Array(project.frames[(currentIndex + 1)...])
             let offsets = plan.offsets(count: next.count)
-            return [f.originalGrid] + zip(next, offsets).map { plan.move(in: $0, offset: $1) }
+            return [flattened(current, activeCel: f.originalGrid)]
+                + zip(next, offsets).map { flattened($0, activeCel: plan.move(in: $0.layers[activeLayer], offset: $1)) }
         }
     }
 
@@ -475,14 +513,21 @@ final class EditorModel {
         mutateCurrent { $0 = f.originalGrid }
         switch mode {
         case .insertFrames:
-            let frames = plan.offsets(count: max(1, frameCount)).map { Frame(grid: plan.render(onto: f.baseGrid, offset: $0)) }
+            // New frames copy the other layers (e.g. a background) and move the active one.
+            let template = project.frames[currentIndex]
+            let frames = plan.offsets(count: max(1, frameCount)).map { offset -> Frame in
+                var cels = template.layers
+                cels[activeLayer] = plan.render(onto: f.baseGrid, offset: offset)
+                return Frame(layers: cels, visible: project.layerVisibility)
+            }
             project.frames.insert(contentsOf: frames, at: currentIndex + 1)
             currentIndex += frames.count
         case .spreadAcrossFollowing:
             let offsets = plan.offsets(count: followingFrameCount)
             for (k, offset) in offsets.enumerated() {
                 let i = currentIndex + 1 + k
-                project.frames[i].grid = plan.move(in: project.frames[i].grid, offset: offset)
+                let visible = project.layerVisibility
+                project.frames[i].editLayer(activeLayer, visible: visible) { $0 = plan.move(in: $0, offset: offset) }
             }
             currentIndex = project.frames.count - 1
         }
@@ -509,7 +554,7 @@ final class EditorModel {
         guard hasRoom(forFrames: 1) else { return false }
         commitSelection()
         pushUndo()
-        project.frames.insert(Frame(grid: blankGrid), at: currentIndex + 1)
+        project.frames.insert(Frame.blank(width: bounds.width, height: bounds.height, layers: project.layers.count), at: currentIndex + 1)
         currentIndex += 1
         finishEdit()
         return true
@@ -519,7 +564,7 @@ final class EditorModel {
         guard project.frames.indices.contains(index), hasRoom(forFrames: 1) else { return }
         commitSelection()
         pushUndo()
-        project.frames.insert(Frame(grid: project.frames[index].grid), at: index + 1)
+        project.frames.insert(Frame(layers: project.frames[index].layers, visible: project.layerVisibility), at: index + 1)
         currentIndex = index + 1
         finishEdit()
     }
@@ -529,7 +574,7 @@ final class EditorModel {
         commitSelection()
         pushUndo()
         if project.frames.count == 1 {
-            project.frames[0].grid = blankGrid
+            project.frames[0] = Frame.blank(width: bounds.width, height: bounds.height, layers: project.layers.count)
         } else {
             project.frames.remove(at: index)
         }
@@ -554,9 +599,10 @@ final class EditorModel {
         currentIndex = index
     }
 
+    /// Clears the active layer in the current frame.
     func clearCurrentFrame() {
         commitSelection()
-        guard !currentGrid.isBlank else { return }
+        guard !currentLayerGrid.isBlank else { return }
         pushUndo()
         mutateCurrent { $0 = blankGrid }
         contentKnown = false
@@ -579,8 +625,157 @@ final class EditorModel {
     /// The frame limit for this sprite at its current size.
     var frameLimit: Int { access.frameLimit(forArea: area) }
 
-    private var area: Int { bounds.width * bounds.height }
+    /// Pixels per frame across all layers (what the memory budget counts).
+    private var area: Int { bounds.width * bounds.height * project.layers.count }
     private var blankGrid: PixelGrid { PixelGrid(width: bounds.width, height: bounds.height) }
+
+    // MARK: Shapes
+
+    /// Redraws the shape being dragged: the layer as it was, plus the shape (mirrored if on).
+    private func drawShape(from a: PixelPoint, to raw: PixelPoint) {
+        guard case let .shape(_, base, baseBounds, _) = gesture else { return }
+        let b = lockProportions ? ShapeRaster.constrained(shapeKind, from: a, to: raw) : raw
+        var pts = ShapeRaster.points(shapeKind, from: a, to: b, filled: shapeFilled)
+        if mirror { pts += pts.map(\.mirrored) }
+        guard let first = pts.first else { return }
+        let box = pts.dropFirst().reduce(PixelRect(x: first.x, y: first.y, width: 1, height: 1)) { $0.union($1) }
+        // Grow the canvas for the shape if allowed; otherwise draw what fits within the cap.
+        var allowed: (PixelPoint) -> Bool = { _ in true }
+        if !ensureCovers(box) {
+            let content = contentBounds
+            let cap = access
+            allowed = { p in
+                let one = PixelRect(x: p.x, y: p.y, width: 1, height: 1)
+                return cap.allowsArt(content.map { $0.union(one) } ?? one)
+            }
+        }
+        let o = bounds.origin
+        let layer = base.reframed(from: baseBounds, to: bounds)
+        let c = color
+        mutateCurrent {
+            $0 = layer
+            for p in pts where allowed(p) { $0[p - o] = c }
+        }
+    }
+
+    /// The first shape on a single-layer sprite goes on a new "Shapes" layer above the art, so
+    /// shapes never overwrite your pixels.
+    private func autoCreateShapesLayer() {
+        guard project.layers.count == 1 else { return }
+        addLayer(named: shapesLayerName)
+    }
+
+    /// Drawing on a hidden layer would be invisible, so it's shown again.
+    private func revealActiveLayer() {
+        guard project.layers.indices.contains(activeLayer), !project.layers[activeLayer].isVisible else { return }
+        project.layers[activeLayer].isVisible = true
+        reflattenAll()
+    }
+
+    private func reflattenAll() {
+        let visible = project.layerVisibility
+        for i in project.frames.indices { project.frames[i].reflatten(visible: visible) }
+    }
+
+    // MARK: Layers
+
+    var canAddLayer: Bool {
+        project.layers.count < SpriteProject.maxLayers
+            && project.frames.count <= FeatureAccess.maxFrames(forArea: bounds.width * bounds.height * (project.layers.count + 1))
+    }
+
+    /// Adds an empty layer above the active one and makes it active.
+    func addLayer(named name: String? = nil) {
+        guard canAddLayer else { return }
+        commitSelection()
+        pushUndo()
+        let at = activeLayer + 1
+        project.layers.insert(LayerInfo(name: name ?? newLayerName(project.layers.count + 1)), at: at)
+        let blank = blankGrid, visible = project.layerVisibility
+        for i in project.frames.indices {
+            var cels = project.frames[i].layers
+            cels.insert(blank, at: at)
+            project.frames[i].setLayers(cels, visible: visible)
+        }
+        activeLayer = at
+        finishEdit()
+    }
+
+    func selectLayer(_ index: Int) {
+        guard project.layers.indices.contains(index), index != activeLayer else { return }
+        commitSelection()
+        activeLayer = index
+    }
+
+    func setLayerVisible(_ index: Int, _ visible: Bool) {
+        guard project.layers.indices.contains(index), project.layers[index].isVisible != visible else { return }
+        commitSelection()
+        pushUndo()
+        project.layers[index].isVisible = visible
+        reflattenAll()
+        finishEdit()
+    }
+
+    func renameLayer(_ index: Int, to name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard project.layers.indices.contains(index), !trimmed.isEmpty else { return }
+        project.layers[index].name = trimmed
+        finishEdit()
+    }
+
+    /// Moves a layer up (+1, towards the top) or down (-1).
+    func moveLayer(_ index: Int, by delta: Int) {
+        let target = index + delta
+        guard project.layers.indices.contains(index), project.layers.indices.contains(target) else { return }
+        commitSelection()
+        pushUndo()
+        project.layers.swapAt(index, target)
+        let visible = project.layerVisibility
+        for i in project.frames.indices {
+            var cels = project.frames[i].layers
+            cels.swapAt(index, target)
+            project.frames[i].setLayers(cels, visible: visible)
+        }
+        if activeLayer == index { activeLayer = target } else if activeLayer == target { activeLayer = index }
+        finishEdit()
+    }
+
+    /// Deletes a layer from every frame. The last layer can't be deleted.
+    func deleteLayer(_ index: Int) {
+        guard project.layers.count > 1, project.layers.indices.contains(index) else { return }
+        commitSelection()
+        pushUndo()
+        project.layers.remove(at: index)
+        let visible = project.layerVisibility
+        for i in project.frames.indices {
+            var cels = project.frames[i].layers
+            cels.remove(at: index)
+            project.frames[i].setLayers(cels, visible: visible)
+        }
+        activeLayer = min(activeLayer > index ? activeLayer - 1 : activeLayer, project.layers.count - 1)
+        contentKnown = false
+        finishEdit()
+    }
+
+    /// Merges the active layer into the one below it.
+    func mergeLayerDown() {
+        let top = activeLayer
+        guard top > 0 else { return }
+        commitSelection()
+        pushUndo()
+        let visible = project.layers.map { _ in true }
+        for i in project.frames.indices {
+            var cels = project.frames[i].layers
+            let merged = Frame(layers: [cels[top - 1], cels[top]], visible: [visible[top - 1], visible[top]]).grid
+            cels[top - 1] = merged
+            cels.remove(at: top)
+            project.frames[i].setLayers(cels, visible: project.layerVisibility.enumerated().filter { $0.offset != top }.map(\.element))
+        }
+        project.layers.remove(at: top)
+        activeLayer = top - 1
+        reflattenAll()
+        finishEdit()
+    }
 
     // MARK: Project settings
 
@@ -615,7 +810,8 @@ final class EditorModel {
     // MARK: Internals
 
     private func snapshot() -> Snapshot {
-        Snapshot(frames: project.frames, bounds: project.bounds, currentIndex: currentIndex)
+        Snapshot(frames: project.frames, bounds: project.bounds, currentIndex: currentIndex,
+                 layers: project.layers, activeLayer: activeLayer)
     }
 
     private func pushUndo(_ s: Snapshot? = nil) {
@@ -625,7 +821,7 @@ final class EditorModel {
         var bytes = 0
         var keep = 0
         for snap in undoStack.reversed() {
-            bytes += snap.frames.count * snap.bounds.width * snap.bounds.height * 4
+            bytes += snap.frames.count * snap.layers.count * snap.bounds.width * snap.bounds.height * 4
             if keep >= 1 && bytes > undoMemoryBudget { break }
             keep += 1
         }
@@ -640,6 +836,8 @@ final class EditorModel {
     private func restore(_ s: Snapshot) {
         project.frames = s.frames
         project.bounds = s.bounds
+        project.layers = s.layers
+        activeLayer = min(s.activeLayer, s.layers.count - 1)
         currentIndex = min(s.currentIndex, s.frames.count - 1)
         contentKnown = false
         finishEdit()
@@ -653,8 +851,19 @@ final class EditorModel {
         gesture = .none
     }
 
-    private func mutateCurrent(_ body: (inout PixelGrid) -> Void) {
-        body(&project.frames[currentIndex].grid)
+    /// Edits the active layer of the current frame. `dirty` (world) limits re-flattening to the
+    /// area that changed, which keeps strokes fast on big sprites with several layers.
+    private func mutateCurrent(dirty: PixelRect? = nil, _ body: (inout PixelGrid) -> Void) {
+        let local = dirty.map { $0.offsetBy(PixelPoint.zero - bounds.origin) }
+        let visible = project.layerVisibility
+        project.frames[currentIndex].editLayer(activeLayer, visible: visible, dirty: local, body)
+    }
+
+    /// A frame flattened with its active cel swapped for `activeCel` (for tween previews).
+    private func flattened(_ frame: Frame, activeCel: PixelGrid) -> PixelGrid {
+        var cels = frame.layers
+        cels[activeLayer] = activeCel
+        return Frame(layers: cels, visible: project.layerVisibility).grid
     }
 
     private func finishEdit() {

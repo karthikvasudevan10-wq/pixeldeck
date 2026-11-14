@@ -40,7 +40,8 @@ struct ExportSource {
     let height: Int
 
     init(_ project: SpriteProject) {
-        let rect = project.contentBounds ?? project.bounds
+        // Hidden layers aren't exported, so crop to what's visible.
+        let rect = project.visibleContentBounds ?? project.bounds
         name = project.name
         fps = project.fps
         grids = project.grids(croppedTo: rect)
