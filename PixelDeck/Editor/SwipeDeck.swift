@@ -12,6 +12,7 @@ struct SwipeDeck<Content: View>: View {
     var onSwipeRight: () -> Void
     @ViewBuilder var content: () -> Content
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var offset: CGSize = .zero
     @State private var swipeCount = 0
     @State private var flying = false
@@ -32,7 +33,7 @@ struct SwipeDeck<Content: View>: View {
 
             card
                 .offset(offset)
-                .rotationEffect(.degrees(Double(offset.width / 22)), anchor: .bottom)
+                .rotationEffect(.degrees(reduceMotion ? 0 : Double(offset.width / 22)), anchor: .bottom)
         }
         .padding(.horizontal, 12)
         .sensoryFeedback(.impact(weight: .medium), trigger: swipeCount)

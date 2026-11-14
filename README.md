@@ -21,14 +21,21 @@ A native SwiftUI pixel-art and sprite-animation app for iPhone (and iPad).
 - **Frames**: a film strip to jump between frames. Long-press a frame to duplicate, reorder or delete it. You can also play the animation at 1–30 fps.
 - **Export**: a sprite sheet PNG (in a row or a grid) with an optional JSON file of frame positions for game engines, an animated GIF, or one PNG per frame, at 1×–32× scale. Files go to the share sheet, so you can save them to Files or Photos, AirDrop them, and so on.
 - **Saving**: everything saves automatically to the app's Documents folder.
+- **Pixel Deck Pro** (one-time in-app purchase, StoreKit 2): 64–256 px canvases, up to 999 frames, GIF export and exports above 4×. Free users get 8–32 px canvases, 12 frames per sprite, every tool including tweening, and PNG / sprite-sheet export up to 4×. All limits are in `Core/FeatureAccess.swift`.
+- **Also**: first-launch tips, Settings (restore purchases, privacy policy, support links), the system review prompt after a few exports, and Reduce Motion support.
+
+## Selling it on the App Store
+
+See [`AppStore/SUBMISSION_CHECKLIST.md`](AppStore/SUBMISSION_CHECKLIST.md) for what's done and what you need to do, the business model, and review notes. [`AppStore/metadata.md`](AppStore/metadata.md) has the listing text, and [`AppStore/privacy-policy.html`](AppStore/privacy-policy.html) is the policy to host.
 
 ## Building
 
-Requirements: **Xcode 16 or newer** and **iOS 17+**.
+Requirements: **Xcode 26 or newer** (App Store uploads have required the iOS 26 SDK since April 2026; Xcode 16 still builds it for testing) and **iOS 17+** on devices.
 
 1. Open `iOS/PixelDeck.xcodeproj`.
 2. Select the **PixelDeck** target. Under *Signing & Capabilities*, pick your team. A free Apple ID works for running on your own phone. Change the bundle identifier (`com.example.pixeldeck`) to something unique.
 3. Choose an iPhone simulator or your device, then press **Run**.
+4. To test the in-app purchase locally, go to Product → Scheme → Edit Scheme → Run → Options and set **StoreKit Configuration** to `PixelDeck.storekit`.
 
 The project uses folder-synced groups, so any file you add under `iOS/PixelDeck/` is picked up automatically.
 
@@ -50,6 +57,7 @@ PixelDeck/
   Editor/                 Editor screen, UIKit canvas, swipe deck, colours, film strip, tween, playback
   Library/                Sprite gallery and new-canvas picker
   Export/                 PNG/GIF/JSON export and share sheet
-  Support/                CGImage rendering and thumbnail cache
+  Store/                  In-app purchase (StoreKit 2) and paywall
+  Support/                Rendering, settings, onboarding, privacy policy, AppConfig
 Tests/                    Unit tests for Core
 ```

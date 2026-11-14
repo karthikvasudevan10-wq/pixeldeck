@@ -75,6 +75,11 @@ final class EditorModel {
     /// Called after every finished edit with the project to save.
     @ObservationIgnored var onChange: ((SpriteProject) -> Void)?
 
+    /// What the user has unlocked. Set by the app from the purchase state.
+    var access: FeatureAccess = .free
+    /// Called when an action needs Pro, so the app can offer the upgrade.
+    @ObservationIgnored var onProRequired: ((ProFeature) -> Void)?
+
     private enum Gesture {
         case none
         case stroke(last: PixelPoint, color: RGBA, before: Snapshot)
@@ -288,6 +293,7 @@ final class EditorModel {
     func generateTween(frameCount: Int, easing: Easing, style: TweenPathStyle, mode: TweenMode) {
         guard let f = floating, let plan = tweenPlan(easing: easing, style: style) else { return }
         if mode == .spreadAcrossFollowing && followingFrameCount == 0 { return }
+        if mode == .insertFrames && !hasRoom(forFrames: max(1, frameCount)) { return }
         pushUndo()
         mutateCurrent { $0 = f.originalGrid }
         switch mode {
@@ -317,16 +323,19 @@ final class EditorModel {
     // MARK: Frames
 
     /// Adds a blank keyframe after the current one. The previous frame shows through as onion skin.
-    func addKeyframe() {
+    @discardableResult
+    func addKeyframe() -> Bool {
+        guard hasRoom(forFrames: 1) else { return false }
         commitSelection()
         pushUndo()
         project.frames.insert(Frame(grid: PixelGrid(size: size)), at: currentIndex + 1)
         currentIndex += 1
         finishEdit()
+        return true
     }
 
     func duplicateFrame(at index: Int) {
-        guard project.frames.indices.contains(index) else { return }
+        guard project.frames.indices.contains(index), hasRoom(forFrames: 1) else { return }
         commitSelection()
         pushUndo()
         project.frames.insert(Frame(grid: project.frames[index].grid), at: index + 1)
@@ -370,6 +379,16 @@ final class EditorModel {
         mutateCurrent { $0 = PixelGrid(size: size) }
         finishEdit()
     }
+
+    /// Whether `count` more frames fit. Asks for Pro when the free limit is the reason.
+    func hasRoom(forFrames count: Int) -> Bool {
+        if project.frames.count + count <= access.frameLimit { return true }
+        if !access.isPro { onProRequired?(.unlimitedFrames) }
+        return false
+    }
+
+    /// Frames that can still be inserted under the current plan.
+    var remainingFrameAllowance: Int { max(0, access.frameLimit - project.frames.count) }
 
     // MARK: Project settings
 

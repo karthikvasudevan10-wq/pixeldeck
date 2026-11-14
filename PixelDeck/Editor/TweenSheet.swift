@@ -9,6 +9,7 @@ struct TweenSheet: View {
     @State private var easing: Easing = .easeInOut
     @State private var style: TweenPathStyle = .traced
     @State private var mode: TweenMode = .insertFrames
+    @State private var upgrade: ProFeature?
 
     init(model: EditorModel) {
         self.model = model
@@ -44,6 +45,12 @@ struct TweenSheet: View {
                     }
                     if mode == .insertFrames {
                         Stepper("\(frameCount) new frame\(frameCount == 1 ? "" : "s")", value: $frameCount, in: 1...60)
+                        if !model.access.isPro && frameCount > model.remainingFrameAllowance {
+                            Label("Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. \(model.remainingFrameAllowance) left.",
+                                  systemImage: "info.circle")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     } else if model.followingFrameCount == 0 {
                         Text("There are no frames after this one yet.")
                             .foregroundStyle(.secondary)
@@ -61,6 +68,12 @@ struct TweenSheet: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
+                        // Over the free limit: offer Pro here (the editor can't show a sheet over this one)
+                        // and stay open so the user can pick fewer frames instead.
+                        if mode == .insertFrames && frameCount > model.remainingFrameAllowance && !model.access.isPro {
+                            upgrade = .unlimitedFrames
+                            return
+                        }
                         model.generateTween(frameCount: frameCount, easing: easing, style: style, mode: mode)
                         dismiss()
                     }
@@ -69,6 +82,7 @@ struct TweenSheet: View {
             }
         }
         .presentationDetents([.large])
+        .proUpgradeSheet($upgrade)
     }
 }
 

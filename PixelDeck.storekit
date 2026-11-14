@@ -1,0 +1,39 @@
+{
+  "identifier" : "6F2B6C1A",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : true,
+      "internalID" : "6740000001",
+      "localizations" : [
+        {
+          "description" : "Large canvases, up to 999 frames, GIF export and big exports.",
+          "displayName" : "Pixel Deck Pro",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.example.pixeldeck.pro",
+      "referenceName" : "Pixel Deck Pro",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6740000000",
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

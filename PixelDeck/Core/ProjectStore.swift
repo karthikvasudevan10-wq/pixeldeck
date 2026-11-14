@@ -8,6 +8,11 @@ final class ProjectStore {
 
     @ObservationIgnored let directory: URL
     @ObservationIgnored private let io = DispatchQueue(label: "PixelDeck.ProjectStore", qos: .utility)
+    /// Latest unsaved version of each project. Only touched on `io`.
+    @ObservationIgnored private var pendingWrites: [UUID: SpriteProject] = [:]
+    @ObservationIgnored private var writeScheduled = false
+    /// Edits arriving within this window are written to disk once.
+    private let writeDelay: TimeInterval = 0.6
 
     init(directory: URL? = nil) {
         let dir = directory ?? FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -43,10 +48,23 @@ final class ProjectStore {
         } else {
             projects.insert(p, at: 0)
         }
-        let url = fileURL(for: p.id)
-        io.async {
-            guard let data = try? JSONEncoder().encode(p) else { return }
-            try? data.write(to: url, options: .atomic)
+        io.async { [self] in
+            pendingWrites[p.id] = p
+            guard !writeScheduled else { return }
+            writeScheduled = true
+            io.asyncAfter(deadline: .now() + writeDelay) { [self] in writePending() }
+        }
+    }
+
+    /// Runs on `io`.
+    private func writePending() {
+        writeScheduled = false
+        let batch = pendingWrites
+        pendingWrites = [:]
+        let encoder = JSONEncoder()
+        for (id, project) in batch {
+            guard let data = try? encoder.encode(project) else { continue }
+            try? data.write(to: fileURL(for: id), options: .atomic)
         }
     }
 
@@ -65,12 +83,15 @@ final class ProjectStore {
     func delete(id: UUID) {
         projects.removeAll { $0.id == id }
         let url = fileURL(for: id)
-        io.async { try? FileManager.default.removeItem(at: url) }
+        io.async { [self] in
+            pendingWrites[id] = nil
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 
     /// Blocks until pending writes are on disk. Used by tests and when the app goes to the background.
     func flush() {
-        io.sync {}
+        io.sync { writePending() }
     }
 
     private func fileURL(for id: UUID) -> URL {

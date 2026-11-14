@@ -1,11 +1,17 @@
 import SwiftUI
 import UIKit
+import StoreKit
 
 /// Choose a format and size, then hand the files to the share sheet
 /// (Save to Files, Photos, AirDrop, Messages…).
 struct ExportSheet: View {
     let project: SpriteProject
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requestReview) private var requestReview
+    @Environment(PurchaseManager.self) private var purchases
+    @AppStorage("completedExports") private var completedExports = 0
+    @AppStorage("reviewRequestedForVersion") private var reviewRequestedForVersion = ""
+    @State private var upgrade: ProFeature?
     @State private var options = ExportOptions()
     @State private var shareItems: ShareItems?
     @State private var errorMessage: String?
@@ -30,8 +36,10 @@ struct ExportSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    Picker("Format", selection: $options.format) {
-                        ForEach(ExportFormat.allCases) { Text($0.title).tag($0) }
+                    Picker("Format", selection: formatBinding) {
+                        ForEach(ExportFormat.allCases) { format in
+                            Text(format == .gif && !purchases.access.allowsGIF ? "GIF · Pro" : format.title).tag(format)
+                        }
                     }
                     .pickerStyle(.segmented)
                 }
@@ -46,8 +54,10 @@ struct ExportSheet: View {
                 }
 
                 Section {
-                    Picker("Scale", selection: $options.scale) {
-                        ForEach(scales, id: \.self) { Text("\($0)×").tag($0) }
+                    Picker("Scale", selection: scaleBinding) {
+                        ForEach(scales, id: \.self) { s in
+                            Text(s > purchases.access.maxExportScale ? "\(s)× · Pro" : "\(s)×").tag(s)
+                        }
                     }
                 } header: {
                     Text("Size")
@@ -76,9 +86,12 @@ struct ExportSheet: View {
             .onChange(of: options.format) { _, _ in clampScale() }
             .onChange(of: options.layout) { _, _ in clampScale() }
             .sheet(item: $shareItems) { items in
-                ActivityView(items: items.urls)
-                    .ignoresSafeArea()
+                ActivityView(items: items.urls) { completed in
+                    if completed { exportSucceeded() }
+                }
+                .ignoresSafeArea()
             }
+            .proUpgradeSheet($upgrade)
             .alert("Export failed", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
                 Button("OK", role: .cancel) {}
             } message: {
@@ -87,8 +100,31 @@ struct ExportSheet: View {
         }
     }
 
+    /// Locked choices open the paywall instead of being selected.
+    private var formatBinding: Binding<ExportFormat> {
+        Binding(get: { options.format }, set: { f in
+            if f == .gif && !purchases.access.allowsGIF { upgrade = .gifExport } else { options.format = f }
+        })
+    }
+
+    private var scaleBinding: Binding<Int> {
+        Binding(get: { options.scale }, set: { s in
+            if s > purchases.access.maxExportScale { upgrade = .largeExport } else { options.scale = s }
+        })
+    }
+
+    /// Ask for a rating only after a few exports the user actually completed, and at most once
+    /// per app version. The system decides whether to show it (and limits it to 3 times a year).
+    private func exportSucceeded() {
+        completedExports += 1
+        guard completedExports >= 3, reviewRequestedForVersion != AppConfig.version else { return }
+        reviewRequestedForVersion = AppConfig.version
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { requestReview() }
+    }
+
     private func clampScale() {
-        if !scales.contains(options.scale) { options.scale = scales.last ?? 1 }
+        let usable = scales.filter { $0 <= purchases.access.maxExportScale }
+        if !usable.contains(options.scale) { options.scale = usable.last ?? 1 }
     }
 
     private func export() {
@@ -114,9 +150,12 @@ struct ShareItems: Identifiable {
 
 struct ActivityView: UIViewControllerRepresentable {
     let items: [Any]
+    var onFinish: (Bool) -> Void = { _ in }
 
     func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(activityItems: items, applicationActivities: nil)
+        let controller = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        controller.completionWithItemsHandler = { _, completed, _, _ in onFinish(completed) }
+        return controller
     }
 
     func updateUIViewController(_ controller: UIActivityViewController, context: Context) {}

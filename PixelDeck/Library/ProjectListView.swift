@@ -3,6 +3,10 @@ import SwiftUI
 /// Home screen: every saved sprite, plus "New canvas".
 struct ProjectListView: View {
     @Environment(ProjectStore.self) private var store
+    @Environment(PurchaseManager.self) private var purchases
+    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
+    @State private var showingOnboarding = false
+    @State private var showingSettings = false
     @State private var path: [UUID] = []
     @State private var showingNewCanvas = false
     @State private var renamingID: UUID?
@@ -40,6 +44,11 @@ struct ProjectListView: View {
             }
             .navigationTitle("Pixel Deck")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showingSettings = true } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button { showingNewCanvas = true } label: {
                         Label("New Canvas", systemImage: "plus")
@@ -56,6 +65,14 @@ struct ProjectListView: View {
             NewCanvasSheet { size in
                 let project = store.create(size: size)
                 path = [project.id]
+            }
+        }
+        .sheet(isPresented: $showingSettings) { SettingsView() }
+        .sheet(isPresented: $showingOnboarding) { OnboardingView() }
+        .onAppear {
+            if !hasSeenOnboarding {
+                hasSeenOnboarding = true
+                showingOnboarding = true
             }
         }
         .alert("Rename sprite", isPresented: Binding(get: { renamingID != nil }, set: { if !$0 { renamingID = nil } })) {

@@ -4,6 +4,8 @@ import SwiftUI
 struct NewCanvasSheet: View {
     var onCreate: (Int) -> Void
     @Environment(\.dismiss) private var dismiss
+    @Environment(PurchaseManager.self) private var purchases
+    @State private var upgrade: ProFeature?
 
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
@@ -12,9 +14,14 @@ struct NewCanvasSheet: View {
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(SpriteProject.supportedSizes, id: \.self) { size in
+                        let locked = !purchases.access.allowsCanvas(size: size)
                         Button {
-                            dismiss()
-                            onCreate(size)
+                            if locked {
+                                upgrade = .largeCanvas
+                            } else {
+                                dismiss()
+                                onCreate(size)
+                            }
                         } label: {
                             VStack(spacing: 8) {
                                 GridGlyph(cells: min(size, 16))
@@ -25,8 +32,12 @@ struct NewCanvasSheet: View {
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 14)
                             .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(alignment: .topTrailing) {
+                                if locked { ProBadge().padding(8) }
+                            }
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("\(size) by \(size) pixels\(locked ? ", requires Pro" : "")")
                     }
                 }
                 .padding()
@@ -38,6 +49,7 @@ struct NewCanvasSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .proUpgradeSheet($upgrade)
     }
 }
 

@@ -188,3 +188,59 @@ final class EditorModelTests: XCTestCase {
         XCTAssertEqual(meta.frames[2].y, 2)
     }
 }
+
+final class FeatureAccessTests: XCTestCase {
+    func testFreeFrameLimitAsksForPro() {
+        let m = EditorModel(project: SpriteProject(name: "T", size: 8))
+        var asked: ProFeature?
+        m.onProRequired = { asked = $0 }
+        for _ in 1..<FeatureAccess.freeFrameLimit { XCTAssertTrue(m.addKeyframe()) }
+        XCTAssertEqual(m.frameCount, FeatureAccess.freeFrameLimit)
+        XCTAssertNil(asked)
+        XCTAssertFalse(m.addKeyframe())
+        XCTAssertEqual(asked, .unlimitedFrames)
+        XCTAssertEqual(m.frameCount, FeatureAccess.freeFrameLimit)
+
+        m.access = .pro
+        XCTAssertTrue(m.addKeyframe())
+    }
+
+    func testTweenInsertRespectsLimit() {
+        let m = EditorModel(project: SpriteProject(name: "T", size: 16))
+        var asked = false
+        m.onProRequired = { _ in asked = true }
+        m.touchBegan(at: Vec2(x: 0.5, y: 0.5)); m.touchEnded()
+        m.tool = .select
+        m.touchBegan(at: Vec2(x: 0.5, y: 0.5)); m.touchEnded()
+        m.touchBegan(at: Vec2(x: 0.5, y: 0.5)); m.touchMoved(to: Vec2(x: 8.5, y: 0.5)); m.touchEnded()
+        m.generateTween(frameCount: 40, easing: .linear, style: .straight, mode: .insertFrames)
+        XCTAssertTrue(asked)
+        XCTAssertEqual(m.frameCount, 1)
+        XCTAssertNotNil(m.floating, "selection is kept so the user can try fewer frames")
+        m.generateTween(frameCount: m.remainingFrameAllowance, easing: .linear, style: .straight, mode: .insertFrames)
+        XCTAssertEqual(m.frameCount, FeatureAccess.freeFrameLimit)
+    }
+
+    func testCanvasSizes() {
+        XCTAssertTrue(FeatureAccess.free.allowsCanvas(size: 32))
+        XCTAssertFalse(FeatureAccess.free.allowsCanvas(size: 64))
+        XCTAssertTrue(FeatureAccess.pro.allowsCanvas(size: 256))
+        XCTAssertFalse(FeatureAccess.free.allowsGIF)
+    }
+
+    func testStoreCoalescesWritesAndFlushes() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = ProjectStore(directory: dir)
+        var p = store.create(size: 8)
+        for i in 0..<20 {
+            p.name = "Name \(i)"
+            store.save(p)
+        }
+        store.flush()
+        XCTAssertEqual(ProjectStore(directory: dir).projects.first?.name, "Name 19")
+        store.delete(id: p.id)
+        store.flush()
+        XCTAssertTrue(ProjectStore(directory: dir).projects.isEmpty)
+        try? FileManager.default.removeItem(at: dir)
+    }
+}

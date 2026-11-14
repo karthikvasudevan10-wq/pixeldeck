@@ -2,6 +2,8 @@ import SwiftUI
 
 struct EditorView: View {
     @Environment(ProjectStore.self) private var store
+    @Environment(PurchaseManager.self) private var purchases
+    @State private var upgrade: ProFeature?
     @State private var model: EditorModel
     @State private var zoom = ZoomCommand()
     @State private var deckMode = false
@@ -26,6 +28,9 @@ struct EditorView: View {
                       onSwipeRight: { showingNewCanvas = true }) {
                 PixelCanvas(state: model.canvasState, model: model, zoom: zoom)
                     .allowsHitTesting(!deckMode)
+                    .accessibilityElement()
+                    .accessibilityLabel("Canvas, \(model.size) by \(model.size) pixels, frame \(model.currentIndex + 1) of \(model.frameCount)")
+                    .accessibilityHint("Drawing on the canvas needs touch. Use the frame strip and menus for other actions.")
             }
             .frame(maxHeight: .infinity)
 
@@ -45,7 +50,11 @@ struct EditorView: View {
         .toolbar { toolbarContent }
         .onAppear {
             model.onChange = { [store] project in store.save(project) }
+            model.access = purchases.access
+            model.onProRequired = { feature in upgrade = feature }
         }
+        .onChange(of: purchases.isPro) { _, _ in model.access = purchases.access }
+        .proUpgradeSheet($upgrade)
         .onDisappear {
             model.commitSelection()
             store.save(model.project)
@@ -175,6 +184,8 @@ struct EditorView: View {
                 .accessibilityLabel("Redo")
             Menu {
                 Button { showingPlayback = true } label: { Label("Play animation", systemImage: "play.fill") }
+                Button { model.addKeyframe() } label: { Label("New frame", systemImage: "plus.rectangle.on.rectangle") }
+                Button { showingNewCanvas = true } label: { Label("New canvas", systemImage: "square.badge.plus") }
                 Button { showingExport = true } label: { Label("Export sprites", systemImage: "square.and.arrow.up") }
                 Divider()
                 Toggle(isOn: $model.showGrid) { Label("Pixel grid", systemImage: "grid") }
