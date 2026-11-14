@@ -130,7 +130,7 @@ extension EditorView {
                             .padding(32)
                     }
                 case .playback:
-                    TweenPreview(frames: model.project.frames.map(\.grid), fps: model.project.fps)
+                    FrameLoop(frames: model.project.frames, fps: model.project.fps).padding(24)
                 case .reference:
                     ReferencePanel(image: $reference, model: model)
                 }
@@ -158,20 +158,22 @@ extension EditorView {
     }
 
     /// The drawing page (Flipbook right page, Easel desk): canvas, caption, page-turn corner.
-    func rightPage(caption: Text, accentBorder: Bool = true) -> some View {
+    func rightPage(caption: Text, accentBorder: Bool = true, showsCaption: Bool = true) -> some View {
         SwipeCanvas(swipeAnywhere: swipeAnywhere, flingsNewFrame: false,
                     onNewFrame: turnPage, onNewCanvas: newCanvas) {
             canvas
         }
         .overlay(alignment: .topLeading) {
-            caption
-                .font(AppFont.pixel(11))
-                .foregroundStyle(accentBorder ? Theme.onAccent : Theme.muted)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(accentBorder ? Theme.accent : Theme.chip)
-                .padding(10)
-                .allowsHitTesting(false)
+            if showsCaption {
+                caption
+                    .font(AppFont.pixel(11))
+                    .foregroundStyle(accentBorder ? Theme.onAccent : Theme.muted)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(accentBorder ? Theme.accent : Theme.chip)
+                    .padding(10)
+                    .allowsHitTesting(false)
+            }
         }
         .overlay(alignment: .bottomTrailing) { PageCorner(action: turnPage) }
         .overlay(alignment: .bottom) {
@@ -194,9 +196,7 @@ extension EditorView {
                 Checkerboard(cell: 24)
                 PixelImage(image: page).padding(24)
             }
-            .rotation3DEffect(.degrees(reduceMotion ? 0 : -180 * Double(turnProgress)),
-                              axis: (x: 0, y: 1, z: 0), anchor: .leading, perspective: 0.45)
-            .opacity(reduceMotion ? Double(1 - turnProgress) : (turnProgress < 0.5 ? 1 : 0))
+            .modifier(PageTurnEffect(progress: turnProgress, crossFade: reduceMotion))
             .allowsHitTesting(false)
         }
     }
@@ -207,10 +207,19 @@ extension EditorView {
         let drawn = ThumbnailCache.shared.image(for: model.project.frames[model.currentIndex])
         guard model.addKeyframe() else { return }
         leftPage = leftPage == .reference ? .reference : .lastFrame
+        turnToken += 1
+        let token = turnToken
+        // Show the page at the start position first; animate on the next run-loop turn, or
+        // SwiftUI would only ever see the end state.
         turningPage = drawn
         turnProgress = 0
-        withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.35)) { turnProgress = 1 }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.37) { turningPage = nil }
+        DispatchQueue.main.async {
+            withAnimation(.easeInOut(duration: reduceMotion ? 0.2 : 0.35)) {
+                turnProgress = 1
+            } completion: {
+                if token == turnToken { turningPage = nil }
+            }
+        }
     }
 
     var onionToggle: some View {
@@ -284,7 +293,9 @@ extension EditorView {
                             barButton(.redo, "Redo") { model.redo() }.disabled(!model.canRedo)
                         }
                     }
-                    rightPage(caption: Text(verbatim: "Frame \(frameLabel)"), accentBorder: false)
+                    rightPage(caption: Text(verbatim: "Frame \(frameLabel)"), accentBorder: false, showsCaption: false)
+                        // The sprite chip holds Export, Back to gallery and the Easel switch.
+                        .overlay(alignment: .topLeading) { chip.padding(10) }
                         .overlay(alignment: .topTrailing) { layersButton.padding(10) }
                     VStack(spacing: 10) {
                         PaletteRow(model: model, onEdit: { editingSwatch = SwatchEdit(index: $0) }, columns: 2)
@@ -301,7 +312,7 @@ extension EditorView {
     }
 
     private func fpsStep(_ symbol: String, label: LocalizedStringKey, by delta: Int) -> some View {
-        Button { model.setFPS(min(24, max(1, model.project.fps + delta))) } label: {
+        Button { model.setFPS(min(30, max(1, model.project.fps + delta))) } label: {
             Text(verbatim: symbol).font(AppFont.pixel(16)).foregroundStyle(Theme.text)
                 .frame(width: 52, height: 44)
                 .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
@@ -547,10 +558,11 @@ enum ReferenceStore {
 }
 
 extension UIImage {
+    /// Smaller copy, drawn upright (EXIF rotation applied), so pixel sampling matches what's shown.
     func downscaled(maxSide: CGFloat) -> UIImage {
         let longest = max(size.width, size.height)
-        guard longest > maxSide else { return self }
-        let s = maxSide / longest
+        guard longest > maxSide || imageOrientation != .up else { return self }
+        let s = min(1, maxSide / longest)
         let target = CGSize(width: (size.width * s).rounded(), height: (size.height * s).rounded())
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
@@ -562,11 +574,55 @@ extension UIImage {
         guard let cg = cgImage else { return nil }
         let x = min(max(Int(p.x * scale), 0), cg.width - 1), y = min(max(Int(p.y * scale), 0), cg.height - 1)
         var px = [UInt8](repeating: 0, count: 4)
-        guard let ctx = CGContext(data: &px, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
-                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
-                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
-        ctx.interpolationQuality = .none
-        ctx.draw(cg, in: CGRect(x: -x, y: -(cg.height - 1 - y), width: cg.width, height: cg.height))
+        // The context writes into `px`, so it must only be used while the buffer is pinned.
+        let drew = px.withUnsafeMutableBytes { buf -> Bool in
+            guard let ctx = CGContext(data: buf.baseAddress, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.interpolationQuality = .none
+            ctx.draw(cg, in: CGRect(x: -x, y: -(cg.height - 1 - y), width: cg.width, height: cg.height))
+            return true
+        }
+        guard drew else { return nil }
         return RGBA(r: px[0], g: px[1], b: px[2], a: 255)
+    }
+}
+
+/// The page-turn: rotates about the spine and disappears once it's past 90° (it's then edge-on
+/// and would show mirrored). An Animatable modifier, so the cut happens at the real halfway point
+/// rather than being interpolated as a fade. With Reduce Motion, a plain cross-fade.
+struct PageTurnEffect: ViewModifier, Animatable {
+    var progress: CGFloat
+    var crossFade: Bool
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .rotation3DEffect(.degrees(crossFade ? 0 : -180 * Double(progress)),
+                              axis: (x: 0, y: 1, z: 0), anchor: .leading, perspective: 0.45)
+            .opacity(crossFade ? Double(1 - progress) : (progress < 0.5 ? 1 : 0))
+    }
+}
+
+/// Loops a sprite's frames using the cached frame images (cheap enough to sit beside a canvas
+/// that updates on every touch). Shows the first frame with Reduce Motion.
+struct FrameLoop: View {
+    let frames: [Frame]
+    let fps: Int
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        if frames.count > 1 && !reduceMotion {
+            TimelineView(.periodic(from: .now, by: 1 / Double(max(fps, 1)))) { ctx in
+                let i = Int(ctx.date.timeIntervalSinceReferenceDate * Double(max(fps, 1))) % frames.count
+                PixelImage(frame: frames[i], checker: false)
+            }
+        } else if let first = frames.first {
+            PixelImage(frame: first, checker: false)
+        }
     }
 }

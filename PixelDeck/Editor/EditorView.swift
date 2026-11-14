@@ -33,6 +33,8 @@ struct EditorView: View {
     /// The frame image folding over during a page turn.
     @State var turningPage: CGImage?
     @State var turnProgress: CGFloat = 0
+    /// Identifies the latest page turn, so an earlier one finishing can't clear it.
+    @State var turnToken = 0
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var layout: StudioLayout { StudioLayout.choose(for: size, easel: easelMode) }
@@ -83,8 +85,17 @@ struct EditorView: View {
         .animation(.easeInOut(duration: 0.2), value: layout)
         .screenBackground()
         .toolbar(.hidden, for: .navigationBar)
-        .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
-        .task { reference = ReferenceStore.load(for: model.project.id) }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { newSize in
+            if size == .zero {
+                // First measurement: place the right layout straight away, without a cross-fade.
+                var t = Transaction()
+                t.disablesAnimations = true
+                withTransaction(t) { size = newSize }
+            } else {
+                size = newSize
+            }
+        }
+        .task(id: model.project.id) { reference = ReferenceStore.load(for: model.project.id) }
         .onAppear {
             model.onChange = { [store] project in store.save(project) }
             model.access = purchases.access

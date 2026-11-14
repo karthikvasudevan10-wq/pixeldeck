@@ -213,6 +213,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         super.willMove(toWindow: newWindow)
         if newWindow == nil, drawRecognizer.isTracking {
             drawRecognizer.finishedByRemoval = true
+            for p in drawRecognizer.drainSamples() { delegate?.canvasTouchMoved(to: worldPoint(p)) }
             delegate?.canvasTouchEnded()
         }
     }
