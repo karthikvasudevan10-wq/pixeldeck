@@ -88,6 +88,12 @@ struct PixelImage: View {
         self.checker = checker
     }
 
+    /// A ready-made image (for looping previews that render their frames once).
+    init(image: CGImage?, checker: Bool = false) {
+        self.image = image
+        self.checker = checker
+    }
+
     var body: some View {
         ZStack {
             if checker { CheckerBackground() }

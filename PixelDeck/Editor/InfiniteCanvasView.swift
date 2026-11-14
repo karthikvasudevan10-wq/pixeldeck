@@ -85,6 +85,8 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
     private let selectionUnderLayer = CAShapeLayer()
     private let selectionLayer = CAShapeLayer()
     private var checkerCellPoints: CGFloat = 0
+    /// What the grid path was last built for; it's rebuilt only when this changes.
+    private var gridKey: (Viewport, CGSize, Bool)?
     /// Where the fingers were on the last pinch update (at .ended one has already lifted).
     private var lastPinchLocation: CGPoint = .zero
     /// When the view was last pinched or panned, so a two-finger pinch isn't also a fit tap.
@@ -205,10 +207,11 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
         state = new
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        if old?.grid != new.grid {
+        // Versions, not pixel comparisons: this runs on every touch.
+        if old?.gridVersion != new.gridVersion {
             imageLayer.contents = PixelRenderer.cgImage(new.grid)
         }
-        if old?.onion != new.onion {
+        if old?.onionVersion != new.onionVersion {
             onionLayer.contents = new.onion.flatMap { PixelRenderer.cgImage(PixelRenderer.tinted($0, with: Theme.onionRGBA)) }
         }
         onionLayer.opacity = Float(new.onionOpacity)
@@ -262,6 +265,9 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
 
     /// Lines only for the visible part of the endless grid; hidden when pixels are too small.
     private func layoutGrid(show: Bool) {
+        // Drawing doesn't move the grid, so don't rebuild it on every stroke.
+        if let k = gridKey, k.0 == viewport, k.1 == bounds.size, k.2 == show { return }
+        gridKey = (viewport, bounds.size, show)
         guard show, s >= 6 else { gridLayer.path = nil; return }
         let tl = worldPoint(.zero), br = worldPoint(CGPoint(x: bounds.width, y: bounds.height))
         gridLayer.lineWidth = 1 / max(traitCollection.displayScale, 1)

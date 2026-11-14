@@ -65,18 +65,17 @@ struct Frame: Identifiable, Sendable {
             ? PixelGrid(width: full.width, height: full.height) : grid
         let area = (rect ?? full).intersection(full)
         guard !area.isEmpty else { grid = g; return }
-        for y in area.y..<area.maxY {
-            for x in area.x..<area.maxX {
-                var c = RGBA.clear
-                var i = layers.count - 1
-                while i >= 0 {
-                    if isVisible(i) {
-                        let p = layers[i][x, y]
-                        if !p.isClear { c = p; break }
-                    }
-                    i -= 1
+        // Visible layers, top first; each pixel takes the first opaque one.
+        let stack = layers.indices.reversed().filter(isVisible).map { layers[$0].pixels }
+        let w = full.width
+        g.withUnsafeMutablePixels { out in
+            for y in area.y..<area.maxY {
+                for x in area.x..<area.maxX {
+                    let i = y * w + x
+                    var c = RGBA.clear
+                    for cel in stack where cel[i].a != 0 { c = cel[i]; break }
+                    out[i] = c
                 }
-                g[x, y] = c
             }
         }
         grid = g

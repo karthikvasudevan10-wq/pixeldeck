@@ -43,16 +43,24 @@ struct PixelGrid: Hashable, Sendable {
 
     var isBlank: Bool { pixels.allSatisfy(\.isClear) }
 
+    /// Direct access for hot loops (flattening layers). Index is y × width + x.
+    mutating func withUnsafeMutablePixels(_ body: (inout UnsafeMutableBufferPointer<RGBA>) -> Void) {
+        pixels.withUnsafeMutableBufferPointer { body(&$0) }
+    }
+
     /// Smallest rectangle (local) holding every opaque pixel, or nil if there are none.
     var opaqueBounds: PixelRect? {
         var minX = width, minY = height, maxX = -1, maxY = -1
-        for y in 0..<height {
-            let row = y * width
-            for x in 0..<width where !pixels[row + x].isClear {
-                if x < minX { minX = x }
-                if x > maxX { maxX = x }
-                if y < minY { minY = y }
-                if y > maxY { maxY = y }
+        let w = width
+        pixels.withUnsafeBufferPointer { px in
+            for y in 0..<height {
+                let row = y * w
+                for x in 0..<w where px[row + x].a != 0 {
+                    if x < minX { minX = x }
+                    if x > maxX { maxX = x }
+                    if y < minY { minY = y }
+                    if y > maxY { maxY = y }
+                }
             }
         }
         guard maxX >= 0 else { return nil }
@@ -166,11 +174,14 @@ struct PixelGrid: Hashable, Sendable {
         let s = max(1, scale)
         let outW = width * s
         var bytes = [UInt8](repeating: 0, count: outW * height * s * 4)
+        let w = width
+        // Unsafe buffers: this runs for every canvas update, so skip per-pixel bounds checks.
+        pixels.withUnsafeBufferPointer { px in
         bytes.withUnsafeMutableBufferPointer { out in
             for y in 0..<height {
-                for x in 0..<width {
-                    let c = pixels[y * width + x]
-                    if c.isClear { continue }
+                for x in 0..<w {
+                    let c = px[y * w + x]
+                    if c.a == 0 { continue }
                     for dy in 0..<s {
                         var i = ((y * s + dy) * outW + x * s) * 4
                         for _ in 0..<s {
@@ -180,6 +191,7 @@ struct PixelGrid: Hashable, Sendable {
                     }
                 }
             }
+        }
         }
         return bytes
     }

@@ -400,13 +400,27 @@ struct AnimatedSprite: View {
 
     @ViewBuilder
     private func frameView(_ s: CharacterSprite, index: Int) -> some View {
+        let images = SpriteImageCache.images(for: s)
         ZStack {
             if onion {
                 let prev = (index - 1 + s.frames.count) % s.frames.count
-                PixelImage(grid: PixelRenderer.tinted(s.frames[prev], with: Theme.onionRGBA), checker: false)
-                    .opacity(0.38)
+                PixelImage(image: images.onion[prev]).opacity(0.38)
             }
-            PixelImage(grid: s.frames[index], checker: false)
+            PixelImage(image: images.frames[index])
         }
+    }
+}
+
+/// Each character's frames rendered once, so looping animations don't build a new bitmap on
+/// every tick.
+private enum SpriteImageCache {
+    private static var cache: [String: (frames: [CGImage?], onion: [CGImage?])] = [:]
+
+    static func images(for s: CharacterSprite) -> (frames: [CGImage?], onion: [CGImage?]) {
+        if let c = cache[s.key] { return c }
+        let c = (s.frames.map { PixelRenderer.cgImage($0) },
+                 s.frames.map { PixelRenderer.cgImage(PixelRenderer.tinted($0, with: Theme.onionRGBA)) })
+        cache[s.key] = c
+        return c
     }
 }

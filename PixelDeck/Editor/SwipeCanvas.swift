@@ -131,29 +131,33 @@ struct SwipeCanvas<Content: View>: View {
 
 /// The 3×5-pixel chevron hint (9×15 pt), 6 pt in from the edge. Idles on a 2.4 s loop: opacity
 /// 0.35 → 0.6 → 0.35 with a 3 pt nudge in the swipe direction. Still with Reduce Motion.
+///
+/// Driven by a repeating SwiftUI animation, which Core Animation runs on the render server: no
+/// view updates per frame, unlike a TimelineView (that kept the CPU busy 30 times a second).
 private struct EdgeChevron: View {
     /// true: "‹" on the trailing edge (swipe toward leading = new frame).
     var pointsLeading: Bool
     var color: Color
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var up = false
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { ctx in
-            let v = reduceMotion ? 0 : Self.pulse(ctx.date.timeIntervalSinceReferenceDate)
-            shape
-                .frame(width: 9, height: 15)
-                .opacity(0.35 + 0.25 * v)
-                .offset(x: (pointsLeading ? -3 : 3) * v)
-        }
-        .frame(maxWidth: .infinity, alignment: pointsLeading ? .trailing : .leading)
-        .padding(pointsLeading ? .trailing : .leading, 6)
+        shape
+            .frame(width: 9, height: 15)
+            .opacity(up ? 0.6 : 0.35)
+            .offset(x: up ? (pointsLeading ? -3 : 3) : 0)
+            .frame(maxWidth: .infinity, alignment: pointsLeading ? .trailing : .leading)
+            .padding(pointsLeading ? .trailing : .leading, 6)
+            .onAppear { start() }
+            .onChange(of: reduceMotion) { _, _ in start() }
     }
 
-    /// 0 → 1 at 35 % of the loop, back to 0 at 70 %, eased.
-    static func pulse(_ t: TimeInterval) -> CGFloat {
-        let p = t.truncatingRemainder(dividingBy: 2.4) / 2.4
-        let x: Double = p < 0.35 ? p / 0.35 : (p < 0.7 ? 1 - (p - 0.35) / 0.35 : 0)
-        return CGFloat(x * x * (3 - 2 * x))
+    private func start() {
+        guard !reduceMotion else {
+            withAnimation(nil) { up = false }
+            return
+        }
+        withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { up = true }
     }
 
     private var shape: some View {

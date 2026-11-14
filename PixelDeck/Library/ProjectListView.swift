@@ -5,6 +5,7 @@ import SwiftUI
 struct ProjectListView: View {
     @Environment(ProjectStore.self) private var store
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @AppStorage("starterSpritesAdded") private var starterSpritesAdded = false
     @State private var path: [UUID] = []
@@ -21,6 +22,12 @@ struct ProjectListView: View {
     /// Preview tile backgrounds from the design, cycled.
     static let tileColors: [Color] = ([0x2B1F47, 0x3A1F2E, 0x3A321C, 0x1F3340, 0x1F3A2A, 0x171129] as [UInt32]).map { Color(hex: $0) }
 
+    /// Live previews run only while the gallery is actually on screen — not under the Studio,
+    /// the welcome screens or export, and not in the background.
+    private var galleryVisible: Bool {
+        path.isEmpty && !showingWelcome && exporting == nil && !showingSettings && scenePhase == .active
+    }
+
     private var filtered: [SpriteProject] {
         store.projects.filter { filter == .moving ? $0.frames.count > 1 : $0.frames.count == 1 }
     }
@@ -34,7 +41,8 @@ struct ProjectListView: View {
                         newCanvasTile
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { i, project in
                             NavigationLink(value: project.id) {
-                                ProjectTile(project: project, tile: Self.tileColors[i % Self.tileColors.count])
+                                ProjectTile(project: project, tile: Self.tileColors[i % Self.tileColors.count],
+                                            animating: galleryVisible)
                             }
                             .buttonStyle(.plain)
                             .contextMenu { menu(for: project) }
@@ -246,6 +254,7 @@ struct ProjectListView: View {
 private struct ProjectTile: View {
     let project: SpriteProject
     let tile: Color
+    var animating = true
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var sizeText: String {
@@ -287,7 +296,7 @@ private struct ProjectTile: View {
 
     @ViewBuilder
     private var preview: some View {
-        if project.frames.count > 1 && !reduceMotion {
+        if project.frames.count > 1 && !reduceMotion && animating {
             TimelineView(.periodic(from: .now, by: 1 / Double(project.fps))) { ctx in
                 let i = Int((ctx.date.timeIntervalSinceReferenceDate * Double(project.fps)).rounded(.down)) % project.frames.count
                 PixelImage(frame: project.frames[i], checker: false)

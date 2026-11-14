@@ -15,7 +15,10 @@ enum Tool: String, CaseIterable, Identifiable, Sendable {
 struct CanvasState: Equatable {
     var bounds: PixelRect
     var grid: PixelGrid
+    /// Changes whenever `grid` does, so the view can tell without comparing every pixel.
+    var gridVersion: Int
     var onion: PixelGrid?
+    var onionVersion: Int?
     var onionOpacity: Double
     var showGrid: Bool
     /// Marquee or floating-selection outline.
@@ -24,6 +27,13 @@ struct CanvasState: Equatable {
     var motionPath: [Vec2]?
     /// Show the mirror axis (world x = 0).
     var mirror: Bool
+
+    /// Compares versions rather than pixels: cheap enough to run on every touch.
+    static func == (l: CanvasState, r: CanvasState) -> Bool {
+        l.gridVersion == r.gridVersion && l.onionVersion == r.onionVersion && l.bounds == r.bounds
+            && l.onionOpacity == r.onionOpacity && l.showGrid == r.showGrid && l.selection == r.selection
+            && l.motionPath == r.motionPath && l.mirror == r.mirror
+    }
 }
 
 /// Where the user is looking on the infinite canvas: how many points one art pixel takes on
@@ -193,16 +203,20 @@ final class EditorModel {
     /// `playingFrame` shows that frame without onion skin or selection (for in-place playback).
     func canvasState(playingFrame: Int? = nil) -> CanvasState {
         if let i = playingFrame, project.frames.indices.contains(i) {
-            return CanvasState(bounds: bounds, grid: project.frames[i].grid, onion: nil, onionOpacity: onionOpacity,
-                               showGrid: showGrid, selection: nil, motionPath: nil, mirror: false)
+            let f = project.frames[i]
+            return CanvasState(bounds: bounds, grid: f.grid, gridVersion: f.version, onion: nil, onionVersion: nil,
+                               onionOpacity: onionOpacity, showGrid: showGrid, selection: nil, motionPath: nil, mirror: false)
         }
         var path: [Vec2]?
         if let f = floating, !f.path.isTrivial {
             let c = f.sourceRect.center
             path = f.path.refined().points.map { $0 + c }
         }
-        return CanvasState(bounds: bounds, grid: currentGrid, onion: onionGrid, onionOpacity: onionOpacity,
-                           showGrid: showGrid, selection: selectionRect, motionPath: path, mirror: mirror)
+        let current = project.frames[currentIndex]
+        let previous = onionSkinEnabled && currentIndex > 0 ? project.frames[currentIndex - 1] : nil
+        return CanvasState(bounds: bounds, grid: current.grid, gridVersion: current.version,
+                           onion: previous?.grid, onionVersion: previous?.version,
+                           onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect, motionPath: path, mirror: mirror)
     }
 
     // MARK: Colour
