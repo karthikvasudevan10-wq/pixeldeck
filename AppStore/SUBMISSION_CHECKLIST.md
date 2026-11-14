@@ -92,6 +92,12 @@ You still need to do this, and no review can replace it:
 
 ### iPhone Duo
 - [ ] Build with **Xcode 27.1 or later**. With the iOS 26 SDK the app is shown in a box in the middle of the inner display, with the iOS 27 SDK it nearly fills it, and from 27.1 it's fully optimised (Apple, "Prepare your apps for iPhone Duo").
+- [ ] Check each layout from the design handoff:
+  - Closed: the Pocket Studio.
+  - Open flat: the Flipbook spread. Turn pages, and try all three left-page tabs, including pinning a reference and sampling a colour from it.
+  - Half open: Easel. Turn it on from the sprite menu.
+  Fold and unfold mid-stroke: the stroke must be kept.
+- [ ] If Xcode 27.1+ documents a fold-posture API, read it in `StudioLayout.choose` so Easel turns on by itself when the device is half open.
 - [ ] In Xcode's **Device Hub**, check every pose (folded, open like a book, tent, propped) in both orientations. Fold and unfold mid-stroke and while zoomed in: the canvas should keep its zoom and position, and the editor should switch between stacked and side-by-side.
 - [ ] Check that system toolbars still fit when iOS shows them vertically below the status bar.
 - [ ] Take Duo screenshots: outer display 1398 × 2034 and inner display 2007 × 2853 (portrait). Apple says these will be required for submissions from April 2027, and they earn an "optimised for iPhone Duo" badge.
@@ -112,7 +118,7 @@ You still need to do this, and no review can replace it:
 - [ ] Use a sandbox Apple Account to buy and restore on a TestFlight build.
 
 ### Assets
-- [ ] **App icon**: now the slime on ember orange, from the brand kit. For iOS 26+, consider rebuilding it in Icon Composer with dark and tinted versions.
+- [ ] **App icon**: now the slime on flip pink, from the brand kit. For iOS 26+, consider rebuilding it in Icon Composer with dark and tinted versions.
 - [ ] **Screenshots**: take them from the simulator or a device, showing the app in use, not just a title card (2.3.3). You need iPhone 6.9" (1320 × 2868) and, because the app runs on iPad, iPad 13" (2064 × 2752). Good shots: the welcome scene, the Studio with onion skin, a tween path, the gallery's live previews, and export. The design's sprite sheets (`sprites/*_sheet_8x.png` in the handoff) also suit marketing artwork. Apple says that from April 2027 every submission must also include iPhone Duo screenshots.
 - [ ] Optional: a 15–30 s App Preview video of a swipe and a tween, which is the most persuasive thing you can show.
 
@@ -144,7 +150,7 @@ Ideas for later versions:
 >
 > Key interactions:
 > - Draw with one finger. Pinch with two fingers to change the pixel size, drag with two fingers to move, and tap with two fingers to fit the art. The canvas has no fixed size; it grows as you draw.
-> - Swipe **left** starting at the right edge of the canvas (marked by a small orange chevron) to add a frame. The previous frame shows as an orange onion skin. Swipe **right** from the left edge (yellow chevron) to start a new canvas. The **+** after the frame thumbnails also adds a frame, and the gallery has a **New canvas** tile.
+> - Swipe **left** starting at the right edge of the canvas (marked by a small pink chevron) to add a frame. The previous frame shows as a pink onion skin. Swipe **right** from the left edge (yellow chevron) to start a new canvas. The **+** after the frame thumbnails also adds a frame, and the gallery has a **New canvas** tile.
 > - To tween: choose the Select tool (the dashed square), drag over pixels to select them, drag the selection along any path, then tap **Tween**.
 > - Long-press a palette colour to change it.
 > - The shapes tool (4th tile) draws lines, rectangles, circles and triangles; the first shape goes on its own layer. The layers button at the top right of the canvas opens the layers panel.

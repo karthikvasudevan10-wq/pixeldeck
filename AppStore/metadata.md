@@ -25,7 +25,7 @@ DRAW IT
 • A 10-colour palette per sprite; long-press any colour to change it
 
 FLIP IT
-• Swipe left for the next frame; the last one stays underneath as an orange onion skin
+• Swipe left for the next frame; the last one stays underneath as a pink onion skin
 • Swipe right to start a fresh canvas whenever an idea hits
 • Play the animation in place, from 1 to 30 fps
 

@@ -206,6 +206,17 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
 
+    /// Folding or unfolding an iPhone Duo (or rotating) can swap the Studio's layout mid-stroke,
+    /// which removes this view. Finish the stroke rather than letting the touch be cancelled,
+    /// which would undo it.
+    override func willMove(toWindow newWindow: UIWindow?) {
+        super.willMove(toWindow: newWindow)
+        if newWindow == nil, drawRecognizer.isTracking {
+            drawRecognizer.finishedByRemoval = true
+            delegate?.canvasTouchEnded()
+        }
+    }
+
     // MARK: Viewport
 
     func setInitialViewport(_ v: Viewport?) {
@@ -400,6 +411,8 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     // MARK: Gestures
 
     @objc private func handleDraw(_ g: DrawGestureRecognizer) {
+        // Already finished when the view was removed (see willMove(toWindow:)).
+        if g.finishedByRemoval { return }
         switch g.state {
         case .began:
             hoverPixel = nil
@@ -516,6 +529,9 @@ final class DrawGestureRecognizer: UIGestureRecognizer {
     private var tracked: UITouch?
     private var startTime: TimeInterval = 0
     private let handOffWindow: TimeInterval = 0.25
+    var isTracking: Bool { tracked != nil && (state == .began || state == .changed) }
+    /// Set when the stroke was finished because the view left the screen.
+    var finishedByRemoval = false
     /// Locations since the last update, in the view's coordinates, including coalesced samples.
     private var samples: [CGPoint] = []
 
@@ -585,6 +601,7 @@ final class DrawGestureRecognizer: UIGestureRecognizer {
     override func reset() {
         super.reset()
         tracked = nil
+        finishedByRemoval = false
         samples.removeAll(keepingCapacity: true)
     }
 }

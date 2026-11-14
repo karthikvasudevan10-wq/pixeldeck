@@ -95,7 +95,12 @@ struct ProjectListView: View {
             Button("Cancel", role: .cancel) {}
         }
         .confirmationDialog("Delete this sprite?", isPresented: Binding(get: { deletingID != nil }, set: { if !$0 { deletingID = nil } }), titleVisibility: .visible) {
-            Button("Delete", role: .destructive) { if let id = deletingID { store.delete(id: id) } }
+            Button("Delete", role: .destructive) {
+                if let id = deletingID {
+                    store.delete(id: id)
+                    ReferenceStore.delete(for: id)
+                }
+            }
         } message: {
             Text("All of its frames will be removed. This can't be undone.")
         }

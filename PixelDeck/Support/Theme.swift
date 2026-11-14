@@ -27,8 +27,8 @@ enum Theme {
     static let text = Color(hex: 0xF4EEFF)
     static let cream = Color(hex: 0xFFF6E0)
     static let muted = Color(hex: 0xA89CC8)
-    static let accent = Color(hex: 0xFF8B3D)
-    static let accentShadow = Color(hex: 0xC25A1A)
+    static let accent = Color(hex: 0xFF5C8A)          // flip pink
+    static let accentShadow = Color(hex: 0xB8336A)
     static let accent2 = Color(hex: 0xFFD23F)
     static let accent2Shadow = Color(hex: 0xB08A12)
     static let onAccent = Color(hex: 0x120E1F)
@@ -36,11 +36,11 @@ enum Theme {
     static let chip = Color(hex: 0x120E1F, opacity: 0.7)
 
     /// The onion skin tint (drawn at 38%).
-    static let onionRGBA = RGBA(hex: 0xFF8B3D)
+    static let onionRGBA = RGBA(hex: 0xFF5C8A)
     static let uiCheckA = UIColor(hex: 0x1A1430)
     static let uiCheckB = UIColor(hex: 0x221B3B)
     static let uiGrid = UIColor(white: 1, alpha: 0.07)
-    static let uiAccent = UIColor(hex: 0xFF8B3D)
+    static let uiAccent = UIColor(hex: 0xFF5C8A)
     static let uiAccent2 = UIColor(hex: 0xFFD23F)
     static let uiInk = UIColor(hex: 0x120E1F)
     static let uiCream = UIColor(hex: 0xFFF6E0)
@@ -168,9 +168,11 @@ extension View {
 /// Transparent-canvas checkerboard (one cell per `cell` points).
 struct Checkerboard: View {
     var cell: CGFloat = 16
+    var a: Color = Color(hex: 0x1A1430)
+    var b: Color = Color(hex: 0x221B3B)
     var body: some View {
         Canvas { ctx, size in
-            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(hex: 0x1A1430)))
+            ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(a))
             let cols = Int((size.width / cell).rounded(.up)), rows = Int((size.height / cell).rounded(.up))
             var p = Path()
             for y in 0..<rows {
@@ -178,7 +180,7 @@ struct Checkerboard: View {
                     p.addRect(CGRect(x: CGFloat(x) * cell, y: CGFloat(y) * cell, width: cell, height: cell))
                 }
             }
-            ctx.fill(p, with: .color(Color(hex: 0x221B3B)))
+            ctx.fill(p, with: .color(b))
         }
     }
 }

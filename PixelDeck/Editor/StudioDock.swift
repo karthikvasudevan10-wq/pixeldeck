@@ -27,8 +27,12 @@ struct StudioDock: View {
 
 // MARK: A — frames
 
-private struct FrameRow: View {
+/// Play/pause, the frame thumbnails and the dashed "+". `thumb` sets the thumbnail size
+/// (40 × 52 in the dock, 44 × 58 in the Flipbook bottom bar).
+struct FrameRow: View {
     let model: EditorModel
+    var thumb = CGSize(width: 40, height: 52)
+    var playSize: CGFloat = 52
 
     var body: some View {
         HStack(spacing: 8) {
@@ -36,7 +40,7 @@ private struct FrameRow: View {
                 model.isPlaying.toggle()
             } label: {
                 (model.isPlaying ? PixelIcon.pause : .play).view(size: 18)
-                    .frame(width: 52, height: 52)
+                    .frame(width: playSize, height: playSize)
                     .contentShape(Rectangle())
             }
             .buttonStyle(PrimaryButtonStyle(depth: 4))
@@ -47,12 +51,12 @@ private struct FrameRow: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 5) {
                         ForEach(Array(model.project.frames.enumerated()), id: \.element.id) { index, frame in
-                            thumb(frame, index: index).id(frame.id)
+                            thumbnail(frame, index: index).id(frame.id)
                         }
                         Button { model.addKeyframe() } label: {
                             PixelIcon.plus.view(size: 16, lineWidth: 2.5)
                                 .foregroundStyle(Theme.accent)
-                                .frame(width: 40, height: 52)
+                                .frame(width: thumb.width, height: thumb.height)
                                 .overlay(Rectangle().strokeBorder(Theme.accent, style: StrokeStyle(lineWidth: 2, dash: [4, 3])))
                                 .contentShape(Rectangle())
                         }
@@ -66,11 +70,11 @@ private struct FrameRow: View {
                 }
             }
         }
-        .frame(height: 52)
+        .frame(height: max(playSize, thumb.height))
         .padding(.bottom, 4)          // room for the play button's pressed-in shadow
     }
 
-    private func thumb(_ frame: Frame, index: Int) -> some View {
+    private func thumbnail(_ frame: Frame, index: Int) -> some View {
         let current = index == model.currentIndex
         return Button {
             model.isPlaying = false
@@ -78,9 +82,9 @@ private struct FrameRow: View {
         } label: {
             PixelImage(frame: frame, checker: false)
                 .padding(4)
-                .frame(width: 40, height: 52)
+                .frame(width: thumb.width, height: thumb.height)
                 .background(Theme.ink)
-                .overlay(Rectangle().strokeBorder(current ? Theme.accent : Theme.line, lineWidth: 2))
+                .overlay(Rectangle().strokeBorder(current ? Theme.accent : (index == model.currentIndex - 1 ? Theme.muted : Theme.line), lineWidth: 2))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -98,78 +102,115 @@ private struct FrameRow: View {
 
 // MARK: B — palette
 
-private struct PaletteRow: View {
+/// The sprite's palette. A full-width row in the dock; a vertical rail or a grid in the iPhone Duo
+/// layouts (`columns` set, with fixed-size swatches).
+struct PaletteRow: View {
     let model: EditorModel
     var onEdit: (Int) -> Void
+    /// nil: one row filling the width. Otherwise a grid this many columns wide.
+    var columns: Int? = nil
+    var swatch = CGSize(width: 52, height: 40)
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Array(model.palette.enumerated()), id: \.offset) { i, c in
-                let selected = c == model.color && model.tool != .eraser
-                Rectangle()
-                    .fill(c.color)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 34)
-                    .overlay {
-                        if selected {
-                            // 2 pt gap in the surface colour, then a 2 pt ring in the text colour.
-                            Rectangle().strokeBorder(Theme.text, lineWidth: 2).padding(-4)
-                            Rectangle().strokeBorder(Theme.surface, lineWidth: 2).padding(-2)
-                        } else {
-                            Rectangle().strokeBorder(Theme.line, lineWidth: 1)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture { model.pickColor(c) }
-                    .onLongPressGesture(minimumDuration: 0.4) { onEdit(i) }
-                    .accessibilityElement()
-                    .accessibilityLabel(Text("Colour \(c.hexString)"))
-                    .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
-                    .accessibilityAction { model.pickColor(c) }
-                    .accessibilityAction(named: Text("Change colour")) { onEdit(i) }
+        Group {
+            if let columns {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(swatch.width), spacing: 6), count: columns), spacing: 6) {
+                    swatches(fixed: true)
+                }
+                .padding(4)
+            } else {
+                HStack(spacing: 6) { swatches(fixed: false) }
+                    .padding(.horizontal, 4)
             }
         }
-        .padding(.horizontal, 4)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Palette")
+    }
+
+    @ViewBuilder
+    private func swatches(fixed: Bool) -> some View {
+        ForEach(Array(model.palette.enumerated()), id: \.offset) { i, c in
+            let selected = c == model.color && model.tool != .eraser
+            Rectangle()
+                .fill(c.color)
+                .frame(maxWidth: fixed ? swatch.width : .infinity)
+                .frame(width: fixed ? swatch.width : nil, height: fixed ? swatch.height : 34)
+                .overlay {
+                    if selected {
+                        // 2 pt gap in the surface colour, then a 2 pt ring in the text colour.
+                        Rectangle().strokeBorder(Theme.text, lineWidth: 2).padding(-4)
+                        Rectangle().strokeBorder(Theme.surface, lineWidth: 2).padding(-2)
+                    } else {
+                        Rectangle().strokeBorder(Theme.line, lineWidth: 1)
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture { model.pickColor(c) }
+                .onLongPressGesture(minimumDuration: 0.4) { onEdit(i) }
+                .accessibilityElement()
+                .accessibilityLabel(Text("Colour \(c.hexString)"))
+                .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+                .accessibilityAction { model.pickColor(c) }
+                .accessibilityAction(named: Text("Change colour")) { onEdit(i) }
+        }
     }
 }
 
 // MARK: C — tools
 
-private struct ToolRow: View {
+/// The tools. A row in the dock; a vertical rail or a 2-column grid in the iPhone Duo layouts.
+struct ToolRow: View {
     let model: EditorModel
+    /// nil: one row filling the width. Otherwise a grid of fixed 52 pt tiles this many columns wide.
+    var columns: Int? = nil
 
     var body: some View {
-        HStack(spacing: 6) {
-            tool(.pencil, icon: .pencil)
-            tool(.eraser, icon: .eraser)
-            tool(.fill, icon: .fill)
-            // One tile for all shapes; its options strip (above the dock) picks which one.
-            tool(.shape, icon: model.shapeKind.icon)
-            tool(.eyedropper, icon: .picker)
-            // Mirror is a mode that works with pencil, eraser, fill and shapes.
-            Button { model.mirror.toggle() } label: {
-                PixelIcon.mirror.view(size: 22).frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
+        if let columns {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(52), spacing: 6), count: columns), spacing: 6) {
+                tiles(fixed: true)
             }
-            .buttonStyle(TileButtonStyle(active: model.mirror))
-            .accessibilityLabel("Mirror")
-            .accessibilityAddTraits(model.mirror ? .isSelected : [])
-            tool(.select, icon: .select)
+        } else {
+            HStack(spacing: 6) { tiles(fixed: false) }
         }
     }
 
-    private func tool(_ t: Tool, icon: PixelIcon) -> some View {
+    @ViewBuilder
+    private func tiles(fixed: Bool) -> some View {
+        tool(.pencil, icon: .pencil, fixed: fixed)
+        tool(.eraser, icon: .eraser, fixed: fixed)
+        tool(.fill, icon: .fill, fixed: fixed)
+        // One tile for all shapes; its options strip picks which one.
+        tool(.shape, icon: model.shapeKind.icon, fixed: fixed)
+        tool(.eyedropper, icon: .picker, fixed: fixed)
+        // Mirror is a mode that works with pencil, eraser, fill and shapes.
+        Button { model.mirror.toggle() } label: {
+            PixelIcon.mirror.view(size: 22).tileFrame(fixed: fixed)
+        }
+        .buttonStyle(TileButtonStyle(active: model.mirror))
+        .accessibilityLabel("Mirror")
+        .accessibilityAddTraits(model.mirror ? .isSelected : [])
+        tool(.select, icon: .select, fixed: fixed)
+    }
+
+    private func tool(_ t: Tool, icon: PixelIcon, fixed: Bool) -> some View {
         let active = model.tool == t
         return Button {
             model.isPlaying = false
             model.tool = t
         } label: {
-            icon.view(size: 22).frame(maxWidth: .infinity, minHeight: 52).contentShape(Rectangle())
+            icon.view(size: 22).tileFrame(fixed: fixed)
         }
         .buttonStyle(TileButtonStyle(active: active))
         .accessibilityLabel(Text(t.title))
         .accessibilityAddTraits(active ? .isSelected : [])
+    }
+}
+
+private extension View {
+    func tileFrame(fixed: Bool) -> some View {
+        frame(width: fixed ? 52 : nil, height: 52)
+            .frame(maxWidth: fixed ? 52 : .infinity)
+            .contentShape(Rectangle())
     }
 }
 

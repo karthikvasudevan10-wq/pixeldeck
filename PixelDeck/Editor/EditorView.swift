@@ -3,25 +3,39 @@ import SwiftUI
 /// The Studio: an endless canvas filling the screen above a dock of controls. On wide spaces
 /// (an unfolded iPhone Duo, iPad, landscape) the dock becomes a side panel.
 struct EditorView: View {
-    @Environment(ProjectStore.self) private var store
-    @Environment(PurchaseManager.self) private var purchases
-    @Environment(\.dismiss) private var dismiss
-    @State private var model: EditorModel
-    @State private var fit = FitCommand()
-    @State private var swipeAnywhere = false
-    @State private var upgrade: ProFeature?
-    @State private var showingTween = false
-    @State private var showingExport = false
-    @State private var showingRename = false
-    @State private var renameText = ""
-    @State private var editingSwatch: SwatchEdit?
-    @State private var showingLayers = false
+    @Environment(ProjectStore.self) var store
+    @Environment(PurchaseManager.self) var purchases
+    @Environment(\.dismiss) var dismiss
+    @State var model: EditorModel
+    @State var fit = FitCommand()
+    @State var swipeAnywhere = false
+    @State var upgrade: ProFeature?
+    @State var showingTween = false
+    @State var showingExport = false
+    @State var showingRename = false
+    @State var renameText = ""
+    @State var editingSwatch: SwatchEdit?
+    @State var showingLayers = false
     /// Apple Pencil draws and fingers move the canvas. Switched on the first time a Pencil is used.
-    @AppStorage("pencilOnly") private var pencilOnly = false
-    @AppStorage("pencilDetected") private var pencilDetected = false
-    @State private var pencilNotice = false
-    /// Chosen from the space the Studio actually has — never from device type or orientation.
-    @State private var sidePanel = false
+    @AppStorage("pencilOnly") var pencilOnly = false
+    @AppStorage("pencilDetected") var pencilDetected = false
+    @State var pencilNotice = false
+    /// The space the Studio has. The layout is chosen from it — never from device type or
+    /// orientation — so it follows iPhone Duo folding, iPad multitasking and rotation.
+    @State var size: CGSize = .zero
+    /// Easel mode (iPhone Duo half open on a desk). iOS doesn't document a fold-posture API yet, so
+    /// it's chosen in the sprite menu; `StudioLayout.choose` is the one place to hook one in.
+    @AppStorage("easelMode") var easelMode = false
+    /// What the Flipbook's left page shows.
+    @State var leftPage: LeftPage = .lastFrame
+    /// A pinned reference image (Flipbook), saved per sprite.
+    @State var reference: UIImage?
+    /// The frame image folding over during a page turn.
+    @State var turningPage: CGImage?
+    @State var turnProgress: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+
+    var layout: StudioLayout { StudioLayout.choose(for: size, easel: easelMode) }
 
     init(project: SpriteProject) {
         _model = State(initialValue: EditorModel(project: project))
@@ -36,7 +50,19 @@ struct EditorView: View {
     var body: some View {
         // A VStack (not a Group) so the modifiers below attach once and survive layout switches.
         VStack(spacing: 0) {
-            if sidePanel {
+            // The project, frame, tool, colour, onion skin and undo history all live in `model`,
+            // so switching layout (folding, unfolding, rotating) changes nothing but the
+            // arrangement. A short cross-fade covers the switch.
+            switch layout {
+            case .pocket:
+                VStack(spacing: 0) {
+                    canvasArea
+                    dock
+                        .background(Theme.surface.ignoresSafeArea(edges: .bottom))
+                        .overlay(alignment: .top) { Theme.line.frame(height: 2) }
+                }
+                .transition(.opacity)
+            case .sidePanel:
                 HStack(spacing: 0) {
                     canvasArea
                     ScrollView {
@@ -47,16 +73,18 @@ struct EditorView: View {
                     .background(Theme.surface.ignoresSafeArea())
                     .overlay(alignment: .leading) { Theme.line.frame(width: 2).ignoresSafeArea() }
                 }
-            } else {
-                canvasArea
-                dock
-                    .background(Theme.surface.ignoresSafeArea(edges: .bottom))
-                    .overlay(alignment: .top) { Theme.line.frame(height: 2) }
+                .transition(.opacity)
+            case .flipbook:
+                flipbook.transition(.opacity)
+            case .easel:
+                easel.transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: layout)
         .screenBackground()
         .toolbar(.hidden, for: .navigationBar)
-        .onGeometryChange(for: Bool.self) { Self.prefersSidePanel($0.size) } action: { sidePanel = $0 }
+        .onGeometryChange(for: CGSize.self) { $0.size } action: { size = $0 }
+        .task { reference = ReferenceStore.load(for: model.project.id) }
         .onAppear {
             model.onChange = { [store] project in store.save(project) }
             model.access = purchases.access
@@ -107,7 +135,7 @@ struct EditorView: View {
         }
     }
 
-    private var dock: some View {
+    var dock: some View {
         StudioDock(model: model,
                    onGallery: { dismiss() },
                    onExport: openExport,
@@ -116,7 +144,7 @@ struct EditorView: View {
 
     // MARK: Canvas
 
-    private var canvasArea: some View {
+    var canvasArea: some View {
         SwipeCanvas(swipeAnywhere: swipeAnywhere,
                     onNewFrame: { model.addKeyframe() },   // also stops playback
                     onNewCanvas: newCanvas) {
@@ -136,7 +164,7 @@ struct EditorView: View {
     }
 
     /// While playing, the canvas shows each frame in turn at the sprite's frame rate.
-    private var canvas: some View {
+    var canvas: some View {
         TimelineView(.animation(minimumInterval: 1 / Double(model.project.fps), paused: !model.isPlaying)) { ctx in
             let frame: Int? = model.isPlaying
                 ? Int((ctx.date.timeIntervalSinceReferenceDate * Double(model.project.fps)).rounded(.down)) % max(model.frameCount, 1)
@@ -153,12 +181,12 @@ struct EditorView: View {
         }
     }
 
-    private var frameLabel: String {
+    var frameLabel: String {
         String(format: "%02d/%02d", model.currentIndex + 1, model.frameCount)
     }
 
     /// Project name and frame counter. Tap for the sprite's menu.
-    private var chip: some View {
+    var chip: some View {
         Menu {
             Button {
                 renameText = model.project.name
@@ -172,6 +200,15 @@ struct EditorView: View {
                 Toggle(isOn: $pencilOnly) {
                     Label("Draw with Apple Pencil only", systemImage: "applepencil")
                 }
+            }
+            if StudioLayout.supportsEasel(size) {
+                Toggle(isOn: $easelMode) {
+                    Label("Easel mode", systemImage: "rectangle.split.1x2")
+                }
+            }
+            if layout == .easel {
+                Button { openExport() } label: { Label("Export", systemImage: "square.and.arrow.up") }
+                Button { dismiss() } label: { Label("Back to gallery", systemImage: "square.grid.2x2") }
             }
             Toggle(isOn: $swipeAnywhere) {
                 Label("Swipe anywhere", systemImage: "hand.draw")
@@ -211,7 +248,7 @@ struct EditorView: View {
     }
 
     /// The active layer, and the way into the layers panel.
-    private var layersButton: some View {
+    var layersButton: some View {
         Button { showingLayers = true } label: {
             HStack(spacing: 6) {
                 PixelIcon.layers.view(size: 14)
@@ -237,7 +274,7 @@ struct EditorView: View {
     }
 
     /// Shape options, shown while the shape tool is in use.
-    private var shapeStrip: some View {
+    var shapeStrip: some View {
         HStack(spacing: 6) {
             ForEach(ShapeKind.allCases) { kind in
                 let on = model.shapeKind == kind
@@ -275,7 +312,7 @@ struct EditorView: View {
 
     /// One 4×4 dot per frame; the current one is a 12×4 accent bar.
     @ViewBuilder
-    private var frameDots: some View {
+    var frameDots: some View {
         if model.frameCount > 1 && model.frameCount <= 30 {
             HStack(spacing: 4) {
                 ForEach(0..<model.frameCount, id: \.self) { i in
@@ -291,7 +328,7 @@ struct EditorView: View {
     }
 
     /// Selection actions, shown only while the Select tool is in use.
-    private var selectionStrip: some View {
+    var selectionStrip: some View {
         HStack(spacing: 8) {
             if model.floating != nil {
                 Button { showingTween = true } label: {
@@ -343,11 +380,11 @@ struct EditorView: View {
 
     // MARK: Actions
 
-    private func canvas(_ action: FitCommand.Action) {
+    func canvas(_ action: FitCommand.Action) {
         fit = FitCommand(action: action, nonce: fit.nonce + 1)
     }
 
-    private func openExport() {
+    func openExport() {
         model.isPlaying = false
         model.commitSelection()
         showingExport = true
@@ -355,7 +392,7 @@ struct EditorView: View {
 
     /// The first Pencil touch switches to Pencil-only drawing, like other iPad drawing apps,
     /// and says so once. It can be turned off in the sprite menu.
-    private func pencilFirstSeen() {
+    func pencilFirstSeen() {
         guard !pencilDetected else { return }
         pencilDetected = true
         pencilOnly = true
@@ -363,7 +400,7 @@ struct EditorView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) { withAnimation { pencilNotice = false } }
     }
 
-    private func pencilAction(_ action: PencilAction) {
+    func pencilAction(_ action: PencilAction) {
         switch action {
         case .toggleEraser: model.toggleEraser()
         case .previousTool: model.switchToPreviousTool()
@@ -373,7 +410,7 @@ struct EditorView: View {
         }
     }
 
-    private func newCanvas() {
+    func newCanvas() {
         model.isPlaying = false
         model.commitSelection()
         store.save(model.project)

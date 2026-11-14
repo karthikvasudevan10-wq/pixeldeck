@@ -10,6 +10,9 @@ import SwiftUI
 /// SwiftUI mirrors with the layout, so the directions and hints flip together.
 struct SwipeCanvas<Content: View>: View {
     var swipeAnywhere: Bool
+    /// false: a left swipe springs back and calls `onNewFrame` (the Flipbook turns a page instead
+    /// of flinging the card away).
+    var flingsNewFrame = true
     var onNewFrame: () -> Void
     var onNewCanvas: () -> Void
     @ViewBuilder var content: () -> Content
@@ -102,7 +105,13 @@ struct SwipeCanvas<Content: View>: View {
                 guard !flying else { return }
                 let projected = value.predictedEndTranslation.width
                 if value.translation.width < -threshold || projected < -threshold * 2.5 {
-                    flyOff(direction: -1)
+                    if flingsNewFrame {
+                        flyOff(direction: -1)
+                    } else {
+                        swipeCount += 1
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0 }
+                        onNewFrame()
+                    }
                 } else if value.translation.width > threshold || projected > threshold * 2.5 {
                     flyOff(direction: 1)
                 } else {

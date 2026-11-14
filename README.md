@@ -4,11 +4,11 @@ A native SwiftUI pixel-art and sprite-animation app for iPhone (and iPad).
 
 ## Features
 
-The look follows the design handoff: a dark "night" palette, square corners, Silkscreen and Space Grotesk fonts, and buttons with a solid drop shadow that press in.
+The look follows the design handoff: a dark "night" palette with a flip-pink accent, square corners, Silkscreen and Space Grotesk fonts, and buttons with a solid drop shadow that press in.
 
 - **Infinite canvas**: there is no size to pick. Draw anywhere and the canvas grows. Pinch to change how big pixels look; zooming snaps to whole points so pixels stay crisp. Drag with two fingers to move around, and tap with two fingers to fit the art. The checkerboard and pixel grid go on forever. Saved sprites and exports are trimmed to the art.
 - **Swipes**:
-  - **Swipe left** from the right edge of the canvas to add a keyframe. The previous frame shows underneath as a flat orange onion skin at 38%.
+  - **Swipe left** from the right edge of the canvas to add a keyframe. The previous frame shows underneath as a flat pink onion skin at 38%.
   - **Swipe right** from the left edge to start a new canvas.
   - Small pulsing pixel chevrons mark both edges. "Swipe anywhere", in the sprite menu, lets you drag the whole canvas instead. Both actions also have buttons.
 - **Dock**:
@@ -66,6 +66,14 @@ The look follows the design handoff: a dark "night" palette, square corners, Sil
     | ⌘' | Pixel grid |
   - **Layout**: the gallery adds columns as the window widens, and the welcome and export screens stay at a readable width.
   - **Drag and drop**: drag the export preview into another app in Split View or Stage Manager to drop the file.
+- **iPhone Duo** (design handoff section 8). The layout follows the space available and switches with a 200 ms cross-fade. The project, frame, tool, colour, onion skin and undo history carry over, and a stroke in progress during a fold is finished, never lost.
+  - **Closed (Pocket):** the regular Studio, with everything in the bottom dock for one thumb.
+  - **Open flat (Flipbook spread):** a big landscape space, which also covers iPad in landscape.
+    - Two pages either side of the hinge gutter.
+    - The left page shows **Last frame**, **Playback** or **Reference**. Reference pins a photo, picked with the system photo picker, and the colour picker can sample from it.
+    - The right page is the canvas. Turn the page to add a frame: tap the pulsing corner or swipe left. The frame you drew folds over onto the left page.
+    - A tool rail sits by the left thumb and a palette rail by the right. The bottom bar holds play, frames, onion skin and fps.
+  - **Half open on a desk (Easel):** a live Stage on the upright half shows the animation on the night backdrop with its fps and frame count. The flat Desk has the tools, undo/redo, canvas, palette and fps − / +. iOS doesn't yet document a fold-posture API, so Easel is turned on in the sprite menu. `StudioLayout.choose` is the single place to hook such an API in.
 - **Adaptive layout**: when there's room, such as an unfolded iPhone Duo, an iPad or landscape, the dock becomes a side panel. Your zoom and position survive folding, rotating and resizing.
 - **Localisation-ready**: the text uses a String Catalog with English plurals, and the layout mirrors for right-to-left languages.
 - **Accessibility**: Reduce Motion pauses the decorative animations (stars, swipe hints and gallery previews). Controls have VoiceOver labels, and body text scales with Dynamic Type.

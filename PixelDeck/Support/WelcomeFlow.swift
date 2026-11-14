@@ -216,7 +216,7 @@ private struct GesturesView: View {
                         demo: AnyView(NewFrameDemo()),
                         icon: .arrowLeft, iconFill: Theme.accent,
                         title: "Swipe left · new frame",
-                        text: "Your last frame stays underneath in orange, so every pose lines up. Swipe from the right edge of the canvas.")
+                        text: "Your last frame stays underneath in pink, so every pose lines up. Swipe from the right edge of the canvas.")
                     gestureCard(
                         demo: AnyView(NewCanvasDemo()),
                         icon: .arrowRight, iconFill: Theme.accent2,
