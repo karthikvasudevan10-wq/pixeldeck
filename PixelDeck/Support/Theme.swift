@@ -108,10 +108,20 @@ struct TileButtonStyle: ButtonStyle {
     var foreground: Color = Theme.text
 
     func makeBody(configuration: Configuration) -> some View {
+        TileBody(configuration: configuration, style: self)
+    }
+}
+
+private struct TileBody: View {
+    let configuration: ButtonStyleConfiguration
+    let style: TileButtonStyle
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
         configuration.label
-            .foregroundStyle(active ? activeForeground : foreground)
-            .background(active ? activeFill : fill)
-            .opacity(configuration.isPressed ? 0.75 : 1)
+            .foregroundStyle(style.active ? style.activeForeground : style.foreground)
+            .background(style.active ? style.activeFill : style.fill)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.75 : 1) : 0.35)
     }
 }
 
@@ -321,6 +331,7 @@ private enum SVGPath {
             case "Z", "z":
                 path.closeSubpath(); cur = start
                 if hasNumber() { cmd = "L" }          // numbers after Z: keep going as line-tos
+                else if i < tokens.count, !(tokens[i].first?.isLetter ?? false) { i += 1 }   // skip junk
             default:
                 i += 1
             }

@@ -85,6 +85,10 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
     private let selectionUnderLayer = CAShapeLayer()
     private let selectionLayer = CAShapeLayer()
     private var checkerCellPoints: CGFloat = 0
+    /// Where the fingers were on the last pinch update (at .ended one has already lifted).
+    private var lastPinchLocation: CGPoint = .zero
+    /// When the view was last pinched or panned, so a two-finger pinch isn't also a fit tap.
+    private var lastTransformTime: CFTimeInterval = 0
 
     private lazy var drawRecognizer = DrawGestureRecognizer(target: self, action: #selector(handleDraw(_:)))
     private lazy var pinchRecognizer = UIPinchGestureRecognizer(target: self, action: #selector(handlePinch(_:)))
@@ -175,7 +179,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
         let r = delegate?.canvasFitRect() ?? state?.bounds ?? SpriteProject.initialBounds
         let fitW = (bounds.width - 32) / CGFloat(max(r.width, 1))
         let fitH = (bounds.height - 56) / CGFloat(max(r.height, 1))
-        let size = min(max(floor(min(fitW, fitH)), Viewport.minPixelSize), 40)
+        let size = min(max(floor(min(fitW, fitH)), CGFloat(Viewport.minPixelSize)), 40)
         viewport = Viewport(pixelSize: Double(size), centerX: r.center.x, centerY: r.center.y)
         layoutLayers()
         report()
@@ -245,28 +249,32 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
         }
         // Anchor the pattern to the world grid so it scrolls with the art.
         let topLeft = worldPoint(.zero)
-        let period = Double(cellWorld * 2)
-        let x0 = (topLeft.x / period).rounded(.down) * period
-        let y0 = (topLeft.y / period).rounded(.down) * period
+        let worldPeriod = Double(cellWorld * 2)
+        let x0 = (topLeft.x / worldPeriod).rounded(.down) * worldPeriod
+        let y0 = (topLeft.y / worldPeriod).rounded(.down) * worldPeriod
         let origin = viewPoint(x0, y0)
-        checkerLayer.frame = CGRect(x: origin.x, y: origin.y,
-                                    width: bounds.width - origin.x + cell * 2, height: bounds.height - origin.y + cell * 2)
+        // Whole pattern periods, so the (flipped) pattern's phase can't drift vertically.
+        let period = cell * 2
+        let w = ((bounds.width - origin.x) / period).rounded(.up) * period + period
+        let h = ((bounds.height - origin.y) / period).rounded(.up) * period + period
+        checkerLayer.frame = CGRect(x: origin.x, y: origin.y, width: w, height: h)
     }
 
     /// Lines only for the visible part of the endless grid; hidden when pixels are too small.
     private func layoutGrid(show: Bool) {
         guard show, s >= 6 else { gridLayer.path = nil; return }
         let tl = worldPoint(.zero), br = worldPoint(CGPoint(x: bounds.width, y: bounds.height))
+        gridLayer.lineWidth = 1 / max(traitCollection.displayScale, 1)
         let path = CGMutablePath()
         var x = tl.x.rounded(.down)
         while x <= br.x {
-            let vx = viewPoint(x, 0).x.rounded() + 0.5
+            let vx = viewPoint(x, 0).x
             path.move(to: CGPoint(x: vx, y: 0)); path.addLine(to: CGPoint(x: vx, y: bounds.height))
             x += 1
         }
         var y = tl.y.rounded(.down)
         while y <= br.y {
-            let vy = viewPoint(0, y).y.rounded() + 0.5
+            let vy = viewPoint(0, y).y
             path.move(to: CGPoint(x: 0, y: vy)); path.addLine(to: CGPoint(x: bounds.width, y: vy))
             y += 1
         }
@@ -329,10 +337,12 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
         let loc = g.location(in: self)
         switch g.state {
         case .began, .changed:
+            lastPinchLocation = loc
+            lastTransformTime = CACurrentMediaTime()
             zoom(to: s * g.scale, about: loc)
             g.scale = 1
         case .ended, .cancelled:
-            zoom(to: max(Viewport.minPixelSize, s.rounded()), about: loc)
+            zoom(to: max(CGFloat(Viewport.minPixelSize), s.rounded()), about: lastPinchLocation)
         default:
             break
         }
@@ -351,6 +361,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
     @objc private func handlePan(_ g: UIPanGestureRecognizer) {
         let t = g.translation(in: self)
         g.setTranslation(.zero, in: self)
+        if t != .zero { lastTransformTime = CACurrentMediaTime() }
         viewport.centerX -= Double(t.x / s)
         viewport.centerY -= Double(t.y / s)
         layoutLayers()
@@ -358,7 +369,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate {
     }
 
     @objc private func handleFitTap(_ g: UITapGestureRecognizer) {
-        if g.state == .ended { fitToArt() }
+        if g.state == .ended, CACurrentMediaTime() - lastTransformTime > 0.4 { fitToArt() }
     }
 
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
@@ -377,7 +388,8 @@ final class DrawGestureRecognizer: UIGestureRecognizer {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesBegan(touches, with: event)
         if tracked == nil {
-            let active = event.allTouches?.filter { $0.phase != .ended && $0.phase != .cancelled }.count ?? touches.count
+            // Only fingers on the canvas count (a thumb resting on the dock mustn't block drawing).
+            let active = event.allTouches?.filter { $0.view === view && $0.phase != .ended && $0.phase != .cancelled }.count ?? touches.count
             guard touches.count == 1, active <= 1, let t = touches.first else {
                 state = .failed
                 return

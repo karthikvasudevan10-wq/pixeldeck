@@ -66,6 +66,12 @@ struct ProjectListView: View {
             }
         }
         .onAppear(perform: firstLaunch)
+        .onChange(of: path) { _, newPath in
+            // Back from the Studio: show the tab holding the sprite you just worked on.
+            if newPath.isEmpty, let recent = store.projects.first {
+                filter = recent.frames.count > 1 ? .moving : .stills
+            }
+        }
         .fullScreenCover(isPresented: $showingWelcome) {
             WelcomeFlow {
                 showingWelcome = false
@@ -243,7 +249,7 @@ private struct ProjectTile: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var sizeText: String {
-        let r = project.contentBounds ?? PixelRect(x: 0, y: 0, width: 0, height: 0)
+        let r = ArtSizeCache.size(of: project)
         return "\(r.width)×\(r.height)"
     }
 
@@ -289,5 +295,18 @@ private struct ProjectTile: View {
         } else {
             PixelImage(frame: project.frames[0], checker: false)
         }
+    }
+}
+
+/// Scanning every frame for the art's size is costly, and the gallery re-renders after every save
+/// while the Studio is open, so sizes are cached per sprite version.
+private enum ArtSizeCache {
+    private static var cache: [UUID: (modified: Date, size: PixelRect)] = [:]
+
+    static func size(of p: SpriteProject) -> PixelRect {
+        if let e = cache[p.id], e.modified == p.modifiedAt { return e.size }
+        let r = p.contentBounds ?? PixelRect(x: 0, y: 0, width: 0, height: 0)
+        cache[p.id] = (p.modifiedAt, r)
+        return r
     }
 }

@@ -67,7 +67,12 @@ struct EditorView: View {
         .sheet(isPresented: $showingTween) { TweenSheet(model: model) }
         .fullScreenCover(isPresented: $showingExport) { ExportView(project: model.project) }
         .sheet(item: $editingSwatch) { edit in
-            SwatchEditor(initial: model.palette[edit.index]) { model.setPaletteColor($0, at: edit.index) }
+            SwatchEditor(initial: model.palette[edit.index],
+                         onChange: { c, final in model.setPaletteColor(c, at: edit.index, commit: final) },
+                         onDone: {
+                             model.setPaletteColor(model.palette[edit.index], at: edit.index)   // save the result
+                             editingSwatch = nil
+                         })
                 .presentationDetents([.medium, .large])
         }
         .alert("Rename sprite", isPresented: $showingRename) {
@@ -92,7 +97,7 @@ struct EditorView: View {
 
     private var canvasArea: some View {
         SwipeCanvas(swipeAnywhere: swipeAnywhere,
-                    onNewFrame: { model.addKeyframe() },
+                    onNewFrame: { model.addKeyframe() },   // also stops playback
                     onNewCanvas: newCanvas) {
             canvas
         }

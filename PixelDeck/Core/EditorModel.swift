@@ -96,6 +96,9 @@ final class EditorModel {
         case stroke(last: PixelPoint, color: RGBA, before: Snapshot)
         case marquee(start: PixelPoint)
         case move(start: Vec2, startOffset: Vec2, pathCount: Int)
+        /// Fill or colour pick: applied when the finger lifts, so a touch that turns into a
+        /// pinch or pan changes nothing.
+        case tap(PixelPoint)
     }
     @ObservationIgnored private var gesture: Gesture = .none
     /// Only offer Pro once per gesture, not on every finger movement.
@@ -190,13 +193,14 @@ final class EditorModel {
         if tool == .eraser || tool == .eyedropper { tool = .pencil }
     }
 
-    /// Long-press edit of a palette swatch. Also selects the new colour.
-    func setPaletteColor(_ c: RGBA, at index: Int) {
+    /// Long-press edit of a palette swatch. Also selects the new colour. Pass `commit: false`
+    /// for live updates while the picker is being dragged (shown, not saved yet).
+    func setPaletteColor(_ c: RGBA, at index: Int, commit: Bool = true) {
         guard project.palette.indices.contains(index) else { return }
         let opaque = RGBA(r: c.r, g: c.g, b: c.b, a: 255)
         project.palette[index] = opaque
         color = opaque
-        finishEdit()
+        if commit { finishEdit() }
     }
 
     // MARK: Touch input (world pixel coordinates, fractional)
@@ -210,15 +214,8 @@ final class EditorModel {
             gesture = .stroke(last: p, color: c, before: snapshot())
             paintSegment(from: p, to: p, color: c)
 
-        case .fill:
-            fill(at: p)
-
-        case .eyedropper:
-            let c = currentGrid[p - bounds.origin]
-            if !c.isClear {
-                color = c
-                tool = .pencil
-            }
+        case .fill, .eyedropper:
+            gesture = .tap(p)
 
         case .select:
             if let f = floating, f.currentRect.contains(p) {
@@ -236,7 +233,7 @@ final class EditorModel {
 
     func touchMoved(to v: Vec2) {
         switch gesture {
-        case .none:
+        case .none, .tap:
             break
         case let .stroke(last, c, before):
             let p = v.pixel
@@ -268,6 +265,16 @@ final class EditorModel {
             finishEdit()
         case .move:
             finishEdit()
+        case let .tap(p):
+            if tool == .fill {
+                fill(at: p)
+            } else {
+                let c = currentGrid[p - bounds.origin]
+                if !c.isClear {
+                    color = c
+                    tool = .pencil
+                }
+            }
         case .marquee, .none:
             break
         }
@@ -290,7 +297,7 @@ final class EditorModel {
             }
         case .marquee:
             marquee = nil
-        case .none:
+        case .none, .tap:
             break
         }
         gesture = .none
@@ -498,6 +505,7 @@ final class EditorModel {
     /// Adds a blank keyframe after the current one. The previous frame shows through as onion skin.
     @discardableResult
     func addKeyframe() -> Bool {
+        isPlaying = false
         guard hasRoom(forFrames: 1) else { return false }
         commitSelection()
         pushUndo()
@@ -612,9 +620,22 @@ final class EditorModel {
 
     private func pushUndo(_ s: Snapshot? = nil) {
         undoStack.append(s ?? snapshot())
-        if undoStack.count > undoLimit { undoStack.removeFirst() }
+        // Snapshots share unchanged frames, but growing or trimming the canvas copies every frame,
+        // so also cap the history by (worst-case) memory: large sprites keep fewer undo steps.
+        var bytes = 0
+        var keep = 0
+        for snap in undoStack.reversed() {
+            bytes += snap.frames.count * snap.bounds.width * snap.bounds.height * 4
+            if keep >= 1 && bytes > undoMemoryBudget { break }
+            keep += 1
+        }
+        let limit = min(undoLimit, keep)
+        if undoStack.count > limit { undoStack.removeFirst(undoStack.count - limit) }
         redoStack.removeAll()
     }
+
+    /// 256 MB of frame data across the undo history.
+    private let undoMemoryBudget = 256 * 1024 * 1024
 
     private func restore(_ s: Snapshot) {
         project.frames = s.frames

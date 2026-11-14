@@ -55,16 +55,17 @@ struct ExportView: View {
         .padding(.bottom, 20)
         .screenBackground()
         .overlay(alignment: .top) { if savedToast { toast } }
-        .onAppear {
-            // GIF is the design's default, but it's part of Pro.
-            if options.format.needsPro && !access.allowsAnimatedExport { options.format = .spriteSheet }
-            clampScale()
-        }
+        .onAppear(perform: chooseStartingFormat)
+        // Purchases are checked at launch; don't move a Pro user off GIF before that finishes.
+        .onChange(of: purchases.entitlementsLoaded) { _, _ in chooseStartingFormat() }
         .onChange(of: options.format) { _, _ in clampScale() }
         .onChange(of: options.layout) { _, _ in clampScale() }
         .proUpgradeSheet($upgrade)
         .sheet(item: $shareItems) { items in
-            ActivityView(items: items.urls) { completed in if completed { exportSucceeded() } }
+            ActivityView(items: items.urls) { completed in
+                shareItems = nil
+                if completed { exportSucceeded() }
+            }
                 .ignoresSafeArea()
         }
         .alert("Export", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -232,6 +233,12 @@ struct ExportView: View {
     }
 
     // MARK: Actions
+
+    private func chooseStartingFormat() {
+        // GIF is the design's default, but it's part of Pro.
+        if purchases.entitlementsLoaded, options.format.needsPro, !access.allowsAnimatedExport { options.format = .spriteSheet }
+        clampScale()
+    }
 
     private func clampScale() {
         let usable = feasible.filter { $0 <= access.maxExportScale }

@@ -410,3 +410,43 @@ final class StarterAndExportTests: XCTestCase {
         XCTAssertEqual(grids[0][2, 4], .black)
     }
 }
+
+final class ReviewFixTests: XCTestCase {
+    func testFillThatBecomesAPinchChangesNothing() {
+        let m = makeModel()
+        stroke(m, [(0.5, 0.5), (4.5, 0.5), (4.5, 4.5), (0.5, 4.5), (0.5, 0.5)])
+        m.pickColor(.white)
+        m.tool = .fill
+        m.touchBegan(at: Vec2(x: 2.5, y: 2.5))
+        m.touchCancelled()
+        XCTAssertEqual(m.pixel(P(2, 2)), .clear)
+        tap(m, 2.5, 2.5)
+        XCTAssertEqual(m.pixel(P(2, 2)), .white)
+    }
+
+    func testEyedropperPicksOnLiftOnly() {
+        let m = makeModel()
+        tap(m, 1.5, 1.5)
+        m.pickColor(.white)
+        m.tool = .eyedropper
+        m.touchBegan(at: Vec2(x: 1.5, y: 1.5))
+        m.touchCancelled()
+        XCTAssertEqual(m.tool, .eyedropper)
+        tap(m, 1.5, 1.5)
+        XCTAssertEqual(m.color, .black)
+        XCTAssertEqual(m.tool, .pencil)
+    }
+
+    func testUndoHistoryIsCappedByMemory() {
+        let m = makeModel(access: .pro)
+        // ~500×500 art: each snapshot is up to ~1 MB per frame; 50 steps would be far less than
+        // the budget, so add frames to make each snapshot big.
+        tap(m, -240.5, -240.5)
+        tap(m, 250.5, 250.5)
+        for _ in 0..<40 { m.addKeyframe() }
+        var steps = 0
+        while m.canUndo { m.undo(); steps += 1 }
+        XCTAssertLessThan(steps, 50, "large sprites keep fewer undo steps")
+        XCTAssertGreaterThan(steps, 0)
+    }
+}

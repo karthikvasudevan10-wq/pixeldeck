@@ -50,7 +50,12 @@ struct ProUpgradeView: View {
         }
         .screenBackground()
         .onChange(of: purchases.isPro) { _, pro in if pro { dismiss() } }
-        .sheet(isPresented: $showingPrivacy) { NavigationStack { PrivacyPolicyView() } }
+        .sheet(isPresented: $showingPrivacy) {
+            NavigationStack {
+                PrivacyPolicyView()
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showingPrivacy = false } } }
+            }
+        }
         .alert("Pixel Deck Pro", isPresented: Binding(get: { purchases.errorMessage != nil },
                                                       set: { if !$0 { purchases.errorMessage = nil } })) {
             Button("OK", role: .cancel) {}

@@ -237,9 +237,11 @@ private struct DimWhenDisabled: ButtonStyle {
 /// The system colour picker for changing a palette swatch.
 struct SwatchEditor: UIViewControllerRepresentable {
     let initial: RGBA
-    var onChange: (RGBA) -> Void
+    /// Called with `final == false` while dragging (show it) and `true` when settled (save it).
+    var onChange: (RGBA, _ final: Bool) -> Void
+    var onDone: () -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange) }
+    func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange, onDone: onDone) }
 
     func makeUIViewController(context: Context) -> UIColorPickerViewController {
         let vc = UIColorPickerViewController()
@@ -252,14 +254,24 @@ struct SwatchEditor: UIViewControllerRepresentable {
 
     func updateUIViewController(_ vc: UIColorPickerViewController, context: Context) {
         context.coordinator.onChange = onChange
+        context.coordinator.onDone = onDone
     }
 
     final class Coordinator: NSObject, UIColorPickerViewControllerDelegate {
-        var onChange: (RGBA) -> Void
-        init(onChange: @escaping (RGBA) -> Void) { self.onChange = onChange }
+        var onChange: (RGBA, Bool) -> Void
+        var onDone: () -> Void
+        init(onChange: @escaping (RGBA, Bool) -> Void, onDone: @escaping () -> Void) {
+            self.onChange = onChange
+            self.onDone = onDone
+        }
 
         func colorPickerViewController(_ vc: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
-            onChange(RGBA(Color(uiColor: color)))
+            onChange(RGBA(Color(uiColor: color)), !continuously)
+        }
+
+        /// The picker's own close button dismisses it; tell SwiftUI so the sheet state resets.
+        func colorPickerViewControllerDidFinish(_ vc: UIColorPickerViewController) {
+            onDone()
         }
     }
 }

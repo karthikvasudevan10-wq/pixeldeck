@@ -29,9 +29,12 @@ private struct WelcomeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // Up to the design's 452 pt; on shorter phones the scene gives way (its ground is at the
+            // bottom, so it's cropped from the top) and the text and buttons always fit.
             NightScene()
-                .frame(height: 452)
+                .frame(minHeight: 160, maxHeight: 452, alignment: .bottom)
                 .clipped()
+                .layoutPriority(0)
             VStack(alignment: .leading, spacing: 16) {
                 (Text("Draw it.\nFlip it.\n") + Text("Make it move.").foregroundStyle(Theme.accent))
                     .font(AppFont.pixel(36))
@@ -56,8 +59,21 @@ private struct WelcomeView: View {
             .padding(.horizontal, 24)
             .padding(.top, 28)
             .padding(.bottom, 32)
+            .layoutPriority(1)
         }
         .ignoresSafeArea(edges: .top)
+        // In an overlay that respects the safe area, so it stays clear of the status bar.
+        .overlay(alignment: .topLeading) {
+            HStack(spacing: 10) {
+                AnimatedSprite(key: "slime", pixel: 2, playing: false)
+                    .frame(width: 28, height: 28)
+                    .background(Theme.accent)
+                Text(verbatim: "Pixel Deck").font(AppFont.pixel(18)).foregroundStyle(Theme.cream).tracking(1)
+            }
+            .padding(.leading, 20)
+            .padding(.top, 12)
+            .accessibilityHidden(true)
+        }
     }
 }
 
@@ -113,15 +129,10 @@ private struct NightScene: View {
 
                 sprite("slime", px: 8, x: 92, y: 212, dx: dx)
                 sprite("flame", px: 7, x: 236, y: 256, dx: dx)
-
-                HStack(spacing: 10) {
-                    AnimatedSprite(key: "slime", pixel: 2, playing: false)
-                        .frame(width: 28, height: 28)
-                        .background(Theme.accent)
-                    Text(verbatim: "Pixel Deck").font(AppFont.pixel(18)).foregroundStyle(Theme.cream).tracking(1)
-                }
-                .offset(x: 20, y: geo.safeAreaInsets.top + 20)
             }
+            // The scene is drawn for 452 pt; when shorter it keeps its bottom (the ground).
+            .frame(width: geo.size.width, height: 452)
+            .offset(y: geo.size.height - 452)
         }
         .accessibilityHidden(true)
     }

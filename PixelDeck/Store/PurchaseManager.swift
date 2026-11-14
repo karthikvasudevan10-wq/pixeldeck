@@ -9,6 +9,8 @@ import Observation
 final class PurchaseManager {
     private(set) var product: Product?
     private(set) var isPro = false
+    /// False until the first check of existing purchases finishes (moments after launch).
+    private(set) var entitlementsLoaded = false
     private(set) var isPurchasing = false
     private(set) var loadFailed = false
     var errorMessage: String?
@@ -51,6 +53,7 @@ final class PurchaseManager {
             }
         }
         isPro = owned
+        entitlementsLoaded = true
     }
 
     func purchase() async {

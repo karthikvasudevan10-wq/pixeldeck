@@ -14,6 +14,7 @@ enum VideoExporter {
 
     static func write(grids: [PixelGrid], fps: Int, to url: URL) throws {
         guard let first = grids.first else { throw ExportError.empty }
+        guard first.width <= side, first.height <= side else { throw ExportError.couldNotWrite(url.lastPathComponent) }
         let fps = max(1, fps)
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let settings: [String: Any] = [
@@ -51,7 +52,11 @@ enum VideoExporter {
                 if index >= maxFrames { break outer }
                 try autoreleasepool {
                     let buffer = try makeBuffer(grid, scale: scale)
-                    while !input.isReadyForMoreMediaData { Thread.sleep(forTimeInterval: 0.005) }
+                    while !input.isReadyForMoreMediaData {
+                        // If the encoder fails (app backgrounded, disk full) it never becomes ready.
+                        if writer.status != .writing { throw writer.error ?? ExportError.couldNotWrite(url.lastPathComponent) }
+                        Thread.sleep(forTimeInterval: 0.005)
+                    }
                     guard adaptor.append(buffer, withPresentationTime: CMTime(value: index, timescale: CMTimeScale(fps))) else {
                         throw writer.error ?? ExportError.couldNotWrite(url.lastPathComponent)
                     }
