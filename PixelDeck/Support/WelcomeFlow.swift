@@ -26,54 +26,92 @@ struct WelcomeFlow: View {
 private struct WelcomeView: View {
     var onStart: () -> Void
     var onShowSwipes: () -> Void
+    /// Measured heights of the text and the buttons, so the scene can take exactly what's left.
+    @State private var textHeight: CGFloat = 320
+    @State private var actionsHeight: CGFloat = 140
+
+    /// The design's scene height.
+    private let fullScene: CGFloat = 452
+    /// Below this (plus the status bar) the slime and campfire would slide under the Dynamic Island.
+    private let minimumScene: CGFloat = 250
+    private let gap: CGFloat = 24
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Up to the design's 452 pt; on shorter phones the scene gives way (its ground is at the
-            // bottom, so it's cropped from the top) and the text and buttons always fit.
-            NightScene()
-                .frame(minHeight: 160, maxHeight: 452, alignment: .bottom)
-                .clipped()
-                .layoutPriority(0)
-            VStack(alignment: .leading, spacing: 16) {
-                (Text("Draw it.\nFlip it.\n") + Text("Make it move.").foregroundStyle(Theme.accent))
-                    .font(AppFont.pixel(36))
-                    .foregroundStyle(Theme.cream)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Pixel art and frame-by-frame animation, built for your thumb. Swipe left for the next frame — the last one stays underneath as an onion skin.")
-                    .font(AppFont.body(16, relativeTo: .body))
-                    .foregroundStyle(Theme.muted)
-                    .lineSpacing(4)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 8)
-                Button(action: onStart) { PrimaryActionLabel(title: "Start drawing") }
-                    .buttonStyle(PrimaryButtonStyle())
-                Button(action: onShowSwipes) {
-                    Text("See how the swipes work")
-                        .font(AppFont.body(15, .medium, relativeTo: .callout))
-                        .foregroundStyle(Theme.accent2)
-                        .frame(maxWidth: .infinity, minHeight: 44)
+        GeometryReader { geo in
+            let top = geo.safeAreaInsets.top
+            let bottom = geo.safeAreaInsets.bottom
+            let screen = geo.size.height + top + bottom
+            // The scene gets whatever the text and buttons leave, up to the design's height.
+            // If even the minimum doesn't leave room (big text on a small phone), the page scrolls.
+            let scene = min(fullScene, max(minimumScene + top, screen - textHeight - actionsHeight - gap))
+
+            ScrollView {
+                VStack(spacing: 0) {
+                    NightScene()
+                        .frame(height: scene)
+                        .clipped()
+                        .overlay(alignment: .topLeading) { logo.padding(.leading, 20).padding(.top, top + 12) }
+
+                    textBlock
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { textHeight = $0 }
+
+                    Spacer(minLength: gap)
+
+                    actions
+                        .padding(.bottom, bottom)
+                        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { actionsHeight = $0 }
                 }
+                // Fill the screen so the buttons sit at the bottom when there's room to spare.
+                .frame(minHeight: screen)
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 28)
-            .padding(.bottom, 32)
-            .layoutPriority(1)
+            .scrollBounceBehavior(.basedOnSize)
+            .scrollIndicators(.hidden)
+            .ignoresSafeArea()
         }
-        .ignoresSafeArea(edges: .top)
-        // In an overlay that respects the safe area, so it stays clear of the status bar.
-        .overlay(alignment: .topLeading) {
-            HStack(spacing: 10) {
-                AnimatedSprite(key: "slime", pixel: 2, playing: false)
-                    .frame(width: 28, height: 28)
-                    .background(Theme.accent)
-                Text(verbatim: "Pixel Deck").font(AppFont.pixel(18)).foregroundStyle(Theme.cream).tracking(1)
+    }
+
+    private var textBlock: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            (Text("Draw it.\nFlip it.\n") + Text("Make it move.").foregroundStyle(Theme.accent))
+                .font(AppFont.pixel(36))
+                .foregroundStyle(Theme.cream)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("Pixel art and frame-by-frame animation, built for your thumb. Swipe left for the next frame — the last one stays underneath as an onion skin.")
+                .font(AppFont.body(16, relativeTo: .body))
+                .foregroundStyle(Theme.muted)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 24)
+        .padding(.top, 28)
+    }
+
+    private var actions: some View {
+        VStack(spacing: 6) {
+            Button(action: onStart) { PrimaryActionLabel(title: "Start drawing") }
+                .buttonStyle(PrimaryButtonStyle())
+            Button(action: onShowSwipes) {
+                Text("See how the swipes work")
+                    .font(AppFont.body(15, .medium, relativeTo: .callout))
+                    .foregroundStyle(Theme.accent2)
+                    .frame(maxWidth: .infinity, minHeight: 44)
             }
-            .padding(.leading, 20)
-            .padding(.top, 12)
-            .accessibilityHidden(true)
         }
+        .padding(.horizontal, 24)
+        .padding(.top, 6)          // room for the button's press-in shadow
+        .padding(.bottom, 32)
+    }
+
+    private var logo: some View {
+        HStack(spacing: 10) {
+            AnimatedSprite(key: "slime", pixel: 2, playing: false)
+                .frame(width: 28, height: 28)
+                .background(Theme.accent)
+            Text(verbatim: "Pixel Deck").font(AppFont.pixel(18)).foregroundStyle(Theme.cream).tracking(1)
+        }
+        .accessibilityHidden(true)
     }
 }
 
