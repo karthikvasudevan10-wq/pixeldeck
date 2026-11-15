@@ -28,7 +28,7 @@ Identifiers already set in the code:
 - [ ] Copy the latest files into `~/Documents/PixelDeck` (everything except `PixelDeck.xcodeproj`).
 - [ ] Target › Signing & Capabilities: choose your Team, and set the Bundle Identifier to `karthikvasudevan.pixeldeck`. Your copy of the project still has the old `com.example` one.
 - [ ] **+ Capability › iCloud**: tick **iCloud Documents** and **CloudKit**, then add and tick the container `iCloud.karthikvasudevan.pixeldeck`.
-- [ ] **+ Capability › In-App Purchase**.
+- [ ] In-App Purchase needs nothing in Xcode. Apple turns it on for every App ID, so recent Xcode versions may not list it under + Capability, and it never shows for a free Personal Team. Make sure your paid team is selected. Once Xcode has registered the App ID, In-App Purchase appears ticked under developer.apple.com › Identifiers › `karthikvasudevan.pixeldeck`.
 - [ ] Build (⌘B) and fix any compile errors. Much of the recent work (tracing image, palettes, iCloud, Community) has only been checked by unit tests on Linux, not compiled for iOS. Send any errors back to Claude to fix.
 
 **4. CloudKit (30 minutes, development environment)**
