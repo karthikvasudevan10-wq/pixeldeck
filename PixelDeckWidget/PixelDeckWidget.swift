@@ -70,9 +70,18 @@ struct TopPostsProvider: TimelineProvider {
         let db = CKContainer(identifier: containerID).publicCloudDatabase
         let query = CKQuery(recordType: "HeartTally", predicate: NSPredicate(format: "count > 0"))
         query.sortDescriptors = [NSSortDescriptor(key: "count", ascending: false)]
-        guard let page = try? await db.records(matching: query, desiredKeys: ["post", "count"], resultsLimit: topCount) else { return [] }
-        let tallies = page.matchResults.compactMap { try? $0.1.get() }
-        let ids = tallies.compactMap { ($0["post"] as? CKRecord.Reference)?.recordID }
+        let tallies = ((try? await db.records(matching: query, desiredKeys: ["post", "count"], resultsLimit: topCount))?
+            .matchResults.compactMap { try? $0.1.get() }) ?? []
+        var ids = tallies.compactMap { ($0["post"] as? CKRecord.Reference)?.recordID }
+        // Not many hearts yet (a new community): fill up with the newest posts.
+        if ids.count < topCount {
+            let newest = CKQuery(recordType: "Post", predicate: NSPredicate(value: true))
+            newest.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+            let recent = ((try? await db.records(matching: newest, desiredKeys: [], resultsLimit: topCount))?
+                .matchResults.map(\.0)) ?? []
+            let have = Set(ids)
+            ids += recent.filter { !have.contains($0) }.prefix(topCount - ids.count)
+        }
         guard !ids.isEmpty else { return [] }
         let hearts = Dictionary(tallies.compactMap { t -> (String, Int)? in
             guard let id = (t["post"] as? CKRecord.Reference)?.recordID.recordName else { return nil }
@@ -144,12 +153,15 @@ struct TopPostsWidgetView: View {
         }
     }
 
+    @ViewBuilder
     private func hearts(_ count: Int) -> some View {
+        if count > 0 {
         HStack(spacing: 3) {
             Image(systemName: "heart.fill").font(.system(size: 10, weight: .bold))
             Text(verbatim: "\(count)").font(.system(size: 12, weight: .bold, design: .monospaced))
         }
         .foregroundStyle(WidgetColors.pink)
+        }
     }
 
     private func small(_ post: TopPost) -> some View {
@@ -168,7 +180,7 @@ struct TopPostsWidgetView: View {
         HStack(spacing: 14) {
             art(post).frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(alignment: .leading, spacing: 4) {
-                Text("MOST HEARTED").font(.system(size: 10, weight: .heavy, design: .monospaced)).foregroundStyle(WidgetColors.pink)
+                Text(post.hearts > 0 ? "MOST HEARTED" : "NEW ON PIXEL DECK").font(.system(size: 10, weight: .heavy, design: .monospaced)).foregroundStyle(WidgetColors.pink)
                 Text(post.title).font(.system(size: 16, weight: .bold)).foregroundStyle(WidgetColors.cream).lineLimit(2)
                 Text("by \(post.author)").font(.system(size: 12)).foregroundStyle(WidgetColors.muted).lineLimit(1)
                 Spacer(minLength: 0)
@@ -181,7 +193,7 @@ struct TopPostsWidgetView: View {
 
     private var large: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("MOST HEARTED ON PIXEL DECK").font(.system(size: 11, weight: .heavy, design: .monospaced)).foregroundStyle(WidgetColors.pink)
+            Text("COMMUNITY FAVOURITES").font(.system(size: 11, weight: .heavy, design: .monospaced)).foregroundStyle(WidgetColors.pink)
             let four = Array(entry.posts.prefix(4))
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                 ForEach(four) { post in
@@ -218,7 +230,7 @@ struct TopPostsWidget: Widget {
             TopPostsWidgetView(entry: entry)
         }
         .configurationDisplayName("Community favourites")
-        .description("The most-hearted pixel art on Pixel Deck. A new one every hour.")
+        .description("The most-hearted pixel art on Pixel Deck, then the newest. A new one every hour.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }

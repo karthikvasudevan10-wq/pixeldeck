@@ -1,5 +1,6 @@
 import CloudKit
 import UIKit
+import WidgetKit
 import Foundation
 import Observation
 
@@ -17,6 +18,8 @@ struct CommunityPost: Identifiable, Equatable {
     /// Hearts from everyone, and whether this person gave one.
     var hearts = 0
     var heartedByMe = false
+    /// Shared before posts carried a preview image (the widget needs one).
+    var needsThumb = false
 
     static func == (l: CommunityPost, r: CommunityPost) -> Bool {
         l.id == r.id && l.isMine == r.isMine && l.hearts == r.hearts && l.heartedByMe == r.heartedByMe
@@ -183,6 +186,32 @@ final class CommunityService {
             }
         }
         await loadHearts(for: added)
+        await addMissingThumbs(added)
+    }
+
+    /// Your own posts from before previews existed get one, so they can appear in the widget.
+    private func addMissingThumbs(_ ids: [String]) async {
+        guard let db else { return }
+        var changed = false
+        for id in ids {
+            guard let i = posts.firstIndex(where: { $0.id == id }), posts[i].isMine, posts[i].needsThumb,
+                  let png = Self.thumbnailPNG(posts[i].art),
+                  let record = try? await db.record(for: CKRecord.ID(recordName: id)) else { continue }
+            let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+            guard (try? png.write(to: url)) != nil else { continue }
+            record["thumb"] = CKAsset(fileURL: url)
+            if (try? await db.save(record)) != nil, let j = posts.firstIndex(where: { $0.id == id }) {
+                posts[j].needsThumb = false
+                changed = true
+            }
+            try? FileManager.default.removeItem(at: url)
+        }
+        if changed { Self.refreshWidget() }
+    }
+
+    /// Asks the Home Screen widget to fetch again (after posting, hearting or a new preview).
+    static func refreshWidget() {
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     // MARK: Hearts
@@ -232,6 +261,7 @@ final class CommunityService {
                 _ = try await db.deleteRecord(withID: hid)
             }
             try await adjustTally(post.id, by: adding ? 1 : -1, db: db)
+            Self.refreshWidget()
             return nil
         } catch {
             if let j = posts.firstIndex(where: { $0.id == post.id }) {
@@ -307,7 +337,8 @@ final class CommunityService {
             authorID: mine ? myUserID : creator,
             created: r.creationDate ?? Date(),
             art: art, isMine: mine,
-            frames: art.frames.map { Frame(grid: $0) })
+            frames: art.frames.map { Frame(grid: $0) },
+            needsThumb: r["thumb"] == nil)
     }
 
     /// Looks up this person's CloudKit id once (nil without an iCloud account).
@@ -370,6 +401,7 @@ final class CommunityService {
                 posts.removeAll { $0.id == post.id }
                 posts.insert(post, at: 0)
             }
+            Self.refreshWidget()
         } catch let e as PostError {
             throw e
         } catch {

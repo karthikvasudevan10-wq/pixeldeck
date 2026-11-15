@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import WidgetKit
 #if canImport(DeclaredAgeRange)
 import DeclaredAgeRange
 #endif
@@ -51,6 +52,7 @@ final class AgeGate {
         UserDefaults.standard.set(s.rawValue, forKey: Self.statusKey)
         UserDefaults.standard.set(Date(), forKey: Self.checkedKey)
         UserDefaults(suiteName: Self.appGroup)?.set(s == .allowed, forKey: Self.allowedKey)
+        WidgetCenter.shared.reloadAllTimelines()
     }
 
     private static func ask() async -> Status {
