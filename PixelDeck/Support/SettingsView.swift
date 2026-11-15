@@ -4,6 +4,8 @@ struct SettingsView: View {
     @Environment(PurchaseManager.self) private var purchases
     @Environment(CloudSync.self) private var cloud
     @Environment(CommunityService.self) private var community
+    /// Replays the guided tour (the gallery starts it once Settings has closed).
+    var onStartTour: (() -> Void)? = nil
     @State private var showingRules = false
     @State private var communityID: String?
     @Environment(\.dismiss) private var dismiss
@@ -94,6 +96,9 @@ struct SettingsView: View {
                         }
 
                         group("Help") {
+                            if let onStartTour {
+                                row(icon: .play, title: "Take the guided tour", tint: Theme.accent2, action: onStartTour)
+                            }
                             row(icon: .arrowLeft, title: "How the swipes work") { showingSwipes = true }
                             if let url = AppConfig.supportURL {
                                 row(icon: .share, title: "Support website") { openURL(url) }

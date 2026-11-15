@@ -241,6 +241,7 @@ extension EditorView {
         .accessibilityAddTraits(model.onionSkinEnabled ? .isSelected : [])
         .contextMenu { OnionMenu(model: model, onTrace: { showingTrace = true }) }
         .accessibilityAction(named: "Tracing image") { showingTrace = true }
+        .tourHighlight(.onion)
     }
 
     func fpsMenu(bordered: Bool) -> some View {

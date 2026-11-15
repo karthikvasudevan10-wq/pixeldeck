@@ -41,6 +41,14 @@ struct EditorView: View {
     /// Identifies the latest page turn, so an earlier one finishing can't clear it.
     @State var turnToken = 0
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    /// The guided tour (Core/GuidedTour.swift): which sprite it's on and which step, kept across
+    /// launches so leaving and coming back resumes it.
+    @AppStorage("tourProjectID") var tourProjectID = ""
+    @AppStorage("tourStep") var tourStepRaw = 0
+    @AppStorage("tourCompleted") var tourCompleted = false
+    @State var tourBaseline = TourBaseline()
+    @State var tourCelebrating = false
+    @State var tourNudge: String?
 
     var layout: StudioLayout { StudioLayout.choose(for: size, easel: easelMode) }
 
@@ -89,6 +97,23 @@ struct EditorView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: layout)
+        .environment(\.tourTarget, tourTarget)
+        .overlay(alignment: .top) {
+            if let step = tourStep {
+                TourCard(step: step, nudge: tourNudge, onNext: advanceTour, onSkip: skipTour)
+                    .padding(.top, 64)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .id(step)
+            } else if tourCelebrating {
+                TourCard(step: .newCanvas, celebrating: true, onNext: {}, onSkip: {})
+                    .padding(.top, 64)
+                    .transition(.opacity)
+            }
+        }
+        .overlay { TourEdgeArrow(target: tourTarget) }
+        .animation(.easeOut(duration: 0.25), value: tourStepRaw)
+        .onChange(of: tourStepDone) { _, done in if done { advanceTour() } }
+        .sensoryFeedback(.success, trigger: tourStepRaw)
         .screenBackground()
         .toolbar(.hidden, for: .navigationBar)
         .onGeometryChange(for: CGSize.self) { $0.size } action: { newSize in
@@ -106,6 +131,7 @@ struct EditorView: View {
             traceImage = ImageStore.traces.load(for: model.project.id)
         }
         .onAppear {
+            prepareTourStep()
             model.onChange = { [store] project in store.save(project) }
             model.access = purchases.access
             model.onProRequired = { feature in upgrade = feature }
@@ -194,7 +220,7 @@ struct EditorView: View {
         let durations = model.frameDurations
         return TimelineView(.animation(minimumInterval: PlaybackClock.tick(durations), paused: !model.isPlaying)) { ctx in
             let frame: Int? = model.isPlaying ? PlaybackClock.index(ctx.date, durations: durations) : nil
-            PixelCanvas(state: model.canvasState(playingFrame: frame), model: model, fit: fit,
+            PixelCanvas(state: withTourGuide(model.canvasState(playingFrame: frame)), model: model, fit: fit,
                         drawingEnabled: !swipeAnywhere && !model.isPlaying,
                         pencilOnly: pencilOnly,
                         onPencilDetected: pencilFirstSeen,
@@ -466,6 +492,14 @@ struct EditorView: View {
     }
 
     func newCanvas() {
+        // During the tour, starting a new canvas is the very last step.
+        if let step = tourStep {
+            guard step == .newCanvas else {
+                tourNudge = String(localized: "Starting a new canvas comes last. Finish this step first!")
+                return
+            }
+            finishTour()
+        }
         model.isPlaying = false
         model.commitSelection()
         // Already on an empty canvas: stay on it rather than making another.
@@ -476,5 +510,80 @@ struct EditorView: View {
         store.save(model.project)
         model.load(store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it")))
         canvas(.fit)
+    }
+}
+
+// MARK: Guided tour
+
+extension EditorView {
+    /// The step showing, if this sprite is the tour's.
+    var tourStep: TourStep? {
+        guard !tourProjectID.isEmpty, tourProjectID == model.project.id.uuidString else { return nil }
+        return TourStep(rawValue: tourStepRaw)
+    }
+
+    /// Read in `body`, so SwiftUI re-checks it whenever anything the step depends on changes.
+    var tourStepDone: Bool {
+        guard let step = tourStep, let id = UUID(uuidString: tourProjectID) else { return false }
+        return GuidedTour.isDone(step, model: model, baseline: tourBaseline, tourProjectID: id)
+    }
+
+    var tourTarget: TourTarget {
+        guard let step = tourStep else { return .none }
+        // After Undo, point at Redo.
+        if step == .undoRedo && model.undoCount > tourBaseline.undoCount { return .redo }
+        return step.target
+    }
+
+    func withTourGuide(_ state: CanvasState) -> CanvasState {
+        guard let step = tourStep, !model.isPlaying, let guide = GuidedTour.guide(for: step) else { return state }
+        var s = state
+        s.guide = guide
+        return s
+    }
+
+    /// Sets up the current step (called when the tour sprite opens, and after each step).
+    func prepareTourStep() {
+        guard let step = tourStep else { return }
+        tourBaseline = TourBaseline(model)
+        tourNudge = nil
+        switch step {
+        case .drawHeart, .drawSecondHeart:
+            model.tool = .pencil
+            model.onionSkinEnabled = true
+            if step == .drawSecondHeart && model.frameCount > 1 && model.currentIndex != 1 { model.selectFrame(1) }
+        case .addFrame, .onion:
+            model.onionSkinEnabled = true
+        default:
+            break
+        }
+        // Already done (e.g. resuming after doing it): move on rather than waiting for a change.
+        if tourStepDone {
+            Task { @MainActor in advanceTour() }
+        }
+    }
+
+    func advanceTour() {
+        guard let step = tourStep else { return }
+        if let next = step.next {
+            tourStepRaw = next.rawValue
+            prepareTourStep()
+        }
+    }
+
+    func skipTour() {
+        tourProjectID = ""
+        tourNudge = nil
+    }
+
+    func finishTour() {
+        tourProjectID = ""
+        tourCompleted = true
+        tourNudge = nil
+        tourCelebrating = true
+        Task {
+            try? await Task.sleep(for: .seconds(3.5))
+            tourCelebrating = false
+        }
     }
 }

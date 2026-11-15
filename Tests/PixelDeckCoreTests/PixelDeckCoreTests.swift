@@ -1232,3 +1232,55 @@ final class OnionSkinTests: XCTestCase {
         XCTAssertGreaterThan(o[1, 0].r, o[1, 0].g, "tinted pink")
     }
 }
+
+final class GuidedTourTests: XCTestCase {
+    /// Plays the whole tour the way a user would, checking each step finishes only when done.
+    func testTheWholeTour() {
+        let project = SpriteProject(name: "My first animation")
+        let m = EditorModel(project: project)
+        var step = TourStep.pickColor
+        var base = TourBaseline(m)
+        func done() -> Bool { GuidedTour.isDone(step, model: m, baseline: base, tourProjectID: project.id) }
+        func advance() { step = step.next!; base = TourBaseline(m) }
+        func paint(_ pts: [PixelPoint]) { for p in pts { m.touchBegan(at: Vec2(x: Double(p.x) + 0.5, y: Double(p.y) + 0.5)); m.touchEnded() } }
+
+        XCTAssertFalse(done())
+        m.pickColor(GuidedTour.pink); XCTAssertTrue(done()); advance()
+
+        paint(Array(GuidedTour.heart.prefix(10))); XCTAssertFalse(done(), "half a heart isn't enough")
+        paint(GuidedTour.heart); XCTAssertTrue(done()); advance()
+
+        m.undo(); XCTAssertFalse(done(), "undo alone")
+        m.redo(); XCTAssertTrue(done()); advance()
+
+        XCTAssertTrue(step.hasNextButton); advance()     // zoom
+
+        XCTAssertFalse(done())
+        m.addKeyframe(); XCTAssertTrue(done()); advance()
+
+        paint(GuidedTour.raisedHeart); XCTAssertTrue(done()); advance()
+
+        XCTAssertFalse(done())
+        m.onionOpacity = 0.6; XCTAssertTrue(done()); advance()
+
+        m.duplicateFrame(at: 0); XCTAssertTrue(done()); advance()
+
+        XCTAssertFalse(done(), "low, low, high isn't a bounce yet")
+        m.moveFrame(from: 1, by: 1); XCTAssertTrue(done(), "low, high, low"); advance()
+
+        m.isPlaying = true; XCTAssertTrue(done()); m.isPlaying = false; advance()
+
+        XCTAssertTrue(step.hasNextButton); advance()     // more tools
+
+        XCTAssertEqual(step, .newCanvas)
+        XCTAssertFalse(done())
+        m.load(SpriteProject(name: "Mine")); XCTAssertTrue(done())
+        XCTAssertNil(step.next, "swiping right is the last step")
+    }
+
+    func testGuidesFitTheStartingCanvas() {
+        let start = SpriteProject.initialBounds
+        for p in GuidedTour.heart + GuidedTour.raisedHeart { XCTAssertTrue(start.contains(p), "\(p)") }
+        XCTAssertEqual(GuidedTour.heart.count, 27)
+    }
+}

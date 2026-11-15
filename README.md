@@ -25,6 +25,23 @@ The look follows the design handoff and **follows the system appearance**. Dark 
 - **Motion tweening**: select pixels and drag them along any path. The app removes the jitter from your drag (Ramer–Douglas–Peucker), smooths it into a curve (Catmull–Rom) and draws it as a dotted line. Tap **Tween** to fill in the frames between, with a choice of path, timing and frame count and a live preview.
 - **Gallery**: a grid of every sprite, each looping its animation live, with a Moving / Stills filter. It always opens on Moving. **Select** lets you pick several sprites (or Select all) and delete them, after a confirmation. New canvas reuses an empty sprite instead of making another. The **Stills** tab starts with eight pictures: strawberry, potion, mushroom, cactus, ice cream, ringed planet, cottage and a sunset sail. All are within the free size, and they're drawn by `Tools/stills_art.py` into `Resources/Starter/stills.json`. It starts with six example sprites (slime, campfire, coin, ghost, sprout and moon) and two large animated **showcase scenes**: *Spring high street*, a 160×120 Japanese shopping street with falling cherry petals, swaying lanterns, a blinking neon sign, rippling banners and a cat; and *Valley mixtape*, a 192×108 valley of snowy mountains, a sparkling river and spring flowers, with a boy on a boulder nodding along to his cassette player. Both loop seamlessly over 16 frames. They're bigger than the free 64×64 limit, so for free users they carry a **PRO** badge: anyone can watch them, but editing needs Pro. Existing installs get them once, too. They're drawn by `Tools/showcase_art.py`, which writes `Resources/Starter/showcase.json` (`--preview DIR` also writes PNGs and GIFs). You can also swipe right anywhere in the gallery for a new canvas.
 - **Welcome screens**: an animated pixel night scene, then a two-step tutorial on the swipes. Both can be opened again from Settings.
+- **Guided tour**: after the welcome screens, new users make a **bouncing heart** in three frames. A card at the top says what to do, a pulsing yellow ring points at the control, and blinking dots on the canvas show which squares to fill. Each step finishes by itself once you've done it.
+  - The 12 steps, in order:
+    1. Pick pink.
+    2. Draw the heart.
+    3. Undo, then Redo.
+    4. Zoom and move (Next).
+    5. Swipe left for frame 2.
+    6. Draw the heart higher, using the onion skin.
+    7. Long-press the onion button.
+    8. Long-press frame 1 › Duplicate.
+    9. Long-press the copy › Move later, so it goes down, up, down.
+    10. Play.
+    11. A tour of the other tools (Next).
+    12. Swipe right to start your own canvas.
+  - Swiping right earlier is blocked with a reminder that it comes last.
+  - Progress is saved, so leaving and coming back resumes the tour. It can be skipped at any time, replayed from Settings › Help › Take the guided tour, and existing users are offered it once with a banner in the gallery.
+  - The steps and their checks are in `Core/GuidedTour.swift`, which is unit-tested by playing the whole tour; the card and highlights are in `Editor/GuidedTourUI.swift`.
 - **Export**: a looping preview, scale choices of 1×, 4×, 8×, 16× and **4K** (Pro: long side up to 3840 px) with the output size shown, and four formats:
   - Animated GIF
   - Sprite sheet, as a row or a grid, with an optional JSON file of frame positions for game engines

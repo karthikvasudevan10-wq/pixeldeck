@@ -117,6 +117,8 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     private let imageLayer = CALayer()
     private let gridLayer = CAShapeLayer()
     private let mirrorLayer = CAShapeLayer()
+    /// The guided tour's dotted squares to fill in: under the art, so painting covers them.
+    private let guideLayer = CAShapeLayer()
     private let pathLayer = CAShapeLayer()
     private let selectionUnderLayer = CAShapeLayer()
     private let selectionLayer = CAShapeLayer()
@@ -156,6 +158,8 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         traceLayer.minificationFilter = .trilinear
         traceLayer.contentsGravity = .resize
         traceLayer.isHidden = true
+        guideLayer.actions = ["path": NSNull(), "hidden": NSNull()]
+        layer.insertSublayer(guideLayer, below: imageLayer)
         gridLayer.fillColor = nil
         gridLayer.lineWidth = 1
         layer.addSublayer(gridLayer)
@@ -339,6 +343,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         let art = viewRect(st.bounds)
         imageLayer.frame = art
         onionLayer.frame = art
+        layoutGuide(st.guide)
         if let t = st.trace, traceImage != nil {
             let r = t.rect
             let o = viewPoint(r.x, r.y)
@@ -351,6 +356,34 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         layoutGrid(show: st.showGrid)
         layoutOverlays(st)
         CATransaction.commit()
+    }
+
+    /// A small square in the middle of each guide pixel, pulsing gently so it's noticed.
+    private func layoutGuide(_ points: [PixelPoint]?) {
+        guard let points, !points.isEmpty else {
+            guideLayer.isHidden = true
+            guideLayer.removeAnimation(forKey: "pulse")
+            return
+        }
+        guideLayer.isHidden = false
+        guideLayer.frame = bounds
+        let path = CGMutablePath()
+        let dot = max(3, s * 0.36)
+        for p in points {
+            let c = viewPoint(Double(p.x) + 0.5, Double(p.y) + 0.5)
+            path.addRect(CGRect(x: c.x - dot / 2, y: c.y - dot / 2, width: dot, height: dot))
+        }
+        guideLayer.path = path
+        guideLayer.fillColor = Theme.uiAccent.resolvedColor(with: traitCollection).withAlphaComponent(0.85).cgColor
+        if guideLayer.animation(forKey: "pulse") == nil && !UIAccessibility.isReduceMotionEnabled {
+            let pulse = CABasicAnimation(keyPath: "opacity")
+            pulse.fromValue = 1
+            pulse.toValue = 0.35
+            pulse.duration = 0.8
+            pulse.autoreverses = true
+            pulse.repeatCount = .infinity
+            guideLayer.add(pulse, forKey: "pulse")
+        }
     }
 
     /// One checker cell per art pixel; when pixels are tiny, cells cover several pixels so the

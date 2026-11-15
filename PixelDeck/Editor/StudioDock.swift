@@ -48,6 +48,7 @@ struct FrameRow: View {
             .buttonStyle(PrimaryButtonStyle(depth: 4))
             .disabled(model.frameCount < 2 && !model.isPlaying)
             .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
+            .tourHighlight(.play)
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -90,6 +91,7 @@ struct FrameRow: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .tourHighlight(.frame(index))
         .contextMenu {
             Button { model.duplicateFrame(at: index) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
             Button { model.copyFrameToClipboard(at: index) } label: { Label("Copy", systemImage: "doc.on.doc") }
@@ -185,6 +187,7 @@ struct PaletteRow: View {
                 .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
                 .accessibilityAction { model.pickColor(c) }
                 .accessibilityAction(named: Text("Change colour")) { onEdit(i) }
+                .tourHighlight(.swatch(i))
         }
     }
 }
@@ -262,8 +265,10 @@ private struct ActionRow: View {
             action(.gallery, color: Theme.muted, label: "Gallery", action: onGallery)
             action(.undo, color: Theme.text, label: "Undo") { model.undo() }
                 .disabled(!model.canUndo)
+                .tourHighlight(.undo)
             action(.redo, color: Theme.text, label: "Redo") { model.redo() }
                 .disabled(!model.canRedo)
+                .tourHighlight(.redo)
             Button { model.onionSkinEnabled.toggle() } label: {
                 PixelIcon.onion.view(size: 20)
                     .foregroundStyle(model.onionSkinEnabled ? Theme.accent : Theme.muted)
@@ -276,6 +281,7 @@ private struct ActionRow: View {
             .accessibilityAddTraits(model.onionSkinEnabled ? .isSelected : [])
             .contextMenu { OnionMenu(model: model, onTrace: onTrace) }
             .accessibilityAction(named: "Tracing image") { onTrace() }
+            .tourHighlight(.onion)
             Menu {
                 Picker("Frame rate", selection: Binding(get: { model.project.fps }, set: { model.setFPS($0) })) {
                     ForEach(Self.fpsChoices, id: \.self) { Text("\($0) fps").tag($0) }

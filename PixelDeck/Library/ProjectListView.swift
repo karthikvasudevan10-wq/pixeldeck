@@ -13,6 +13,10 @@ struct ProjectListView: View {
     @AppStorage("showcaseSpritesAdded") private var showcaseSpritesAdded = false
     /// The starter stills arrived later too; added once to every gallery.
     @AppStorage("stillSpritesAdded") private var stillSpritesAdded = false
+    /// The guided tour: which sprite it runs on (read by the editor), and whether it's been offered.
+    @AppStorage("tourProjectID") private var tourProjectID = ""
+    @AppStorage("tourStep") private var tourStepRaw = 0
+    @AppStorage("tourOffered") private var tourOffered = false
     @Environment(PurchaseManager.self) private var purchases
     @State private var path: [UUID] = []
     @State private var filter: GalleryFilter = .moving
@@ -52,6 +56,7 @@ struct ProjectListView: View {
         NavigationStack(path: $path) {
             VStack(spacing: 0) {
                 header
+                if !tourOffered && hasSeenOnboarding && !selecting { tourBanner }
                 ScrollView {
                     // Two columns on iPhone (as designed); more on iPad as the width allows.
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 165, maximum: 260), spacing: 12)], spacing: 12) {
@@ -103,10 +108,19 @@ struct ProjectListView: View {
         .fullScreenCover(isPresented: $showingWelcome) {
             WelcomeFlow {
                 showingWelcome = false
-                createAndOpen()
+                startTour()
             }
         }
-        .sheet(isPresented: $showingSettings) { SettingsView() }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView(onStartTour: {
+                showingSettings = false
+                // After the sheet has gone, so the navigation push isn't lost.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(400))
+                    startTour()
+                }
+            })
+        }
         .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
         .sheet(item: $sharing) { ShareToCommunityView(project: $0) }
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
@@ -350,6 +364,51 @@ struct ProjectListView: View {
     }
 
     // MARK: Actions
+
+    /// Starts the guided tour on a fresh sprite: draw a heart and make it bounce in three frames.
+    private func startTour() {
+        let p = SpriteProject(name: String(localized: "My bouncing heart", comment: "Name of the sprite made in the guided tour"))
+        store.save(p)
+        tourProjectID = p.id.uuidString
+        tourStepRaw = 0
+        tourOffered = true
+        filter = .moving
+        path = [p.id]
+    }
+
+    /// Offered once to people who had the app before the tour existed.
+    private var tourBanner: some View {
+        HStack(spacing: 12) {
+            AnimatedSprite(key: "slime", pixel: 3)
+                .frame(width: 40, height: 48)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("New: a 2-minute guided tour").font(AppFont.body(15, .bold, relativeTo: .body)).foregroundStyle(Theme.cream)
+                Text("Make a bouncing heart and learn every gesture and hidden menu.")
+                    .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 4)
+            VStack(spacing: 6) {
+                Button(action: startTour) {
+                    Text("Start")
+                        .font(AppFont.pixel(12))
+                        .foregroundStyle(Theme.onAccent2)
+                        .padding(.horizontal, 14)
+                        .frame(height: 34)
+                }
+                .buttonStyle(PrimaryButtonStyle(fill: Theme.accent2, shadow: Theme.accent2Shadow, depth: 3))
+                Button("Not now") { tourOffered = true }
+                    .font(AppFont.body(12, relativeTo: .caption))
+                    .foregroundStyle(Theme.muted)
+            }
+        }
+        .padding(12)
+        .background(Theme.surface)
+        .overlay(Rectangle().strokeBorder(Theme.accent2, lineWidth: 2))
+        .padding(.horizontal, 16)
+        .padding(.bottom, 12)
+    }
 
     private func createAndOpen() {
         let project = store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it"))

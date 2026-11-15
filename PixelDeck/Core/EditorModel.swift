@@ -29,12 +29,14 @@ struct CanvasState: Equatable {
     var mirror: Bool
     /// The tracing picture's placement and opacity, if one is shown (never during playback).
     var trace: TraceSettings? = nil
+    /// Squares to fill in (the guided tour's dotted guide), in world pixels.
+    var guide: [PixelPoint]? = nil
 
     /// Compares versions rather than pixels: cheap enough to run on every touch.
     static func == (l: CanvasState, r: CanvasState) -> Bool {
         l.gridVersion == r.gridVersion && l.onionVersion == r.onionVersion && l.bounds == r.bounds
             && l.onionOpacity == r.onionOpacity && l.showGrid == r.showGrid && l.selection == r.selection
-            && l.motionPath == r.motionPath && l.mirror == r.mirror && l.trace == r.trace
+            && l.motionPath == r.motionPath && l.mirror == r.mirror && l.trace == r.trace && l.guide == r.guide
     }
 }
 
@@ -87,8 +89,15 @@ final class EditorModel {
     var onionOpacity = 0.38
     /// Playing the animation in place on the canvas. Drawing is paused meanwhile.
     var isPlaying = false {
-        didSet { if isPlaying { commitSelection() } }
+        didSet {
+            if isPlaying { commitSelection() }
+            if isPlaying && !oldValue { playCount += 1 }
+        }
     }
+    /// How many times these were used (the guided tour watches them).
+    private(set) var undoCount = 0
+    private(set) var redoCount = 0
+    private(set) var playCount = 0
 
     /// A selected area that hasn't been moved yet (world).
     private(set) var marquee: PixelRect?
@@ -904,6 +913,7 @@ final class EditorModel {
 
     func undo() {
         guard let s = undoStack.popLast() else { return }
+        undoCount += 1
         discardSelectionState()
         redoStack.append(snapshot())
         restore(s)
@@ -911,6 +921,7 @@ final class EditorModel {
 
     func redo() {
         guard let s = redoStack.popLast() else { return }
+        redoCount += 1
         discardSelectionState()
         undoStack.append(snapshot())
         restore(s)
