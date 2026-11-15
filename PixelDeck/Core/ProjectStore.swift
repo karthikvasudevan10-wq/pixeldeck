@@ -93,9 +93,13 @@ final class ProjectStore {
         projects.sort { $0.modifiedAt > $1.modifiedAt }
     }
 
-    func duplicate(id: UUID, name: (String) -> String = { "\($0) copy" }) {
-        guard let p = project(id: id) else { return }
-        save(p.duplicated(name: name(p.name)))
+    /// Returns the copy, so the app can copy files kept beside the sprite (e.g. its tracing picture).
+    @discardableResult
+    func duplicate(id: UUID, name: (String) -> String = { "\($0) copy" }) -> SpriteProject? {
+        guard let p = project(id: id) else { return nil }
+        let copy = p.duplicated(name: name(p.name))
+        save(copy)
+        return copy
     }
 
     func rename(id: UUID, to name: String) {

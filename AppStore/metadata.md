@@ -21,6 +21,7 @@ DRAW IT
 • Pinch to make pixels bigger or smaller, always razor sharp
 • Pencil, eraser, fill, colour picker, mirror and select, with undo/redo
 • Ten shapes, from lines, rectangles and circles to hexagons, parallelograms and stars, outlined or filled
+• Trace over any photo or sketch: it sits under every layer at the opacity you choose
 • Layers: keep backgrounds, shapes and characters apart, then hide, reorder or merge them
 • A 10-colour palette per sprite; long-press any colour to change it
 

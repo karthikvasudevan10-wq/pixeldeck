@@ -27,12 +27,14 @@ struct CanvasState: Equatable {
     var motionPath: [Vec2]?
     /// Show the mirror axis (world x = 0).
     var mirror: Bool
+    /// The tracing picture's placement and opacity, if one is shown (never during playback).
+    var trace: TraceSettings? = nil
 
     /// Compares versions rather than pixels: cheap enough to run on every touch.
     static func == (l: CanvasState, r: CanvasState) -> Bool {
         l.gridVersion == r.gridVersion && l.onionVersion == r.onionVersion && l.bounds == r.bounds
             && l.onionOpacity == r.onionOpacity && l.showGrid == r.showGrid && l.selection == r.selection
-            && l.motionPath == r.motionPath && l.mirror == r.mirror
+            && l.motionPath == r.motionPath && l.mirror == r.mirror && l.trace == r.trace
     }
 }
 
@@ -221,7 +223,8 @@ final class EditorModel {
         let previous = onionSkinEnabled && currentIndex > 0 ? project.frames[currentIndex - 1] : nil
         return CanvasState(bounds: bounds, grid: current.grid, gridVersion: current.version,
                            onion: previous?.grid, onionVersion: previous?.version,
-                           onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect, motionPath: path, mirror: mirror)
+                           onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect, motionPath: path, mirror: mirror,
+                           trace: project.trace?.isVisible == true ? project.trace : nil)
     }
 
     // MARK: Tool switching (Apple Pencil double-tap / squeeze, keyboard)
@@ -882,6 +885,13 @@ final class EditorModel {
 
     /// Seconds each frame is shown when playing.
     var frameDurations: [Double] { project.frameDurations }
+
+    /// A sprite setting change that isn't art (no undo step, no trim).
+    func updateProject(_ change: (inout SpriteProject) -> Void) {
+        change(&project)
+        project.modifiedAt = Date()
+        onChange?(project)
+    }
 
     func rename(_ name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)

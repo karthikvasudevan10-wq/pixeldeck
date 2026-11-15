@@ -239,6 +239,8 @@ extension EditorView {
         .buttonStyle(.plain)
         .accessibilityLabel("Onion skin")
         .accessibilityAddTraits(model.onionSkinEnabled ? .isSelected : [])
+        .contextMenu { OnionMenu(model: model, onTrace: { showingTrace = true }) }
+        .accessibilityAction(named: "Tracing image") { showingTrace = true }
     }
 
     func fpsMenu(bordered: Bool) -> some View {
@@ -515,7 +517,7 @@ struct ReferencePanel: View {
 
     private func setImage(_ img: UIImage?) {
         image = img
-        ReferenceStore.save(img, for: model.project.id)
+        ImageStore.references.save(img, for: model.project.id)
     }
 
     private func fittedRect(_ imageSize: CGSize, in box: CGSize) -> CGRect {
@@ -526,33 +528,55 @@ struct ReferencePanel: View {
     }
 }
 
-/// Reference images, one per sprite, in Application Support (on the device only).
-enum ReferenceStore {
-    private static var folder: URL? {
+/// Pictures kept beside a sprite, one per sprite, in Application Support (on the device only):
+/// the Flipbook's reference image and the tracing picture.
+struct ImageStore {
+    static let references = ImageStore(folder: "References", png: false)
+    /// PNG, so transparent sketches stay transparent.
+    static let traces = ImageStore(folder: "Trace", png: true)
+
+    let folder: String
+    let png: Bool
+
+    private var directory: URL? {
         guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
-        let dir = base.appendingPathComponent("References", isDirectory: true)
+        let dir = base.appendingPathComponent(folder, isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
 
-    private static func url(_ id: UUID) -> URL? { folder?.appendingPathComponent(id.uuidString).appendingPathExtension("jpg") }
+    private func url(_ id: UUID) -> URL? { directory?.appendingPathComponent(id.uuidString).appendingPathExtension(png ? "png" : "jpg") }
 
-    static func load(for id: UUID) -> UIImage? {
+    func load(for id: UUID) -> UIImage? {
         guard let u = url(id), let data = try? Data(contentsOf: u) else { return nil }
         return UIImage(data: data)
     }
 
-    static func save(_ image: UIImage?, for id: UUID) {
+    func save(_ image: UIImage?, for id: UUID) {
         guard let u = url(id) else { return }
-        if let data = image?.jpegData(compressionQuality: 0.85) {
+        if let data = png ? image?.pngData() : image?.jpegData(compressionQuality: 0.85) {
             try? data.write(to: u, options: .atomic)
         } else {
             try? FileManager.default.removeItem(at: u)
         }
     }
 
-    static func delete(for id: UUID) {
-        save(nil, for: id)
+    func delete(for id: UUID) { save(nil, for: id) }
+
+    func copy(from id: UUID, to newID: UUID) {
+        guard let a = url(id), let b = url(newID), FileManager.default.fileExists(atPath: a.path) else { return }
+        try? FileManager.default.copyItem(at: a, to: b)
+    }
+
+    /// Removes the pictures of every sprite a sprite was deleted for.
+    static func deleteAll(for id: UUID) {
+        references.delete(for: id)
+        traces.delete(for: id)
+    }
+
+    static func copyAll(from id: UUID, to newID: UUID) {
+        references.copy(from: id, to: newID)
+        traces.copy(from: id, to: newID)
     }
 }
 

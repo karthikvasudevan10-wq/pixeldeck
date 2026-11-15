@@ -4,7 +4,9 @@ import SwiftUI
 /// the canvas, thumbnails and exports. Changes apply to every frame.
 struct LayersSheet: View {
     let model: EditorModel
+    @Binding var traceImage: UIImage?
     @Environment(\.dismiss) private var dismiss
+    @State private var showingTrace = false
     @State private var renamingIndex: Int?
     @State private var renameText = ""
 
@@ -17,6 +19,8 @@ struct LayersSheet: View {
                     ForEach(Array(model.layers.indices.reversed()), id: \.self) { i in
                         row(i)
                     }
+                    // Always the bottom of the stack.
+                    traceRow
                 }
                 .padding(16)
             }
@@ -36,11 +40,75 @@ struct LayersSheet: View {
         }
         .screenBackground()
         .presentationDetents([.medium, .large])
+        .sheet(isPresented: $showingTrace) { TraceSheet(model: model, image: $traceImage) }
         .alert("Rename layer", isPresented: Binding(get: { renamingIndex != nil }, set: { if !$0 { renamingIndex = nil } })) {
             TextField("Name", text: $renameText)
             Button("Save") { if let i = renamingIndex { model.renameLayer(i, to: renameText) } }
             Button("Cancel", role: .cancel) {}
         }
+    }
+
+    /// The tracing picture, under every layer.
+    private var traceRow: some View {
+        let trace = traceImage == nil ? nil : model.trace
+        let visible = trace?.isVisible ?? false
+        return HStack(spacing: 12) {
+            Button { showingTrace = true } label: {
+                HStack(spacing: 12) {
+                    Group {
+                        if let traceImage {
+                            Image(uiImage: traceImage).resizable().scaledToFit()
+                        } else {
+                            PixelIcon.gallery.view(size: 20).foregroundStyle(Theme.muted)
+                        }
+                    }
+                    .frame(width: 40, height: 40)
+                    .background(Theme.ink)
+                    .opacity(trace == nil || visible ? 1 : 0.4)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Tracing image")
+                            .font(AppFont.body(15, .bold, relativeTo: .body))
+                            .foregroundStyle(trace == nil || visible ? Theme.cream : Theme.muted)
+                        if let trace {
+                            Text("\(Int((trace.opacity * 100).rounded()))% · not exported").font(AppFont.pixel(10)).foregroundStyle(Theme.muted)
+                        } else {
+                            Text("Add a picture to trace over").font(AppFont.pixel(10)).foregroundStyle(Theme.muted)
+                        }
+                    }
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Tracing image")
+            .accessibilityHint(trace == nil ? Text("Choose a picture to trace over") : Text("Change the picture, its opacity, size and position"))
+
+            if let trace {
+                Button {
+                    var t = trace
+                    t.isVisible.toggle()
+                    model.setTrace(t)
+                } label: {
+                    (visible ? PixelIcon.eye : .eyeOff).view(size: 20)
+                        .foregroundStyle(visible ? Theme.text : Theme.muted)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(visible ? Text("Hide tracing image") : Text("Show tracing image"))
+            } else {
+                PixelIcon.plus.view(size: 20)
+                    .foregroundStyle(Theme.muted)
+                    .frame(width: 44, height: 44)
+                    .accessibilityHidden(true)
+            }
+            // Lines up with the layers' "more" buttons.
+            Color.clear.frame(width: 44, height: 44)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Theme.surface)
+        .overlay(Rectangle().strokeBorder(Theme.line, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
     }
 
     private func row(_ i: Int) -> some View {

@@ -30,6 +30,9 @@ struct EditorView: View {
     @State var leftPage: LeftPage = .lastFrame
     /// A pinned reference image (Flipbook), saved per sprite.
     @State var reference: UIImage?
+    /// The tracing picture under every layer, saved per sprite.
+    @State var traceImage: UIImage?
+    @State var showingTrace = false
     /// The frame image folding over during a page turn.
     @State var turningPage: CGImage?
     @State var turnProgress: CGFloat = 0
@@ -95,7 +98,10 @@ struct EditorView: View {
                 size = newSize
             }
         }
-        .task(id: model.project.id) { reference = ReferenceStore.load(for: model.project.id) }
+        .task(id: model.project.id) {
+            reference = ImageStore.references.load(for: model.project.id)
+            traceImage = ImageStore.traces.load(for: model.project.id)
+        }
         .onAppear {
             model.onChange = { [store] project in store.save(project) }
             model.access = purchases.access
@@ -111,7 +117,8 @@ struct EditorView: View {
         }
         .proUpgradeSheet($upgrade)
         .sheet(isPresented: $showingTween) { TweenSheet(model: model) }
-        .sheet(isPresented: $showingLayers) { LayersSheet(model: model) }
+        .sheet(isPresented: $showingLayers) { LayersSheet(model: model, traceImage: $traceImage) }
+        .sheet(isPresented: $showingTrace) { TraceSheet(model: model, image: $traceImage) }
         .background { KeyboardShortcuts(model: model, canvas: canvas, onExport: openExport,
                                         onNewCanvas: newCanvas, onLayers: { showingLayers = true }) }
         .overlay(alignment: .top) {
@@ -150,7 +157,8 @@ struct EditorView: View {
         StudioDock(model: model,
                    onGallery: { dismiss() },
                    onExport: openExport,
-                   onEditSwatch: { editingSwatch = SwatchEdit(index: $0) })
+                   onEditSwatch: { editingSwatch = SwatchEdit(index: $0) },
+                   onTrace: { showingTrace = true })
     }
 
     // MARK: Canvas
@@ -183,7 +191,8 @@ struct EditorView: View {
                         drawingEnabled: !swipeAnywhere && !model.isPlaying,
                         pencilOnly: pencilOnly,
                         onPencilDetected: pencilFirstSeen,
-                        onPencilAction: pencilAction)
+                        onPencilAction: pencilAction,
+                        traceImage: traceImage?.cgImage)
                 .accessibilityLabel(Text("Canvas, frame \(model.currentIndex + 1) of \(model.frameCount)"))
                 .accessibilityHint(pencilOnly
                     ? Text("Draw with Apple Pencil. Drag with one finger to move, pinch to change the pixel size, tap with two fingers to fit the art.")
@@ -230,6 +239,7 @@ struct EditorView: View {
                 Label("Onion skin strength", systemImage: "square.2.layers.3d")
             }
             .pickerStyle(.menu)
+            Button { showingTrace = true } label: { Label("Tracing image…", systemImage: "photo") }
             Divider()
             Button { model.duplicateFrame(at: model.currentIndex) } label: { Label("Duplicate frame", systemImage: "plus.square.on.square") }
             Button { model.copyFrameToClipboard(at: model.currentIndex) } label: { Label("Copy frame", systemImage: "doc.on.doc") }

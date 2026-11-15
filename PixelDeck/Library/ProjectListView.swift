@@ -101,7 +101,7 @@ struct ProjectListView: View {
             Button("Delete", role: .destructive) {
                 if let id = deletingID {
                     store.delete(id: id)
-                    ReferenceStore.delete(for: id)
+                    ImageStore.deleteAll(for: id)
                 }
             }
         } message: {
@@ -221,7 +221,9 @@ struct ProjectListView: View {
             renamingID = project.id
         } label: { Label("Rename", systemImage: "pencil") }
         Button {
-            store.duplicate(id: project.id) { String(localized: "\($0) copy", comment: "Name for a duplicated sprite; the placeholder is the original name") }
+            if let copy = store.duplicate(id: project.id, name: { String(localized: "\($0) copy", comment: "Name for a duplicated sprite; the placeholder is the original name") }) {
+                ImageStore.copyAll(from: project.id, to: copy.id)
+            }
         } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
         Button { exporting = project } label: { Label("Export", systemImage: "square.and.arrow.up") }
         Button(role: .destructive) { deletingID = project.id } label: { Label("Delete", systemImage: "trash") }

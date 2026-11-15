@@ -11,13 +11,14 @@ struct StudioDock: View {
     var onGallery: () -> Void
     var onExport: () -> Void
     var onEditSwatch: (Int) -> Void
+    var onTrace: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 10) {
             FrameRow(model: model)
             PaletteRow(model: model, onEdit: onEditSwatch)
             ToolRow(model: model)
-            ActionRow(model: model, onGallery: onGallery, onExport: onExport)
+            ActionRow(model: model, onGallery: onGallery, onExport: onExport, onTrace: onTrace)
         }
         .padding(.horizontal, 12)
         .padding(.top, 12)
@@ -229,6 +230,7 @@ private struct ActionRow: View {
     let model: EditorModel
     var onGallery: () -> Void
     var onExport: () -> Void
+    var onTrace: () -> Void
 
     static let fpsChoices = [1, 2, 3, 4, 6, 8, 10, 12, 15, 24, 30]
 
@@ -249,6 +251,8 @@ private struct ActionRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Onion skin")
             .accessibilityAddTraits(model.onionSkinEnabled ? .isSelected : [])
+            .contextMenu { OnionMenu(model: model, onTrace: onTrace) }
+            .accessibilityAction(named: "Tracing image") { onTrace() }
             Menu {
                 Picker("Frame rate", selection: Binding(get: { model.project.fps }, set: { model.setFPS($0) })) {
                     ForEach(Self.fpsChoices, id: \.self) { Text("\($0) fps").tag($0) }
@@ -349,5 +353,21 @@ extension ShapeKind {
         case .parallelogram: .parallelogram
         case .star: .star
         }
+    }
+}
+
+/// Long-press menu for the onion skin buttons: strength, and the tracing picture.
+struct OnionMenu: View {
+    let model: EditorModel
+    var onTrace: () -> Void
+
+    var body: some View {
+        Picker(selection: Binding(get: { model.onionOpacity }, set: { model.onionOpacity = $0 })) {
+            ForEach([0.2, 0.38, 0.6], id: \.self) { v in Text(v, format: .percent).tag(v) }
+        } label: {
+            Label("Onion skin strength", systemImage: "square.2.layers.3d")
+        }
+        .pickerStyle(.menu)
+        Button(action: onTrace) { Label("Tracing image…", systemImage: "photo") }
     }
 }

@@ -23,6 +23,8 @@ struct PixelCanvas: UIViewRepresentable {
     var pencilOnly = false
     var onPencilDetected: () -> Void = {}
     var onPencilAction: (PencilAction) -> Void = { _ in }
+    /// The tracing picture, drawn under every layer where `state.trace` places it.
+    var traceImage: CGImage? = nil
 
     // Start from the current nonce so a recreated canvas doesn't replay the last fit.
     func makeCoordinator() -> Coordinator { Coordinator(model: model, lastFitNonce: fit.nonce) }
@@ -42,6 +44,7 @@ struct PixelCanvas: UIViewRepresentable {
         context.coordinator.onPencilAction = onPencilAction
         view.drawingEnabled = drawingEnabled
         view.pencilOnly = pencilOnly
+        view.setTraceImage(traceImage)
         view.render(state)
         if fit.nonce != context.coordinator.lastFitNonce {
             context.coordinator.lastFitNonce = fit.nonce
@@ -107,6 +110,9 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     private var state: CanvasState?
 
     private let checkerLayer = CALayer()
+    /// The tracing picture: above the checkerboard, below the onion skin and every layer.
+    private let traceLayer = CALayer()
+    private var traceImage: CGImage?
     private let onionLayer = CALayer()
     private let imageLayer = CALayer()
     private let gridLayer = CAShapeLayer()
@@ -139,12 +145,17 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         clipsToBounds = true
         isMultipleTouchEnabled = true
 
-        for l in [checkerLayer, onionLayer, imageLayer] {
+        for l in [checkerLayer, traceLayer, onionLayer, imageLayer] {
             l.magnificationFilter = .nearest
             l.minificationFilter = .nearest
-            l.actions = ["contents": NSNull(), "bounds": NSNull(), "position": NSNull()]
+            l.actions = ["contents": NSNull(), "bounds": NSNull(), "position": NSNull(), "opacity": NSNull(), "hidden": NSNull()]
             layer.addSublayer(l)
         }
+        // A photo, so it's smoothed rather than shown as blocks.
+        traceLayer.magnificationFilter = .linear
+        traceLayer.minificationFilter = .trilinear
+        traceLayer.contentsGravity = .resize
+        traceLayer.isHidden = true
         gridLayer.fillColor = nil
         gridLayer.lineWidth = 1
         layer.addSublayer(gridLayer)
@@ -292,6 +303,16 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         layoutLayers()
     }
 
+    func setTraceImage(_ image: CGImage?) {
+        guard image !== traceImage else { return }
+        traceImage = image
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        traceLayer.contents = image
+        CATransaction.commit()
+        layoutLayers()
+    }
+
     func render(_ new: CanvasState) {
         let old = state
         state = new
@@ -305,6 +326,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
             onionLayer.contents = new.onion.flatMap { PixelRenderer.cgImage(PixelRenderer.tinted($0, with: Theme.onionRGBA)) }
         }
         onionLayer.opacity = Float(new.onionOpacity)
+        traceLayer.opacity = Float(new.trace?.opacity ?? 0)
         CATransaction.commit()
         if needsInitialFit { setNeedsLayout() }
         layoutLayers()
@@ -317,6 +339,14 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         let art = viewRect(st.bounds)
         imageLayer.frame = art
         onionLayer.frame = art
+        if let t = st.trace, traceImage != nil {
+            let r = t.rect
+            let o = viewPoint(r.x, r.y)
+            traceLayer.frame = CGRect(x: o.x, y: o.y, width: CGFloat(r.width) * s, height: CGFloat(r.height) * s)
+            traceLayer.isHidden = false
+        } else {
+            traceLayer.isHidden = true
+        }
         layoutChecker()
         layoutGrid(show: st.showGrid)
         layoutOverlays(st)

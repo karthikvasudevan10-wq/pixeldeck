@@ -153,6 +153,8 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     static let maxLayers = 8
 
     var layerVisibility: [Bool] { layers.map(\.isVisible) }
+    /// A picture under every layer to trace over (the picture itself is stored separately).
+    var trace: TraceSettings?
     var createdAt = Date()
     var modifiedAt = Date()
 
@@ -200,7 +202,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         frames.map { $0.grid.reframed(from: bounds, to: world) }
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, layers, createdAt, modifiedAt }
+    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, layers, trace, createdAt, modifiedAt }
 
     /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
     /// crashing the app (the editor assumes at least one frame, all the same size). Files from
@@ -240,6 +242,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         playbackEasing = (try? c.decode(Easing.self, forKey: .playbackEasing)) ?? .linear
         let pal = ((try? c.decode([RGBA].self, forKey: .palette)) ?? []).map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         palette = pal.count == SpriteProject.defaultPalette.count ? pal : SpriteProject.defaultPalette
+        trace = (try? c.decodeIfPresent(TraceSettings.self, forKey: .trace))?.sanitized
         createdAt = (try? c.decode(Date.self, forKey: .createdAt)) ?? Date()
         modifiedAt = (try? c.decode(Date.self, forKey: .modifiedAt)) ?? createdAt
     }
@@ -254,6 +257,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         try c.encode(playbackEasing, forKey: .playbackEasing)
         try c.encode(palette, forKey: .palette)
         try c.encode(layers, forKey: .layers)
+        try c.encodeIfPresent(trace, forKey: .trace)
         try c.encode(createdAt, forKey: .createdAt)
         try c.encode(modifiedAt, forKey: .modifiedAt)
     }

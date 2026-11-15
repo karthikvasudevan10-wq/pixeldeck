@@ -813,3 +813,50 @@ final class FrameClipboardTests: XCTestCase {
         XCTAssertTrue(m.pasteFrame(clip, asNewFrame: false), "replacing still works at the limit")
     }
 }
+
+final class TraceImageTests: XCTestCase {
+    func testNewPictureCoversTheArt() {
+        let art = PixelRect(x: -4, y: -2, width: 20, height: 10)
+        let wide = TraceSettings.placed(aspect: 0.25, over: art)          // wider than the art
+        XCTAssertEqual(wide.height, 10, accuracy: 1e-9)
+        XCTAssertEqual(wide.centerX, 6); XCTAssertEqual(wide.centerY, 3)
+        let tall = TraceSettings.placed(aspect: 2, over: art)
+        XCTAssertEqual(tall.width, 20, accuracy: 1e-9)
+        let blank = TraceSettings.placed(aspect: 1, over: nil)
+        XCTAssertEqual(blank.width, 32); XCTAssertEqual(blank.centerX, 0)
+    }
+
+    func testSettingsAreClamped() {
+        var t = TraceSettings()
+        t.opacity = 7; t.width = .nan; t.aspect = -1
+        let s = t.sanitized
+        XCTAssertEqual(s.opacity, 1); XCTAssertEqual(s.width, 32); XCTAssertEqual(s.aspect, 0.05)
+    }
+
+    func testTraceIsSavedAndOldFilesLoad() throws {
+        var p = SpriteProject(name: "T")
+        var t = TraceSettings(); t.opacity = 0.3; t.width = 48; t.isVisible = false
+        p.trace = t
+        let data = try JSONEncoder().encode(p)
+        XCTAssertEqual(try JSONDecoder().decode(SpriteProject.self, from: data).trace, t)
+        p.trace = nil
+        XCTAssertNil(try JSONDecoder().decode(SpriteProject.self, from: JSONEncoder().encode(p)).trace)
+    }
+
+    func testCanvasShowsTraceUnderTheArtButNotInFramesOrPlayback() {
+        let m = makeModel()
+        tap(m, 0.5, 0.5)
+        m.setTrace(TraceSettings())
+        XCTAssertNotNil(m.canvasState().trace)
+        XCTAssertNil(m.canvasState(playingFrame: 0).trace, "playback shows the result only")
+        var hidden = TraceSettings(); hidden.isVisible = false
+        m.setTrace(hidden)
+        let before = m.canvasState()
+        XCTAssertNil(before.trace)
+        m.setTrace(TraceSettings())
+        XCTAssertNotEqual(before, m.canvasState(), "the canvas redraws when the picture changes")
+        XCTAssertTrue(m.canUndo, "drawing is still undoable")
+        m.undo()
+        XCTAssertNotNil(m.trace, "undo doesn't remove the tracing picture")
+    }
+}
