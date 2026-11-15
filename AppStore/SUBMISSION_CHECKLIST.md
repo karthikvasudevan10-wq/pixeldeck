@@ -240,19 +240,24 @@ Ideas for later versions:
 
 ## Review notes (paste into App Store Connect → App Review Information)
 
-> Pixel Deck is an offline pixel-art and sprite-animation editor. No account or login is needed.
->
-> Key interactions:
-> - Draw with one finger. Pinch with two fingers to change the pixel size, drag with two fingers to move, and tap with two fingers to fit the art. The canvas has no fixed size; it grows as you draw.
-> - Swipe **left** starting at the right edge of the canvas (marked by a small pink chevron) to add a frame. The previous frame shows as a pink onion skin. Swipe **right** from the left edge (yellow chevron) to start a new canvas. The **+** after the frame thumbnails also adds a frame, and the gallery has a **New canvas** tile.
-> - To tween: choose the Select tool (the dashed square), drag over pixels to select them, drag the selection along any path, then tap **Tween**.
-> - Long-press a palette colour to change it.
-> - The shapes tool (4th tile) draws lines, rectangles, circles and triangles; the first shape goes on its own layer. The layers button at the top right of the canvas opens the layers panel.
->
-> In-app purchase: "Pixel Deck Pro" (non-consumable) unlocks art larger than 64 × 64, more than 12 frames, GIF and video export, exports above 4×, and eased playback timing (frame-rate menu → Timing). To see the paywall, go to Settings (the icon at the top of the gallery) → Unlock Pro, or pick GIF on the export screen. Restore Purchases is in Settings and on the paywall.
->
-> **Save** on the export screen asks for add-only Photos access; **Share** uses the share sheet.
->
-> Community (the globe button at the top of the gallery) shares sprites through CloudKit's public database. To post: long-press a sprite in the gallery → Share to Community, agree to the rules, enter a title and nickname. Each post has Report, Block and (for your own posts) Delete. Three reports from different people hide a post for everyone, titles and nicknames are filtered, and reports are reviewed within 24 hours.
->
-> Community posts (art, title, nickname) are the only data that leaves the device besides the user's private iCloud sync.
+Plain text, since the field doesn't render formatting. About 2,000 of the 4,000 characters allowed.
+
+```
+Pixel Deck is a pixel-art and sprite-animation editor. No account or login is needed. Drawings are stored on the device and synced through the user's own private iCloud.
+
+KEY INTERACTIONS
+- Draw with one finger. Pinch with two fingers to change the pixel size, drag with two fingers to move, and tap with two fingers to fit the art. The canvas has no fixed size; it grows as you draw.
+- Swipe LEFT from the right edge of the canvas (small pink chevron) to add a frame; the previous frame shows as a pink onion skin. Swipe RIGHT from the left edge (yellow chevron) to start a new canvas. The + after the frame thumbnails also adds a frame, and the gallery has a New canvas tile.
+- Tweening: choose the Select tool (dashed square), drag over pixels to select them, drag the selection along any path, then tap Tween.
+- Shapes tool (4th tool): line, rectangle, circle, triangle, diamond, pentagon, hexagon, octagon, parallelogram and star. The layers button at the top right of the canvas opens the Layers panel.
+- Colours: long-press a palette swatch to change it, or tap the grid button at the end of the palette for the colour picker and ready-made palettes.
+
+IN-APP PURCHASE
+"Pixel Deck Pro" (non-consumable, one-time) unlocks art larger than 64 x 64 (up to 512 x 512), more than 12 frames per sprite, GIF and MP4 export, exports above 4x, and eased playback timing (frame-rate menu > Timing). To see the paywall: Settings (gear at the top of the gallery) > Unlock Pro, or choose GIF on the export screen. Restore Purchases is in Settings and on the paywall. The two large "showcase" sprites in the gallery carry a PRO badge: anyone can view and export them, but editing them needs Pro.
+
+PERMISSIONS
+Save on the export screen asks for add-only Photos access. Share uses the system share sheet. No other permissions are requested.
+
+COMMUNITY (USER-GENERATED CONTENT)
+The globe button at the top of the gallery opens Community, which shares sprites through CloudKit's public database. Browsing needs no sign-in; posting needs an iCloud account. To post: long-press a sprite in the gallery > Share to Community, agree to the community rules, then enter a title and nickname. Each post has Report and Block, and your own posts have Delete. Titles and nicknames are filtered for objectionable text, links and contact details. Three reports from different people hide a post for everyone, and reports are reviewed within 24 hours. Blocked users can be unblocked in Settings > Community. Support: karthik.vasudevan.10@gmail.com
+```
