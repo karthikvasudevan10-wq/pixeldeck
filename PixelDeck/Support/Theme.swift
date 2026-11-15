@@ -14,36 +14,82 @@ extension Color {
 }
 
 extension UIColor {
+    var color: Color { Color(uiColor: self) }
+
     convenience init(hex: UInt32, alpha: CGFloat = 1) {
         self.init(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
                   blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
     }
 }
 
+/// Design tokens. Each has a dark ("Night") and a light ("Paper") value and follows the system
+/// appearance. Light values come from the design's Paper theme, keeping the brand pink (a little
+/// deeper so it holds up on paper) and swapping the yellow for Paper's blue, which stays readable.
+/// Illustrations (the welcome night scene, the Easel stage) keep their night colours in both.
 enum Theme {
-    static let ink = Color(hex: 0x120E1F)
-    static let surface = Color(hex: 0x1E1833)
-    static let line = Color(hex: 0x2E2650)
-    static let text = Color(hex: 0xF4EEFF)
-    static let cream = Color(hex: 0xFFF6E0)
-    static let muted = Color(hex: 0xA89CC8)
-    static let accent = Color(hex: 0xFF5C8A)          // flip pink
-    static let accentShadow = Color(hex: 0xB8336A)
-    static let accent2 = Color(hex: 0xFFD23F)
-    static let accent2Shadow = Color(hex: 0xB08A12)
-    static let onAccent = Color(hex: 0x120E1F)
-    static let tool = Color(hex: 0x2A2347)
-    static let chip = Color(hex: 0x120E1F, opacity: 0.7)
+    /// Dark value first, light second.
+    static func dynamic(_ dark: UInt32, _ light: UInt32, darkAlpha: CGFloat = 1, lightAlpha: CGFloat = 1) -> UIColor {
+        UIColor { t in
+            t.userInterfaceStyle == .dark ? UIColor(hex: dark, alpha: darkAlpha) : UIColor(hex: light, alpha: lightAlpha)
+        }
+    }
 
-    /// The onion skin tint (drawn at 38%).
+    static let uiInk = dynamic(0x120E1F, 0xF4EFE6)              // page background
+    static let uiSurface = dynamic(0x1E1833, 0xFFFDF8)          // cards, dock
+    static let uiLine = dynamic(0x2E2650, 0xE2D9C8)
+    static let uiText = dynamic(0xF4EEFF, 0x1F1A14)
+    /// Headlines and the selected tool tile (cream on night, ink on paper).
+    static let uiCream = dynamic(0xFFF6E0, 0x1F1A14)
+    static let uiMuted = dynamic(0xA89CC8, 0x6B6256)
+    static let uiAccent = dynamic(0xFF5C8A, 0xE5406F)            // flip pink
+    static let uiAccentShadow = dynamic(0xB8336A, 0xA62A57)
+    static let uiAccent2 = dynamic(0xFFD23F, 0x2F6FEB)           // spark yellow / paper blue
+    static let uiAccent2Shadow = dynamic(0xB08A12, 0x1F4FB0)
+    static let uiOnAccent = dynamic(0x120E1F, 0x1F1A14)
+    /// Text on accent2 (dark on yellow, white on blue).
+    static let uiOnAccent2 = dynamic(0x120E1F, 0xFFFDF8)
+    static let uiTool = dynamic(0x2A2347, 0xF1EBE0)
+    static let uiChip = dynamic(0x120E1F, 0xFFFDF8, darkAlpha: 0.7, lightAlpha: 0.85)
+    static let uiCheckA = dynamic(0x1A1430, 0xEFE8DC)
+    static let uiCheckB = dynamic(0x221B3B, 0xE6DDCD)
+    /// The Flipbook's viewer page: a slightly darker checker than the canvas.
+    static let uiViewerA = dynamic(0x171129, 0xE9E1D3)
+    static let uiViewerB = dynamic(0x1C1633, 0xE1D7C6)
+    static let uiHinge = dynamic(0x0B0814, 0xD9D0BF)
+    static let uiGrid = UIColor { t in
+        t.userInterfaceStyle == .dark ? UIColor(white: 1, alpha: 0.07) : UIColor(red: 31 / 255, green: 26 / 255, blue: 20 / 255, alpha: 0.08)
+    }
+
+    static let ink = Color(uiColor: uiInk)
+    static let surface = Color(uiColor: uiSurface)
+    static let line = Color(uiColor: uiLine)
+    static let text = Color(uiColor: uiText)
+    static let cream = Color(uiColor: uiCream)
+    static let muted = Color(uiColor: uiMuted)
+    static let accent = Color(uiColor: uiAccent)
+    static let accentShadow = Color(uiColor: uiAccentShadow)
+    static let accent2 = Color(uiColor: uiAccent2)
+    static let accent2Shadow = Color(uiColor: uiAccent2Shadow)
+    static let onAccent = Color(uiColor: uiOnAccent)
+    static let onAccent2 = Color(uiColor: uiOnAccent2)
+    static let tool = Color(uiColor: uiTool)
+    static let chip = Color(uiColor: uiChip)
+    static let checkA = Color(uiColor: uiCheckA)
+    static let checkB = Color(uiColor: uiCheckB)
+    static let viewerA = Color(uiColor: uiViewerA)
+    static let viewerB = Color(uiColor: uiViewerB)
+    static let hinge = Color(uiColor: uiHinge)
+
+    /// Fixed night colours for text drawn over the night illustrations, in either appearance.
+    enum Night {
+        static let cream = Color(hex: 0xFFF6E0)
+        static let muted = Color(hex: 0xA89CC8)
+        static let accent = Color(hex: 0xFF5C8A)
+        static let onAccent = Color(hex: 0x120E1F)
+    }
+
+    /// The onion skin tint (drawn at 38%). Pixel data, so one value for both appearances.
     static let onionRGBA = RGBA(hex: 0xFF5C8A)
-    static let uiCheckA = UIColor(hex: 0x1A1430)
-    static let uiCheckB = UIColor(hex: 0x221B3B)
-    static let uiGrid = UIColor(white: 1, alpha: 0.07)
-    static let uiAccent = UIColor(hex: 0xFF5C8A)
-    static let uiAccent2 = UIColor(hex: 0xFFD23F)
-    static let uiInk = UIColor(hex: 0x120E1F)
-    static let uiCream = UIColor(hex: 0xFFF6E0)
 }
 
 // MARK: Fonts
@@ -168,8 +214,8 @@ extension View {
 /// Transparent-canvas checkerboard (one cell per `cell` points).
 struct Checkerboard: View {
     var cell: CGFloat = 16
-    var a: Color = Color(hex: 0x1A1430)
-    var b: Color = Color(hex: 0x221B3B)
+    var a: Color = Theme.checkA
+    var b: Color = Theme.checkB
     var body: some View {
         Canvas { ctx, size in
             ctx.fill(Path(CGRect(origin: .zero, size: size)), with: .color(a))

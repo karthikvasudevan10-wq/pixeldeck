@@ -100,7 +100,8 @@ extension EditorView {
                 .frame(maxWidth: .infinity)
             }
             .padding(.horizontal, 20)
-            .overlay { Color.white.opacity(0.05).frame(width: 2).accessibilityHidden(true) }
+            // The hinge line: faint white on night, faint ink on paper.
+            .overlay { Theme.uiGrid.color.frame(width: 2).accessibilityHidden(true) }
 
             // Bottom bar, 84 pt: play, frames, onion, fps.
             HStack(spacing: 10) {
@@ -116,7 +117,7 @@ extension EditorView {
     /// Left page: the previous frame, the live loop, or a pinned reference image.
     var leftPagePanel: some View {
         ZStack(alignment: .topLeading) {
-            Checkerboard(cell: 24, a: Color(hex: 0x171129), b: Color(hex: 0x1C1633))
+            Checkerboard(cell: 24, a: Theme.viewerA, b: Theme.viewerB)
             Group {
                 switch leftPage {
                 case .lastFrame:
@@ -279,7 +280,7 @@ extension EditorView {
                     .clipped()
                 // Hinge band: kept empty.
                 ZStack {
-                    Color(hex: 0x0B0814)
+                    Theme.hinge
                     Theme.line.frame(width: 64, height: 4)
                 }
                 .frame(height: hinge)
@@ -373,7 +374,7 @@ struct EaselStage: View {
                 Color(hex: 0x171129).frame(height: 120 * k).offset(y: 150 * k)
                 Color(hex: 0x1E1736).frame(height: 110 * k).offset(y: 270 * k)
                 ForEach(0..<14, id: \.self) { i in
-                    Theme.cream.frame(width: 4, height: 4)
+                    Theme.Night.cream.frame(width: 4, height: 4)
                         .opacity(i % 3 == 0 ? 0.5 : 0.9)
                         .offset(x: CGFloat((i * 137) % 100) / 100 * w, y: CGFloat((i * 61) % 100) / 100 * 260 * k)
                 }
@@ -386,18 +387,18 @@ struct EaselStage: View {
                     HStack(spacing: 10) {
                         Text("Easel mode")
                             .font(AppFont.pixel(11))
-                            .foregroundStyle(Theme.onAccent)
+                            .foregroundStyle(Theme.Night.onAccent)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
-                            .background(Theme.accent)
+                            .background(Theme.Night.accent)
                         Text("Live loop of everything you draw below")
                             .font(AppFont.body(13, relativeTo: .footnote))
-                            .foregroundStyle(Theme.muted)
+                            .foregroundStyle(Theme.Night.muted)
                     }
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(model.project.name).font(AppFont.body(15, .bold, relativeTo: .headline)).foregroundStyle(Theme.cream)
+                        Text(model.project.name).font(AppFont.body(15, .bold, relativeTo: .headline)).foregroundStyle(Theme.Night.cream)
                         Text(verbatim: "\(model.bounds.width)×\(model.bounds.height) px")
-                            .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                            .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.Night.muted)
                     }
                     .padding(.top, 50 * k)
                 }
@@ -405,10 +406,10 @@ struct EaselStage: View {
                 .padding(.top, 20)
 
                 VStack(alignment: .trailing, spacing: 4) {
-                    Text(verbatim: "\(model.project.fps)").font(AppFont.pixel(44)).foregroundStyle(Theme.cream)
-                    Text("fps").font(AppFont.pixel(12)).foregroundStyle(Theme.muted)
-                    Text(verbatim: "\(model.frameCount)").font(AppFont.pixel(28)).foregroundStyle(Theme.cream).padding(.top, 18)
-                    Text("frames").font(AppFont.pixel(12)).foregroundStyle(Theme.muted)
+                    Text(verbatim: "\(model.project.fps)").font(AppFont.pixel(44)).foregroundStyle(Theme.Night.cream)
+                    Text("fps").font(AppFont.pixel(12)).foregroundStyle(Theme.Night.muted)
+                    Text(verbatim: "\(model.frameCount)").font(AppFont.pixel(28)).foregroundStyle(Theme.Night.cream).padding(.top, 18)
+                    Text("frames").font(AppFont.pixel(12)).foregroundStyle(Theme.Night.muted)
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
                 .padding(.trailing, 28)

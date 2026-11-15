@@ -4,7 +4,7 @@ A native SwiftUI pixel-art and sprite-animation app for iPhone (and iPad).
 
 ## Features
 
-The look follows the design handoff: a dark "night" palette with a flip-pink accent, square corners, Silkscreen and Space Grotesk fonts, and buttons with a solid drop shadow that press in.
+The look follows the design handoff and **follows the system appearance**. Dark uses the "Night" palette; Light uses the design's "Paper" palette, with the brand pink a shade deeper and Paper's blue instead of yellow so links stay readable. The night-sky illustrations (welcome scene, Easel stage) stay night in both. Both palettes have a flip-pink accent, square corners, Silkscreen and Space Grotesk fonts, and buttons with a solid drop shadow that press in.
 
 - **Infinite canvas**: there is no size to pick. Draw anywhere and the canvas grows. Pinch to change how big pixels look; zooming snaps to whole points so pixels stay crisp. Drag with two fingers to move around, and tap with two fingers to fit the art. The checkerboard and pixel grid go on forever. Saved sprites and exports are trimmed to the art.
 - **Swipes**:

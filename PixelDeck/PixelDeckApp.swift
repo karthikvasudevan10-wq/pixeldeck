@@ -15,8 +15,7 @@ struct PixelDeckApp: App {
             ProjectListView()
                 .environment(store)
                 .environment(purchases)
-                // The design has one night theme; system sheets and menus follow it.
-                .preferredColorScheme(.dark)
+                // Night (dark) and Paper (light) follow the system appearance.
                 .tint(Theme.accent)
         }
         .onChange(of: scenePhase) { _, phase in

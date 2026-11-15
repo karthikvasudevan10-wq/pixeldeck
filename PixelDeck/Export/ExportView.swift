@@ -130,7 +130,7 @@ struct ExportView: View {
                         Text(verbatim: "\(s)×")
                             .font(AppFont.pixel(15))
                             .frame(maxWidth: .infinity, minHeight: 48)
-                            .foregroundStyle(on ? Theme.onAccent : Theme.text)
+                            .foregroundStyle(on ? Theme.onAccent2 : Theme.text)
                             .background(on ? Theme.accent2 : Theme.surface)
                             .overlay(Rectangle().strokeBorder(on ? Theme.accent2 : Theme.line, lineWidth: 2))
                             .overlay(alignment: .topTrailing) { if locked { ProBadge().padding(3) } }
@@ -228,7 +228,7 @@ struct ExportView: View {
     private var toast: some View {
         Text("Saved to Photos")
             .font(AppFont.pixel(13))
-            .foregroundStyle(Theme.onAccent)
+            .foregroundStyle(Theme.onAccent2)
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(Theme.accent2)

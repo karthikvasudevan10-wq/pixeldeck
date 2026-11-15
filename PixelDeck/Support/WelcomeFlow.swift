@@ -111,7 +111,7 @@ private struct WelcomeView: View {
             AnimatedSprite(key: "slime", pixel: 2, playing: false)
                 .frame(width: 28, height: 28)
                 .background(Theme.accent)
-            Text(verbatim: "Pixel Deck").font(AppFont.pixel(18)).foregroundStyle(Theme.cream).tracking(1)
+            Text(verbatim: "Pixel Deck").font(AppFont.pixel(18)).foregroundStyle(Theme.Night.cream).tracking(1)
         }
         .accessibilityHidden(true)
     }
@@ -242,7 +242,7 @@ private struct GesturesView: View {
             demo
             HStack(alignment: .top, spacing: 10) {
                 icon.view(size: 20, lineWidth: 2.5)
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(icon == .arrowRight ? Theme.onAccent2 : Theme.onAccent)
                     .frame(width: 36, height: 36)
                     .background(iconFill)
                 VStack(alignment: .leading, spacing: 2) {

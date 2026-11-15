@@ -28,7 +28,7 @@ struct ProUpgradeView: View {
                     HStack(alignment: .center, spacing: 14) {
                         AnimatedSprite(key: "coin", pixel: 6)
                             .frame(width: 64, height: 64)
-                            .background(Color(hex: 0x3A321C))
+                            .background(Color(uiColor: Theme.dynamic(0x3A321C, 0xF4ECD6)))
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Pixel Deck Pro").font(AppFont.pixel(26)).foregroundStyle(Theme.cream)
                             Text("One purchase. No subscription.")
@@ -166,7 +166,7 @@ struct ProBadge: View {
             .font(AppFont.pixel(9))
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
-            .foregroundStyle(Theme.onAccent)
+            .foregroundStyle(Theme.onAccent2)
             .background(Theme.accent2)
             .accessibilityLabel("Requires Pro")
     }

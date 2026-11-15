@@ -80,6 +80,10 @@ You still need to do this, and no review can replace it:
 - [ ] **Pricing**: Free, with the in-app purchase. See the business model notes below.
 - [ ] Paste the text from `metadata.md` and the review notes.
 
+### Light and Dark
+- [ ] Switch Settings › Display & Brightness between Light and Dark while the app is open, including with the Studio open. Check the gallery, Studio (canvas checker, grid, selection, hover), export, paywall, settings, layers and tween screens.
+- [ ] Take App Store screenshots in Dark: the design was drawn there first.
+
 ### iPad
 - [ ] Test on a real iPad with Apple Pencil:
   - Draw with a palm resting on the screen.

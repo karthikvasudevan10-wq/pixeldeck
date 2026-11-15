@@ -118,7 +118,7 @@ struct EditorView: View {
             if pencilNotice {
                 Text("Apple Pencil draws. Fingers now move and zoom the canvas.")
                     .font(AppFont.body(14, .medium, relativeTo: .subheadline))
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onAccent2)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)

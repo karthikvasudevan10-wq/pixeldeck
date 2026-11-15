@@ -20,7 +20,10 @@ struct ProjectListView: View {
     enum GalleryFilter: Hashable { case moving, stills }
 
     /// Preview tile backgrounds from the design, cycled.
-    static let tileColors: [Color] = ([0x2B1F47, 0x3A1F2E, 0x3A321C, 0x1F3340, 0x1F3A2A, 0x171129] as [UInt32]).map { Color(hex: $0) }
+    static let tileColors: [Color] = [
+        Theme.dynamic(0x2B1F47, 0xEAE2F5), Theme.dynamic(0x3A1F2E, 0xF6E2E8), Theme.dynamic(0x3A321C, 0xF4ECD6),
+        Theme.dynamic(0x1F3340, 0xDEEAF0), Theme.dynamic(0x1F3A2A, 0xDFECE1), Theme.dynamic(0x171129, 0xE8E3EF),
+    ].map { Color(uiColor: $0) }
 
     /// Live previews run only while the gallery is actually on screen — not under the Studio,
     /// the welcome screens or export, and not in the background.
@@ -162,7 +165,7 @@ struct ProjectListView: View {
         Button(action: createAndOpen) {
             VStack(spacing: 10) {
                 PixelIcon.plus.view(size: 24, lineWidth: 3)
-                    .foregroundStyle(Theme.onAccent)
+                    .foregroundStyle(Theme.onAccent2)
                     .frame(width: 52, height: 52)
                     .background(Theme.accent2)
                     .background(alignment: .top) { Theme.accent2Shadow.offset(y: 4) }

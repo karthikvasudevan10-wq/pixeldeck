@@ -146,28 +146,22 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
             layer.addSublayer(l)
         }
         gridLayer.fillColor = nil
-        gridLayer.strokeColor = Theme.uiGrid.cgColor
         gridLayer.lineWidth = 1
         layer.addSublayer(gridLayer)
 
         mirrorLayer.fillColor = nil
-        mirrorLayer.strokeColor = Theme.uiAccent2.withAlphaComponent(0.7).cgColor
         mirrorLayer.lineWidth = 2
         mirrorLayer.lineDashPattern = [6, 6]
         layer.addSublayer(mirrorLayer)
 
         pathLayer.fillColor = nil
-        pathLayer.strokeColor = Theme.uiAccent.cgColor
         pathLayer.lineWidth = 2
         pathLayer.lineDashPattern = [2, 6]
         pathLayer.lineCap = .square
         layer.addSublayer(pathLayer)
 
         selectionUnderLayer.fillColor = nil
-        selectionUnderLayer.strokeColor = Theme.uiInk.cgColor
         selectionUnderLayer.lineWidth = 2
-        selectionLayer.fillColor = Theme.uiCream.withAlphaComponent(0.06).cgColor
-        selectionLayer.strokeColor = Theme.uiCream.cgColor
         selectionLayer.lineWidth = 2
         selectionLayer.lineDashPattern = [5, 4]
         layer.addSublayer(selectionUnderLayer)
@@ -188,10 +182,8 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         }
 
         hoverUnderLayer.fillColor = nil
-        hoverUnderLayer.strokeColor = Theme.uiInk.cgColor
         hoverUnderLayer.lineWidth = 3
         hoverLayer.fillColor = nil
-        hoverLayer.strokeColor = Theme.uiCream.cgColor
         hoverLayer.lineWidth = 1.5
         layer.addSublayer(hoverUnderLayer)
         layer.addSublayer(hoverLayer)
@@ -200,11 +192,33 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         pencil.delegate = self
         addInteraction(pencil)
 
+        // Layer colours are fixed CGColors, so re-apply them when Light/Dark changes.
+        applyColors()
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (view: InfiniteCanvasView, _: UITraitCollection) in
+            view.applyColors()
+        }
+
         isAccessibilityElement = true
         accessibilityTraits = .allowsDirectInteraction
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    /// Resolves the theme's light/dark colours for the layers (and redraws the checker pattern).
+    private func applyColors() {
+        let t = traitCollection
+        func c(_ u: UIColor, alpha: CGFloat = 1) -> CGColor { u.resolvedColor(with: t).withAlphaComponent(alpha).cgColor }
+        gridLayer.strokeColor = c(Theme.uiGrid)
+        mirrorLayer.strokeColor = c(Theme.uiAccent2, alpha: 0.7)
+        pathLayer.strokeColor = c(Theme.uiAccent)
+        selectionUnderLayer.strokeColor = c(Theme.uiInk)
+        selectionLayer.fillColor = c(Theme.uiCream, alpha: 0.06)
+        selectionLayer.strokeColor = c(Theme.uiCream)
+        hoverUnderLayer.strokeColor = c(Theme.uiInk)
+        hoverLayer.strokeColor = c(Theme.uiCream)
+        checkerCellPoints = 0                      // forces the pattern to be redrawn
+        layoutLayers()
+    }
 
     /// Folding or unfolding an iPhone Duo (or rotating) can swap the Studio's layout mid-stroke,
     /// which removes this view. Finish the stroke rather than letting the touch be cancelled,
@@ -318,9 +332,9 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
             checkerCellPoints = cell
             let size = CGSize(width: cell * 2, height: cell * 2)
             let image = UIGraphicsImageRenderer(size: size).image { ctx in
-                Theme.uiCheckA.setFill()
+                Theme.uiCheckA.resolvedColor(with: traitCollection).setFill()
                 ctx.fill(CGRect(origin: .zero, size: size))
-                Theme.uiCheckB.setFill()
+                Theme.uiCheckB.resolvedColor(with: traitCollection).setFill()
                 ctx.fill(CGRect(x: cell, y: 0, width: cell, height: cell))
                 ctx.fill(CGRect(x: 0, y: cell, width: cell, height: cell))
             }

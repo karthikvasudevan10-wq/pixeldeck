@@ -84,7 +84,7 @@ struct SwipeCanvas<Content: View>: View {
         let newFrame = offset < 0
         return Text(newFrame ? "New frame" : "New canvas")
             .font(AppFont.pixel(13))
-            .foregroundStyle(Theme.onAccent)
+            .foregroundStyle(newFrame ? Theme.onAccent : Theme.onAccent2)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
             .background(newFrame ? Theme.accent : Theme.accent2)
