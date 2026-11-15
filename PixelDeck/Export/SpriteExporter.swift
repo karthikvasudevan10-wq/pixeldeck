@@ -8,7 +8,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
 
     /// GIF and video are part of Pro.
     var needsPro: Bool { self == .gif || self == .video }
-    /// Video is always 1080 × 1080, so it has no scale choice.
+    /// Video is 1080 × 1080, or 2160 × 2160 with 4K, so it has no scale choice.
     var hasScale: Bool { self != .video }
 }
 
@@ -17,6 +17,14 @@ struct ExportOptions {
     var layout: SpriteSheetLayout = .strip
     var scale = 4
     var includeMetadata = true
+    /// 4K instead of `scale` (Pro): the largest whole-number scale with the long side up to 3840
+    /// px for images and GIFs, and 2160 × 2160 for video. Not offered for sprite sheets.
+    var fourK = false
+    /// Adds the "Made with Pixel Deck" footer to PNG frames (free version).
+    var watermark = false
+
+    /// Formats that offer 4K.
+    var offersFourK: Bool { format == .gif || format == .frames || format == .video }
 }
 
 enum ExportError: LocalizedError {
@@ -63,6 +71,27 @@ enum SpriteExporter {
     /// Total decoded size of all GIF frames (ImageIO keeps them until the GIF is finalised).
     static let gifMemoryBudget = 512 * 1024 * 1024
     static let scales = [1, 4, 8, 16]
+    /// The long side of a 4K image.
+    static let fourKSide = 3840
+
+    /// The scale actually used: the chosen one, or the 4K one.
+    static func scale(_ src: ExportSource, _ o: ExportOptions) -> Int {
+        guard o.fourK, o.format != .spriteSheet else { return max(1, o.scale) }
+        return max(1, fourKSide / max(1, max(src.width, src.height)))
+    }
+
+    /// Whether 4K output fits the memory limits for this sprite and format.
+    static func fourKFeasible(_ src: ExportSource, options: ExportOptions) -> Bool {
+        var o = options
+        o.fourK = true
+        let size = outputSize(src, options: o)
+        switch options.format {
+        case .frames: return max(size.width, size.height) <= maxSide
+        case .gif: return max(size.width, size.height) <= maxSide && src.grids.count * size.width * size.height * 4 <= gifMemoryBudget
+        case .video: return true
+        case .spriteSheet: return false
+        }
+    }
 
     /// Output size in pixels for a format and scale.
     static func outputSize(_ src: ExportSource, options: ExportOptions) -> (width: Int, height: Int) {
@@ -71,9 +100,11 @@ enum SpriteExporter {
             return SpriteSheet.pixelSize(frameWidth: src.width, frameHeight: src.height, frameCount: src.grids.count,
                                          scale: options.scale, layout: options.layout)
         case .gif, .frames:
-            return (src.width * options.scale, src.height * options.scale)
+            let s = scale(src, options)
+            return (src.width * s, src.height * s)
         case .video:
-            return (VideoExporter.side, VideoExporter.side)
+            let side = options.fourK ? VideoExporter.fourKSide : VideoExporter.side
+            return (side, side)
         }
     }
 
@@ -82,11 +113,12 @@ enum SpriteExporter {
         scales.filter { scale in
             var o = options
             o.scale = scale
+            o.fourK = false
             let size = outputSize(src, options: o)
             switch options.format {
             case .spriteSheet: return max(size.width, size.height) <= maxSide
-            case .frames: return max(size.width, size.height) <= 2048
-            case .gif: return max(size.width, size.height) <= 2048 && src.grids.count * size.width * size.height * 4 <= gifMemoryBudget
+            case .frames: return max(size.width, size.height) <= maxSide
+            case .gif: return max(size.width, size.height) <= maxSide && src.grids.count * size.width * size.height * 4 <= gifMemoryBudget
             case .video: return true
             }
         }
@@ -99,7 +131,7 @@ enum SpriteExporter {
             .appendingPathComponent("Export-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let base = fileSafe(src.name)
-        let scale = max(1, options.scale)
+        let scale = Self.scale(src, options)
 
         switch options.format {
         case .spriteSheet:
@@ -125,13 +157,22 @@ enum SpriteExporter {
         case .frames:
             return try src.grids.enumerated().map { i, grid in
                 let url = dir.appendingPathComponent(String(format: "%@_%03d.png", base, i + 1))
-                try writePNG(width: grid.width * scale, height: grid.height * scale, rgba: grid.rgbaBytes(scale: scale), to: url)
+                try autoreleasepool {
+                    guard options.watermark else {
+                        try writePNG(width: grid.width * scale, height: grid.height * scale, rgba: grid.rgbaBytes(scale: scale), to: url)
+                        return
+                    }
+                    guard let art = PixelRenderer.cgImage(width: grid.width * scale, height: grid.height * scale, rgba: grid.rgbaBytes(scale: scale)),
+                          let marked = Watermark.apply(to: art) else { throw ExportError.couldNotWrite(url.lastPathComponent) }
+                    try writePNG(marked, to: url)
+                }
                 return url
             }
 
         case .video:
             let url = dir.appendingPathComponent("\(base).mp4")
-            try VideoExporter.write(grids: src.grids, durations: src.durations, to: url)
+            try VideoExporter.write(grids: src.grids, durations: src.durations,
+                                    side: options.fourK ? VideoExporter.fourKSide : VideoExporter.side, to: url)
             return [url]
         }
     }
@@ -146,8 +187,14 @@ enum SpriteExporter {
     }
 
     static func writePNG(width: Int, height: Int, rgba: [UInt8], to url: URL) throws {
-        guard let image = PixelRenderer.cgImage(width: width, height: height, rgba: rgba),
-              let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
+        guard let image = PixelRenderer.cgImage(width: width, height: height, rgba: rgba) else {
+            throw ExportError.couldNotWrite(url.lastPathComponent)
+        }
+        try writePNG(image, to: url)
+    }
+
+    static func writePNG(_ image: CGImage, to url: URL) throws {
+        guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
         else { throw ExportError.couldNotWrite(url.lastPathComponent) }
         CGImageDestinationAddImage(dest, image, nil)
         guard CGImageDestinationFinalize(dest) else { throw ExportError.couldNotWrite(url.lastPathComponent) }

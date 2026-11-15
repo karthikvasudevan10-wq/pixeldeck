@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 
 /// Ready-made 10-colour palettes. Applying one replaces the sprite's palette (the art keeps its
 /// colours). Names are localised in the app layer (LocalizedTitles.swift).
@@ -37,5 +38,81 @@ extension EditorModel {
         let opaque = colors.map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         updateProject { $0.palette = opaque }
         if let slot { pickColor(opaque[slot]) }
+    }
+}
+
+/// A palette the user saved (built with the colour picker), to reuse in any sprite.
+struct CustomPalette: Codable, Identifiable, Equatable, Sendable {
+    var id = UUID()
+    var name: String
+    var colors: [RGBA]
+}
+
+/// The user's saved palettes, kept as one JSON file. The app puts it beside the sprites (in iCloud
+/// when sync is on), so saved palettes follow the user to their other devices.
+@Observable
+final class PaletteLibrary {
+    private(set) var palettes: [CustomPalette] = []
+    let url: URL
+    /// The app swaps in a coordinated (iCloud-safe) write.
+    @ObservationIgnored var writeFile: (Data, URL) throws -> Void = { data, url in try data.write(to: url, options: .atomic) }
+
+    static let maxPalettes = 60
+    static let maxNameLength = 24
+
+    init(url: URL) {
+        self.url = url
+        load()
+    }
+
+    func load() {
+        guard let data = try? Data(contentsOf: url),
+              let list = try? JSONDecoder().decode([CustomPalette].self, from: data) else { palettes = []; return }
+        // Only well-formed palettes (a damaged file can't break the panel).
+        palettes = list.filter { $0.colors.count == SpriteProject.defaultPalette.count }.prefix(Self.maxPalettes).map { $0 }
+    }
+
+    var isFull: Bool { palettes.count >= Self.maxPalettes }
+
+    /// Saves `colors` as a new palette at the top. A blank name becomes "My palette N".
+    @discardableResult
+    func add(name: String, colors: [RGBA]) -> CustomPalette? {
+        guard !isFull, colors.count == SpriteProject.defaultPalette.count else { return nil }
+        let p = CustomPalette(name: tidyName(name), colors: colors.map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) })
+        palettes.insert(p, at: 0)
+        save()
+        return p
+    }
+
+    func rename(_ id: UUID, to name: String) {
+        guard let i = palettes.firstIndex(where: { $0.id == id }) else { return }
+        palettes[i].name = tidyName(name)
+        save()
+    }
+
+    /// Replaces a saved palette's colours (e.g. with the sprite's after editing them).
+    func update(_ id: UUID, colors: [RGBA]) {
+        guard let i = palettes.firstIndex(where: { $0.id == id }), colors.count == SpriteProject.defaultPalette.count else { return }
+        palettes[i].colors = colors
+        save()
+    }
+
+    func delete(_ id: UUID) {
+        palettes.removeAll { $0.id == id }
+        save()
+    }
+
+    private func tidyName(_ name: String) -> String {
+        let t = String(name.trimmingCharacters(in: .whitespacesAndNewlines).prefix(Self.maxNameLength))
+        if !t.isEmpty { return t }
+        var n = palettes.count + 1
+        let names = Set(palettes.map(\.name))
+        while names.contains("My palette \(n)") { n += 1 }
+        return "My palette \(n)"
+    }
+
+    private func save() {
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let data = try? JSONEncoder().encode(palettes) { try? writeFile(data, url) }
     }
 }

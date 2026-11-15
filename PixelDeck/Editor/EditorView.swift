@@ -142,14 +142,15 @@ struct EditorView: View {
             }
         }
         .fullScreenCover(isPresented: $showingExport) { ExportView(project: model.project) }
-        .sheet(item: $editingSwatch) { edit in
-            SwatchEditor(initial: model.palette[edit.index],
-                         onChange: { c, final in model.setPaletteColor(c, at: edit.index, commit: final) },
-                         onDone: {
-                             model.setPaletteColor(model.palette[edit.index], at: edit.index)   // save the result
-                             editingSwatch = nil
-                         })
-                .presentationDetents([.medium, .large])
+        .onChange(of: editingSwatch) { _, edit in
+            guard let edit, model.palette.indices.contains(edit.index) else { return }
+            SystemColorPicker.present(
+                initial: model.palette[edit.index],
+                onChange: { c, final in model.setPaletteColor(c, at: edit.index, commit: final) },
+                onDone: {
+                    model.setPaletteColor(model.palette[edit.index], at: edit.index)   // save the result
+                    editingSwatch = nil
+                })
         }
         .alert("Rename sprite", isPresented: $showingRename) {
             TextField("Name", text: $renameText)
@@ -467,6 +468,11 @@ struct EditorView: View {
     func newCanvas() {
         model.isPlaying = false
         model.commitSelection()
+        // Already on an empty canvas: stay on it rather than making another.
+        if model.project.isBlank {
+            canvas(.fit)
+            return
+        }
         store.save(model.project)
         model.load(store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it")))
         canvas(.fit)

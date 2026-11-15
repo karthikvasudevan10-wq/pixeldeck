@@ -146,6 +146,7 @@ extension ProFeature {
         case .unlimitedFrames: .gallery
         case .gifExport: .play
         case .largeExport: .export
+        case .noWatermark: .check
         case .timing: .tween
         }
     }

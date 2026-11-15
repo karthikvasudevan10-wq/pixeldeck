@@ -323,7 +323,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
             imageLayer.contents = PixelRenderer.cgImage(new.grid)
         }
         if old?.onionVersion != new.onionVersion {
-            onionLayer.contents = new.onion.flatMap { PixelRenderer.cgImage(PixelRenderer.tinted($0, with: Theme.onionRGBA)) }
+            onionLayer.contents = new.onion.flatMap { PixelRenderer.cgImage(OnionSkin.tint($0)) }
         }
         onionLayer.opacity = Float(new.onionOpacity)
         traceLayer.opacity = Float(new.trace?.opacity ?? 0)

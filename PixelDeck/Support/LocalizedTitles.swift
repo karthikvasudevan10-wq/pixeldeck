@@ -116,7 +116,8 @@ extension ProFeature {
         case .largeCanvas: "Grow your art to \(FeatureAccess.proMaxArtSide) × \(FeatureAccess.proMaxArtSide)"
         case .unlimitedFrames: "Up to \(FeatureAccess.absoluteFrameLimit) frames per sprite"
         case .gifExport: "Animated GIF & video export"
-        case .largeExport: "Export up to 16× size"
+        case .largeExport: "Export up to 16× and 4K"
+        case .noWatermark: "No watermark"
         case .timing: "Eased playback timing"
         }
     }
@@ -126,7 +127,8 @@ extension ProFeature {
         case .largeCanvas: "The canvas is infinite for everyone. Free art can grow to \(FeatureAccess.freeMaxArtSide) × \(FeatureAccess.freeMaxArtSide) pixels; Pro gives it \(FeatureAccess.proAreaMultiple) times the room, for detailed scenes and tilesets."
         case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. Very large sprites have a lower limit to protect your device's memory."
         case .gifExport: "Share looping GIFs and MP4 videos for Reels, Shorts and TikTok."
-        case .largeExport: "Crisp, large images for stores, social posts and print."
+        case .largeExport: "Crisp, large images and 4K videos for stores, social posts and print."
+        case .noWatermark: "Free PNG exports carry a small \"Made with Pixel Deck\" footer. Pro exports are just your art."
         case .timing: "Let animations speed up and slow down — ease in, ease out or both — in playback, GIFs, videos and sprite sheets."
         }
     }

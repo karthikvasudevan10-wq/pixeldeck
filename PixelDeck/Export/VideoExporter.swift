@@ -7,13 +7,14 @@ import CoreVideo
 /// at least three seconds.
 enum VideoExporter {
     static let side = 1080
+    static let fourKSide = 2160
     static let minimumSeconds = 3.0
     static let maximumSeconds = 60.0
     /// The design's ink colour, as BGRA bytes.
     private static let background: (b: UInt8, g: UInt8, r: UInt8) = (0x1F, 0x0E, 0x12)
 
     /// `durations`: seconds per frame (eased timing gives frames different lengths).
-    static func write(grids: [PixelGrid], durations: [Double], to url: URL) throws {
+    static func write(grids: [PixelGrid], durations: [Double], side: Int = VideoExporter.side, to url: URL) throws {
         guard let first = grids.first else { throw ExportError.empty }
         guard first.width <= side, first.height <= side else { throw ExportError.couldNotWrite(url.lastPathComponent) }
         let durations = grids.indices.map { i in max(PlaybackTiming.minimumDuration, i < durations.count ? durations[i] : 0.125) }
@@ -25,7 +26,7 @@ enum VideoExporter {
             AVVideoWidthKey: side,
             AVVideoHeightKey: side,
             AVVideoCompressionPropertiesKey: [
-                AVVideoAverageBitRateKey: 6_000_000,
+                AVVideoAverageBitRateKey: side > VideoExporter.side ? 24_000_000 : 6_000_000,
                 AVVideoProfileLevelKey: AVVideoProfileLevelH264HighAutoLevel,
             ],
         ]
@@ -42,7 +43,7 @@ enum VideoExporter {
         writer.startSession(atSourceTime: .zero)
 
         // Largest integer scale with a margin; frames are rendered one at a time to keep memory low.
-        let margin = 120
+        let margin = side / 9
         let scale = max(1, min((side - 2 * margin) / max(first.width, 1), (side - 2 * margin) / max(first.height, 1)))
         let loopSeconds = durations.reduce(0, +)
         let loops = max(1, Int((minimumSeconds / loopSeconds).rounded(.up)))
@@ -52,7 +53,7 @@ enum VideoExporter {
             for (i, grid) in grids.enumerated() {
                 if time >= maximumSeconds { break outer }
                 try autoreleasepool {
-                    let buffer = try makeBuffer(grid, scale: scale)
+                    let buffer = try makeBuffer(grid, scale: scale, side: side)
                     while !input.isReadyForMoreMediaData {
                         // If the encoder fails (app backgrounded, disk full) it never becomes ready.
                         if writer.status != .writing { throw writer.error ?? ExportError.couldNotWrite(url.lastPathComponent) }
@@ -75,7 +76,7 @@ enum VideoExporter {
         guard writer.status == .completed else { throw writer.error ?? ExportError.couldNotWrite(url.lastPathComponent) }
     }
 
-    private static func makeBuffer(_ grid: PixelGrid, scale: Int) throws -> CVPixelBuffer {
+    private static func makeBuffer(_ grid: PixelGrid, scale: Int, side: Int) throws -> CVPixelBuffer {
         var pb: CVPixelBuffer?
         let attrs: [String: Any] = [kCVPixelBufferCGImageCompatibilityKey as String: true,
                                     kCVPixelBufferCGBitmapContextCompatibilityKey as String: true]

@@ -955,9 +955,10 @@ final class SyncStoreTests: XCTestCase {
     func testMergeFromDiskPicksUpOtherDevices() {
         let dir = tempDir()
         let here = ProjectStore(directory: dir)
-        let kept = here.create(baseName: "Kept")
-        let doomed = here.create(baseName: "Doomed")
-        var changed = here.create(baseName: "Changed")
+        // Saved directly: "New canvas" (create) would reuse one empty sprite for all three.
+        let kept = SpriteProject(name: "Kept 1"); here.save(kept)
+        let doomed = SpriteProject(name: "Doomed 1"); here.save(doomed)
+        var changed = SpriteProject(name: "Changed 1"); here.save(changed)
         here.flush()
 
         // Another device: edits one, deletes one, adds one (through the shared folder).
@@ -969,7 +970,7 @@ final class SyncStoreTests: XCTestCase {
         there.flush()
 
         // And an unsaved edit here must survive.
-        let fresh = here.create(baseName: "Fresh")
+        let fresh = SpriteProject(name: "Fresh 1"); here.save(fresh)
         here.mergeFromDisk()
         let names = Set(here.projects.map(\.name))
         XCTAssertTrue(names.contains("Changed elsewhere"))
@@ -1118,5 +1119,116 @@ final class StillSpriteTests: XCTestCase {
             XCTAssertTrue(FeatureAccess.free.allowsArt(PixelRect(x: 0, y: 0, width: s.width, height: s.height)), "\(key) is editable for free")
             XCTAssertNotNil(s.frames[0].opaqueBounds, "\(key) isn't blank")
         }
+    }
+}
+
+final class BlankCanvasTests: XCTestCase {
+    private func store() -> ProjectStore {
+        ProjectStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+    }
+
+    func testNewCanvasReusesAnEmptySprite() {
+        let s = store()
+        let a = s.create()
+        let b = s.create()
+        XCTAssertEqual(a.id, b.id, "an empty sprite is reused")
+        XCTAssertEqual(s.projects.count, 1)
+    }
+
+    func testDrawnSpritesAreNotReused() {
+        let s = store()
+        let m = EditorModel(project: s.create())
+        m.onChange = { s.save($0) }
+        m.pickColor(.black)
+        m.touchBegan(at: Vec2(x: 0.5, y: 0.5)); m.touchEnded()
+        XCTAssertFalse(s.projects[0].isBlank)
+        let next = s.create()
+        XCTAssertNotEqual(next.id, m.project.id)
+        XCTAssertEqual(s.projects.count, 2)
+    }
+
+    func testMoreFramesOrATracingPictureCountAsWork() {
+        var p = SpriteProject(name: "x")
+        XCTAssertTrue(p.isBlank)
+        p.trace = TraceSettings()
+        XCTAssertFalse(p.isBlank)
+        let m = EditorModel(project: SpriteProject(name: "y"))
+        m.addKeyframe()
+        XCTAssertFalse(m.project.isBlank)
+    }
+
+    func testExtraBlanksAreCleanedUp() {
+        let s = store()
+        for i in 0..<4 {
+            var p = SpriteProject(name: "Blank \(i)")
+            p.modifiedAt = Date(timeIntervalSince1970: Double(1000 + i))
+            s.save(p)
+        }
+        XCTAssertEqual(s.removeExtraBlanks().count, 3)
+        XCTAssertEqual(s.projects.map(\.name), ["Blank 3"], "the newest blank is kept")
+    }
+}
+
+final class CustomPaletteTests: XCTestCase {
+    private func url() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("palettes.json")
+    }
+
+    func testSaveRenameUpdateDeleteAndReload() throws {
+        let u = url()
+        let lib = PaletteLibrary(url: u)
+        let a = try XCTUnwrap(lib.add(name: "  Dusk  ", colors: PalettePreset.sunset.colors))
+        let b = try XCTUnwrap(lib.add(name: "", colors: PalettePreset.ocean.colors))
+        XCTAssertEqual(a.name, "Dusk")
+        XCTAssertEqual(b.name, "My palette 2", "blank names get a default")
+        XCTAssertEqual(lib.palettes.first?.id, b.id, "newest first")
+        lib.rename(a.id, to: "Evening")
+        lib.update(a.id, colors: PalettePreset.forest.colors)
+        let reloaded = PaletteLibrary(url: u)
+        XCTAssertEqual(reloaded.palettes.count, 2)
+        XCTAssertEqual(reloaded.palettes.last?.name, "Evening")
+        XCTAssertEqual(reloaded.palettes.last?.colors, PalettePreset.forest.colors)
+        reloaded.delete(b.id)
+        XCTAssertEqual(PaletteLibrary(url: u).palettes.map(\.name), ["Evening"])
+    }
+
+    func testOnlyFullPalettesAreSavedAndDamagedFilesLoadEmpty() throws {
+        let u = url()
+        let lib = PaletteLibrary(url: u)
+        XCTAssertNil(lib.add(name: "Short", colors: [.black]))
+        try FileManager.default.createDirectory(at: u.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data("garbage".utf8).write(to: u)
+        XCTAssertTrue(PaletteLibrary(url: u).palettes.isEmpty)
+    }
+
+    func testApplyingASavedPaletteUsesItsColours() throws {
+        let lib = PaletteLibrary(url: url())
+        let saved = try XCTUnwrap(lib.add(name: "Mine", colors: PalettePreset.neon.colors))
+        let m = EditorModel(project: SpriteProject(name: "x"))
+        m.applyPalette(saved.colors)
+        XCTAssertEqual(m.palette, PalettePreset.neon.colors)
+    }
+}
+
+final class OnionSkinTests: XCTestCase {
+    func testInnerFeaturesStayVisible() {
+        // A green face with dark eyes and a red mouth.
+        var g = PixelGrid(width: 7, height: 7, fill: RGBA(hex: 0x7BE07B))
+        g[2, 2] = RGBA(hex: 0x1B1530); g[4, 2] = RGBA(hex: 0x1B1530)
+        g[3, 4] = RGBA(hex: 0xE63946)
+        let o = OnionSkin.tint(g)
+        let face = o[5, 5]                               // plain face, no different neighbours
+        XCTAssertNotEqual(o[2, 2], face, "eyes differ from the face")
+        XCTAssertNotEqual(o[3, 4], face, "the mouth differs from the face")
+        XCTAssertNotEqual(o[2, 3], face, "pixels next to a feature are edged")
+        XCTAssertEqual(face.a, 255)
+    }
+
+    func testClearStaysClearAndColoursArePink() {
+        var g = PixelGrid(width: 3, height: 1)
+        g[1, 0] = RGBA(hex: 0x3A86FF)
+        let o = OnionSkin.tint(g)
+        XCTAssertTrue(o[0, 0].isClear); XCTAssertTrue(o[2, 0].isClear)
+        XCTAssertGreaterThan(o[1, 0].r, o[1, 0].g, "tinted pink")
     }
 }

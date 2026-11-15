@@ -262,6 +262,12 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         try c.encode(modifiedAt, forKey: .modifiedAt)
     }
 
+    /// Nothing drawn yet: one frame, no pixels on any layer, no tracing picture. New canvases reuse
+    /// a blank sprite instead of piling up empty ones.
+    var isBlank: Bool {
+        frames.count == 1 && trace == nil && frames[0].layers.allSatisfy { $0.opaqueBounds == nil }
+    }
+
     /// A copy with fresh identifiers, so caches never confuse it with the original.
     func duplicated(name: String) -> SpriteProject {
         var copy = self

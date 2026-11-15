@@ -536,6 +536,8 @@ struct ImageStore {
     /// PNG, so transparent sketches stay transparent.
     static let traces = ImageStore(folder: "Trace", png: true)
     static let all = [references, traces]
+    /// Folders moved between the device and iCloud when sync is switched (saved palettes too).
+    private static let movable = all + [ImageStore(folder: "Palettes", png: false)]
 
     /// The iCloud container, when syncing; nil for the device.
     nonisolated(unsafe) static var root: URL?
@@ -592,7 +594,7 @@ struct ImageStore {
     static func move(to newRoot: URL?, removingOld: Bool) {
         let oldRoot = root
         guard oldRoot?.standardizedFileURL != newRoot?.standardizedFileURL else { return }
-        for s in all {
+        for s in movable {
             guard let from = s.directory(in: oldRoot), let to = s.directory(in: newRoot) else { continue }
             let files = (try? FileManager.default.contentsOfDirectory(at: from, includingPropertiesForKeys: nil)) ?? []
             for f in files {

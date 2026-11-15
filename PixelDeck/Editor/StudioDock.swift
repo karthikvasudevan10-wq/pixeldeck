@@ -314,50 +314,68 @@ private struct DimWhenDisabled: ButtonStyle {
 
 // MARK: Colour editor
 
-/// The system colour picker for changing a palette swatch.
-struct SwatchEditor: UIViewControllerRepresentable {
-    let initial: RGBA
-    /// Called with `final == false` while dragging (show it) and `true` when settled (save it).
-    var onChange: (RGBA, _ final: Bool) -> Void
-    var onDone: () -> Void
+/// Apple's colour picker (grid, spectrum, sliders and eyedropper) for changing a palette swatch,
+/// presented modally by UIKit. It mustn't be embedded in a SwiftUI sheet: its eyedropper hides the
+/// picker by dismissing its own presentation, which crashes when it isn't the presented controller.
+@MainActor
+final class SystemColorPicker: NSObject, UIColorPickerViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
+    /// Kept alive while the picker is on screen (it's the picker's delegate).
+    private static var current: SystemColorPicker?
+    private let onChange: (RGBA, Bool) -> Void
+    private let onDone: () -> Void
+    private var finished = false
 
-    func makeCoordinator() -> Coordinator { Coordinator(onChange: onChange, onDone: onDone) }
+    private init(onChange: @escaping (RGBA, Bool) -> Void, onDone: @escaping () -> Void) {
+        self.onChange = onChange
+        self.onDone = onDone
+    }
 
-    func makeUIViewController(context: Context) -> UIColorPickerViewController {
+    /// `onChange(colour, final)`: final is false while dragging (show it), true once settled (save it).
+    static func present(initial: RGBA, onChange: @escaping (RGBA, _ final: Bool) -> Void, onDone: @escaping () -> Void) {
+        guard current == nil, let top = topViewController() else { onDone(); return }
+        let picker = SystemColorPicker(onChange: onChange, onDone: onDone)
         let vc = UIColorPickerViewController()
         vc.supportsAlpha = false
         vc.selectedColor = UIColor(red: CGFloat(initial.r) / 255, green: CGFloat(initial.g) / 255,
                                    blue: CGFloat(initial.b) / 255, alpha: 1)
-        vc.delegate = context.coordinator
-        return vc
+        vc.delegate = picker
+        if let sheet = vc.sheetPresentationController {
+            sheet.detents = [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+        }
+        vc.presentationController?.delegate = picker
+        current = picker
+        top.present(vc, animated: true)
     }
 
-    func updateUIViewController(_ vc: UIColorPickerViewController, context: Context) {
-        context.coordinator.onChange = onChange
-        context.coordinator.onDone = onDone
+    private static func topViewController() -> UIViewController? {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let window = scenes.flatMap(\.windows).first(where: \.isKeyWindow) ?? scenes.first?.windows.first
+        var top = window?.rootViewController
+        while let next = top?.presentedViewController, !next.isBeingDismissed { top = next }
+        return top
     }
 
-    final class Coordinator: NSObject, UIColorPickerViewControllerDelegate {
-        var onChange: (RGBA, Bool) -> Void
-        var onDone: () -> Void
-        init(onChange: @escaping (RGBA, Bool) -> Void, onDone: @escaping () -> Void) {
-            self.onChange = onChange
-            self.onDone = onDone
-        }
-
-        func colorPickerViewController(_ vc: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
-            onChange(RGBA(Color(uiColor: color)), !continuously)
-        }
-
-        /// The picker's own close button dismisses it; tell SwiftUI so the sheet state resets.
-        func colorPickerViewControllerDidFinish(_ vc: UIColorPickerViewController) {
-            onDone()
-        }
+    private func finish() {
+        guard !finished else { return }
+        finished = true
+        onDone()
+        Self.current = nil
     }
+
+    func colorPickerViewController(_ vc: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
+        onChange(RGBA(Color(uiColor: color)), !continuously)
+    }
+
+    /// The picker's close button.
+    func colorPickerViewControllerDidFinish(_ vc: UIColorPickerViewController) { finish() }
+
+    /// Swiped down.
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) { finish() }
 }
 
 /// Identifies which swatch is being edited (for `.sheet(item:)`).
-struct SwatchEdit: Identifiable {
+struct SwatchEdit: Identifiable, Equatable {
     let index: Int
     var id: Int { index }
 }

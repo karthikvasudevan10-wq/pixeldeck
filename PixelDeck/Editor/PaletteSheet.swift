@@ -6,6 +6,11 @@ struct PaletteSheet: View {
     let model: EditorModel
     @Environment(\.dismiss) private var dismiss
     @State private var editing: SwatchEdit?
+    @State private var library = PaletteLibrary.forApp()
+    /// Naming a palette: nil, or the palette being renamed (an empty id means a new one).
+    @State private var naming: CustomPalette?
+    @State private var nameText = ""
+    @State private var deleting: CustomPalette?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,6 +18,7 @@ struct PaletteSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     current
+                    mine
                     presets
                 }
                 .padding(16)
@@ -21,14 +27,15 @@ struct PaletteSheet: View {
         }
         .screenBackground()
         .presentationDetents([.medium, .large])
-        .sheet(item: $editing) { edit in
-            SwatchEditor(initial: model.palette[edit.index],
-                         onChange: { c, final in model.setPaletteColor(c, at: edit.index, commit: final) },
-                         onDone: {
-                             model.setPaletteColor(model.palette[edit.index], at: edit.index)
-                             editing = nil
-                         })
-                .presentationDetents([.medium, .large])
+        .onChange(of: editing) { _, edit in
+            guard let edit, model.palette.indices.contains(edit.index) else { return }
+            SystemColorPicker.present(
+                initial: model.palette[edit.index],
+                onChange: { c, final in model.setPaletteColor(c, at: edit.index, commit: final) },
+                onDone: {
+                    model.setPaletteColor(model.palette[edit.index], at: edit.index)
+                    editing = nil
+                })
         }
     }
 
@@ -73,10 +80,100 @@ struct PaletteSheet: View {
             }
             .buttonStyle(PrimaryButtonStyle(depth: 4))
             .accessibilityHint("Opens the colour picker with a grid, spectrum and sliders for the selected swatch")
-            Text("Tap a swatch to draw with it. Long-press any swatch to change it.")
+            Text("Tap a swatch to draw with it. Long-press any swatch to change it with the colour picker, then save the set below.")
                 .font(AppFont.body(12, relativeTo: .caption))
                 .foregroundStyle(Theme.muted)
         }
+    }
+
+    // MARK: My palettes
+
+    private var mine: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("My palettes").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            Button {
+                nameText = ""
+                naming = CustomPalette(id: UUID(), name: "", colors: model.palette)
+            } label: {
+                HStack(spacing: 10) {
+                    PixelIcon.plus.view(size: 16, lineWidth: 3)
+                    Text("Save this sprite's colours as a palette").font(AppFont.body(14, .bold, relativeTo: .body))
+                    Spacer(minLength: 0)
+                }
+                .foregroundStyle(Theme.accent2)
+                .padding(12)
+                .overlay(Rectangle().strokeBorder(Theme.accent2, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(library.isFull)
+            ForEach(library.palettes) { saved in
+                paletteRow(Text(verbatim: saved.name), colors: saved.colors)
+                    .contextMenu {
+                        Button {
+                            nameText = saved.name
+                            naming = saved
+                        } label: { Label("Rename", systemImage: "pencil") }
+                        Button { library.update(saved.id, colors: model.palette) } label: {
+                            Label("Replace with this sprite's colours", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                        Button(role: .destructive) { deleting = saved } label: { Label("Delete", systemImage: "trash") }
+                    }
+            }
+            if !library.palettes.isEmpty {
+                Text("Long-press a saved palette to rename, update or delete it.")
+                    .font(AppFont.body(12, relativeTo: .caption))
+                    .foregroundStyle(Theme.muted)
+            }
+        }
+        .alert(naming.map { library.palettes.contains($0) } == true ? "Rename palette" : "Save palette",
+               isPresented: Binding(get: { naming != nil }, set: { if !$0 { naming = nil } })) {
+            TextField("Name", text: $nameText)
+            Button("Save") {
+                guard let p = naming else { return }
+                if library.palettes.contains(where: { $0.id == p.id }) { library.rename(p.id, to: nameText) }
+                else { library.add(name: nameText, colors: p.colors) }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog("Delete this palette?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+                            titleVisibility: .visible) {
+            Button("Delete", role: .destructive) { if let d = deleting { library.delete(d.id) } }
+        } message: {
+            Text("Sprites keep their colours; only the saved palette is removed.")
+        }
+    }
+
+    /// A palette you can tap to use: its name and a strip of its colours.
+    private func paletteRow(_ title: Text, colors: [RGBA]) -> some View {
+        let inUse = colors == model.palette
+        return Button { model.applyPalette(colors) } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    title
+                        .font(AppFont.body(15, .bold, relativeTo: .body))
+                        .foregroundStyle(Theme.cream)
+                    Spacer()
+                    if inUse {
+                        PixelIcon.check.view(size: 18).foregroundStyle(Theme.accent)
+                    }
+                }
+                HStack(spacing: 0) {
+                    ForEach(Array(colors.enumerated()), id: \.offset) { _, c in
+                        Rectangle().fill(c.color).frame(maxWidth: .infinity).frame(height: 22)
+                    }
+                }
+                .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 1))
+            }
+            .padding(10)
+            .background(Theme.surface)
+            .overlay(Rectangle().strokeBorder(inUse ? Theme.accent : Theme.line, lineWidth: 2))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(inUse ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint("Use this palette for this sprite")
     }
 
     // MARK: Ready-made palettes
@@ -85,39 +182,24 @@ struct PaletteSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Palettes").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
             ForEach(PalettePreset.allCases) { preset in
-                let colors = preset.colors
-                let inUse = colors == model.palette
-                Button { model.applyPalette(colors) } label: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text(preset.title)
-                                .font(AppFont.body(15, .bold, relativeTo: .body))
-                                .foregroundStyle(Theme.cream)
-                            Spacer()
-                            if inUse {
-                                PixelIcon.check.view(size: 18).foregroundStyle(Theme.accent)
-                            }
-                        }
-                        HStack(spacing: 0) {
-                            ForEach(Array(colors.enumerated()), id: \.offset) { _, c in
-                                Rectangle().fill(c.color).frame(maxWidth: .infinity).frame(height: 22)
-                            }
-                        }
-                        .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 1))
-                    }
-                    .padding(10)
-                    .background(Theme.surface)
-                    .overlay(Rectangle().strokeBorder(inUse ? Theme.accent : Theme.line, lineWidth: 2))
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text(preset.title))
-                .accessibilityAddTraits(inUse ? .isSelected : [])
-                .accessibilityHint("Use this palette for this sprite")
+                paletteRow(Text(preset.title), colors: preset.colors)
             }
             Text("A palette changes the swatches, not colours already in your art.")
                 .font(AppFont.body(12, relativeTo: .caption))
                 .foregroundStyle(Theme.muted)
         }
+    }
+}
+
+extension PaletteLibrary {
+    /// Saved palettes live beside the sprites: in iCloud with sync on (so they follow the user to
+    /// their other devices), otherwise in Application Support on the device.
+    @MainActor static func forApp() -> PaletteLibrary {
+        let base = ImageStore.root
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let library = PaletteLibrary(url: base.appendingPathComponent("Palettes", isDirectory: true)
+            .appendingPathComponent("palettes.json"))
+        library.writeFile = CloudFiles.write
+        return library
     }
 }

@@ -161,11 +161,29 @@ final class ProjectStore {
     }
 
     /// `baseName` is localised by the app, e.g. "Sprite" → "Sprite 3".
+    /// A new canvas. If there's already an empty sprite (one frame, nothing drawn), that one is
+    /// reused and moved to the top instead, so tapping New canvas repeatedly doesn't pile up blanks.
     @discardableResult
     func create(baseName: String = "Sprite") -> SpriteProject {
+        if var blank = projects.first(where: \.isBlank) {
+            blank.modifiedAt = Date()
+            save(blank)
+            projects.sort { $0.modifiedAt > $1.modifiedAt }
+            return blank
+        }
         let p = SpriteProject(name: nextName(base: baseName))
         save(p)
         return p
+    }
+
+    /// Deletes all but the newest empty sprite (left over from before blanks were reused).
+    /// Returns the deleted ids, so the app can remove pictures kept beside them.
+    @discardableResult
+    func removeExtraBlanks() -> [UUID] {
+        let blanks = projects.filter(\.isBlank).sorted { $0.modifiedAt > $1.modifiedAt }
+        let extra = blanks.dropFirst().map(\.id)
+        for id in extra { delete(id: id) }
+        return extra
     }
 
     func save(_ p: SpriteProject) {

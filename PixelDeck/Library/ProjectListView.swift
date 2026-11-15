@@ -24,6 +24,11 @@ struct ProjectListView: View {
     @State private var renamingID: UUID?
     @State private var renameText = ""
     @State private var deletingID: UUID?
+    /// Multi-select: tiles toggle a check instead of opening, and the bottom bar offers
+    /// Select all and Delete.
+    @State private var selecting = false
+    @State private var selected: Set<UUID> = []
+    @State private var confirmingBulkDelete = false
 
     enum GalleryFilter: Hashable { case moving, stills }
 
@@ -50,14 +55,23 @@ struct ProjectListView: View {
                 ScrollView {
                     // Two columns on iPhone (as designed); more on iPad as the width allows.
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 165, maximum: 260), spacing: 12)], spacing: 12) {
-                        newCanvasTile
+                        if !selecting { newCanvasTile }
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { i, project in
-                            NavigationLink(value: project.id) {
-                                ProjectTile(project: project, tile: Self.tileColors[i % Self.tileColors.count],
-                                            animating: galleryVisible, isPro: purchases.isPro)
+                            let tile = ProjectTile(project: project, tile: Self.tileColors[i % Self.tileColors.count],
+                                                   animating: galleryVisible, isPro: purchases.isPro)
+                            if selecting {
+                                let on = selected.contains(project.id)
+                                Button { toggle(project.id) } label: {
+                                    tile.overlay { selectionMark(on) }
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityAddTraits(on ? [.isButton, .isSelected] : .isButton)
+                                .accessibilityHint("Selects this sprite")
+                            } else {
+                                NavigationLink(value: project.id) { tile }
+                                    .buttonStyle(.plain)
+                                    .contextMenu { menu(for: project) }
                             }
-                            .buttonStyle(.plain)
-                            .contextMenu { menu(for: project) }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -72,10 +86,10 @@ struct ProjectListView: View {
                 // The design: "or swipe right anywhere" to start a new canvas.
                 .simultaneousGesture(
                     DragGesture(minimumDistance: 40).onEnded { v in
-                        if v.translation.width > 110 && abs(v.translation.height) < 60 { createAndOpen() }
+                        if !selecting && v.translation.width > 110 && abs(v.translation.height) < 60 { createAndOpen() }
                     }
                 )
-                bottomBar
+                if selecting { selectionBar } else { bottomBar }
             }
             .screenBackground()
             .toolbar(.hidden, for: .navigationBar)
@@ -111,6 +125,16 @@ struct ProjectListView: View {
         } message: {
             Text("All of its frames will be removed. This can't be undone.")
         }
+        .confirmationDialog(Text("Delete \(selected.count) sprites?", comment: "Gallery multi-delete confirmation title; plural"),
+                            isPresented: $confirmingBulkDelete, titleVisibility: .visible) {
+            Button(role: .destructive, action: deleteSelected) {
+                Text("Delete \(selected.count) sprites", comment: "Gallery multi-delete button; plural")
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("They'll be removed with all their frames, from this device and from iCloud on all your devices. This can't be undone.")
+        }
+        .onChange(of: filter) { _, _ in selected = [] }
         .alert("Couldn't save your sprite", isPresented: Binding(get: { store.saveFailed }, set: { if !$0 { store.acknowledgeSaveFailure() } })) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -130,16 +154,31 @@ struct ProjectListView: View {
                     .minimumScaleFactor(0.6)
                     .layoutPriority(1)
                 Spacer(minLength: 8)
-                Button { showingCommunity = true } label: {
-                    PixelIcon.community.view(size: 20).frame(width: 42, height: 42)
+                Button {
+                    withAnimation(.easeOut(duration: 0.15)) {
+                        selecting.toggle()
+                        selected = []
+                    }
+                } label: {
+                    Text(selecting ? "Done" : "Select")
+                        .font(AppFont.pixel(11))
+                        .padding(.horizontal, 12)
+                        .frame(height: 42)
                 }
-                .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
-                .accessibilityLabel("Community")
-                Button { showingSettings = true } label: {
-                    PixelIcon.settings.view(size: 20).frame(width: 42, height: 42)
+                .buttonStyle(TileButtonStyle(active: selecting, fill: Theme.surface, foreground: Theme.text))
+                .disabled(!selecting && store.projects.isEmpty)
+                if !selecting {
+                    Button { showingCommunity = true } label: {
+                        PixelIcon.community.view(size: 20).frame(width: 42, height: 42)
+                    }
+                    .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
+                    .accessibilityLabel("Community")
+                    Button { showingSettings = true } label: {
+                        PixelIcon.settings.view(size: 20).frame(width: 42, height: 42)
+                    }
+                    .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.muted))
+                    .accessibilityLabel("Settings")
                 }
-                .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.muted))
-                .accessibilityLabel("Settings")
             }
             HStack(spacing: 8) {
                 Group {
@@ -223,6 +262,64 @@ struct ProjectListView: View {
         .overlay(alignment: .top) { Theme.line.frame(height: 2) }
     }
 
+    /// The bottom bar while selecting: Select all (or none), and Delete.
+    private var selectionBar: some View {
+        let allSelected = !filtered.isEmpty && filtered.allSatisfy { selected.contains($0.id) }
+        return HStack(spacing: 12) {
+            Button {
+                if allSelected { selected.subtract(filtered.map(\.id)) } else { selected.formUnion(filtered.map(\.id)) }
+            } label: {
+                Text(allSelected ? "Select none" : "Select all")
+                    .font(AppFont.pixel(12))
+                    .frame(maxWidth: .infinity, minHeight: 50)
+            }
+            .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.text))
+            .disabled(filtered.isEmpty)
+            Button { confirmingBulkDelete = true } label: {
+                HStack(spacing: 8) {
+                    PixelIcon.trash.view(size: 18)
+                    (selected.isEmpty ? Text("Delete") : Text("Delete (\(selected.count))"))
+                        .font(AppFont.pixel(12))
+                }
+                .frame(maxWidth: .infinity, minHeight: 50)
+            }
+            .buttonStyle(PrimaryButtonStyle(depth: 4))
+            .disabled(selected.isEmpty)
+        }
+        .padding(.horizontal, 16)
+        .frame(height: 76)
+        .background(Theme.ink.ignoresSafeArea(edges: .bottom))
+        .overlay(alignment: .top) { Theme.line.frame(height: 2) }
+    }
+
+    /// Check box and highlight on a tile while selecting.
+    private func selectionMark(_ on: Bool) -> some View {
+        ZStack(alignment: .topLeading) {
+            Rectangle().strokeBorder(on ? Theme.accent : .clear, lineWidth: 3)
+            ZStack {
+                Rectangle().fill(on ? Theme.accent : Theme.ink.opacity(0.7))
+                Rectangle().strokeBorder(on ? Theme.accent : Theme.cream, lineWidth: 2)
+                if on { PixelIcon.check.view(size: 16, lineWidth: 3).foregroundStyle(Theme.onAccent) }
+            }
+            .frame(width: 28, height: 28)
+            .padding(8)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func toggle(_ id: UUID) {
+        if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
+    }
+
+    private func deleteSelected() {
+        for id in selected {
+            store.delete(id: id)
+            ImageStore.deleteAll(for: id)
+        }
+        selected = []
+        selecting = false
+    }
+
     private func barItem(_ icon: PixelIcon, _ title: LocalizedStringKey, color: Color, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 4) {
@@ -261,6 +358,8 @@ struct ProjectListView: View {
 
     /// First launch: the starter sprites go into the gallery, and the welcome screens show.
     private func firstLaunch() {
+        // Tidy up empty sprites left by earlier versions (new canvases now reuse a blank one).
+        for id in store.removeExtraBlanks() { ImageStore.deleteAll(for: id) }
         if !starterSpritesAdded {
             starterSpritesAdded = true
             let names: [String: String] = [

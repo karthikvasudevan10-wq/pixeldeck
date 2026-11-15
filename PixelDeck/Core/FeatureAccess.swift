@@ -10,6 +10,8 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     /// GIF and MP4 video.
     case gifExport
     case largeExport
+    /// Free PNG exports carry a small "Made with Pixel Deck" footer.
+    case noWatermark
 
     var id: String { rawValue }
 
@@ -59,4 +61,8 @@ struct FeatureAccess: Equatable, Sendable {
     var allowsEasedPlayback: Bool { isPro }
 
     var maxExportScale: Int { isPro ? 16 : FeatureAccess.freeMaxExportScale }
+    /// 4K exports (long side about 3840 px; 2160 × 2160 video).
+    var allowsFourK: Bool { isPro }
+    /// Free PNG exports get the "Made with Pixel Deck" footer.
+    var addsWatermark: Bool { !isPro }
 }

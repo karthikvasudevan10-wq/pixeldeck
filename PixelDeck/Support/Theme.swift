@@ -482,7 +482,7 @@ private enum SpriteImageCache {
     static func images(for s: CharacterSprite) -> (frames: [CGImage?], onion: [CGImage?]) {
         if let c = cache[s.key] { return c }
         let c = (s.frames.map { PixelRenderer.cgImage($0) },
-                 s.frames.map { PixelRenderer.cgImage(PixelRenderer.tinted($0, with: Theme.onionRGBA)) })
+                 s.frames.map { PixelRenderer.cgImage(OnionSkin.tint($0)) })
         cache[s.key] = c
         return c
     }

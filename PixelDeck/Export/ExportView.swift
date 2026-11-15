@@ -45,7 +45,9 @@ struct ExportView: View {
                         .foregroundStyle(Theme.muted)
                         .padding(.top, -6)
                     if options.format.hasScale { scaleSection }
+                    if options.format == .video { videoResolution }
                     formatSection
+                    if options.format == .frames && access.addsWatermark { watermarkNote }
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -122,10 +124,10 @@ struct ExportView: View {
             }
             HStack(spacing: 6) {
                 ForEach(SpriteExporter.scales, id: \.self) { s in
-                    let on = s == options.scale
+                    let on = !options.fourK && s == options.scale
                     let locked = s > access.maxExportScale
                     Button {
-                        if locked { upgrade = .largeExport } else { options.scale = s }
+                        if locked { upgrade = .largeExport } else { options.scale = s; options.fourK = false }
                     } label: {
                         Text(verbatim: "\(s)×")
                             .font(AppFont.pixel(15))
@@ -142,7 +144,70 @@ struct ExportView: View {
                     .accessibilityLabel(locked ? Text("\(s) times, requires Pro") : Text("\(s) times"))
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
+                if options.offersFourK { fourKChip }
             }
+        }
+    }
+
+    /// 4K (Pro): the long side scaled up to about 3840 px.
+    private var fourKChip: some View {
+        let on = options.fourK
+        let locked = !access.allowsFourK
+        let possible = SpriteExporter.fourKFeasible(source, options: options)
+        return Button {
+            if locked { upgrade = .largeExport } else { options.fourK = true }
+        } label: {
+            Text(verbatim: "4K")
+                .font(AppFont.pixel(15))
+                .frame(maxWidth: .infinity, minHeight: 48)
+                .foregroundStyle(on ? Theme.onAccent2 : Theme.text)
+                .background(on ? Theme.accent2 : Theme.surface)
+                .overlay(Rectangle().strokeBorder(on ? Theme.accent2 : Theme.line, lineWidth: 2))
+                .overlay(alignment: .topTrailing) { if locked { ProBadge().padding(3) } }
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!possible)
+        .opacity(possible ? 1 : 0.35)
+        .accessibilityLabel(locked ? Text("4K, requires Pro") : Text("4K"))
+        .accessibilityAddTraits(on ? .isSelected : [])
+    }
+
+    /// Video: 1080 × 1080, or 4K (2160 × 2160).
+    private var videoResolution: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline) {
+                SectionLabel(text: "Resolution")
+                Spacer()
+                Text(verbatim: outputText).font(AppFont.pixel(12)).foregroundStyle(Theme.accent2)
+            }
+            HStack(spacing: 6) {
+                Button { options.fourK = false } label: {
+                    Text(verbatim: "1080p")
+                        .font(AppFont.pixel(15))
+                        .frame(maxWidth: .infinity, minHeight: 48)
+                        .foregroundStyle(!options.fourK ? Theme.onAccent2 : Theme.text)
+                        .background(!options.fourK ? Theme.accent2 : Theme.surface)
+                        .overlay(Rectangle().strokeBorder(!options.fourK ? Theme.accent2 : Theme.line, lineWidth: 2))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(!options.fourK ? .isSelected : [])
+                fourKChip
+            }
+        }
+    }
+
+    /// Free PNG exports carry the footer; say so, with the way to remove it.
+    private var watermarkNote: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text("Free PNG exports include a small \"Made with Pixel Deck\" footer below the art.")
+                .font(AppFont.body(13, relativeTo: .footnote))
+                .foregroundStyle(Theme.muted)
+            Spacer(minLength: 4)
+            Button("Remove with Pro") { upgrade = .noWatermark }
+                .font(AppFont.body(13, .bold, relativeTo: .footnote))
+                .foregroundStyle(Theme.accent)
         }
     }
 
@@ -213,14 +278,14 @@ struct ExportView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(PrimaryButtonStyle())
-            .disabled(working || feasible.isEmpty)
+            .disabled(working || (!options.fourK && feasible.isEmpty))
 
             Button(action: share) {
                 PixelIcon.share.view(size: 20).frame(width: 56, height: 56)
             }
             .buttonStyle(TileButtonStyle(fill: Theme.surface))
             .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
-            .disabled(working || feasible.isEmpty)
+            .disabled(working || (!options.fourK && feasible.isEmpty))
             .accessibilityLabel("Share")
         }
     }
@@ -245,6 +310,9 @@ struct ExportView: View {
     }
 
     private func clampScale() {
+        if options.fourK && (!options.offersFourK || !access.allowsFourK || !SpriteExporter.fourKFeasible(source, options: options)) {
+            options.fourK = false
+        }
         let usable = feasible.filter { $0 <= access.maxExportScale }
         // A long single-row sheet can be too wide at any scale: wrap it into a grid instead.
         if usable.isEmpty, options.format == .spriteSheet, options.layout == .strip {
@@ -256,7 +324,9 @@ struct ExportView: View {
 
     private func makeFiles(_ then: @escaping ([URL]) -> Void) {
         working = true
-        let src = source, opts = options
+        let src = source
+        var opts = options
+        opts.watermark = access.addsWatermark && opts.format == .frames
         DispatchQueue.global(qos: .userInitiated).async {
             let result = Result { try SpriteExporter.export(src, options: opts) }
             DispatchQueue.main.async {
