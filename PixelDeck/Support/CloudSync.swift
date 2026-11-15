@@ -68,7 +68,8 @@ final class CloudSync {
         guard !started else { return }
         started = true
         let account = NotificationCenter.default.addObserver(forName: .NSUbiquityIdentityDidChange, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { Task { await self?.apply() } }
+            // Account changed (signed in, out, or switched): check iCloud again.
+            Task { @MainActor in await self?.apply() }
         }
         observers.append(account)
         Task { await apply() }

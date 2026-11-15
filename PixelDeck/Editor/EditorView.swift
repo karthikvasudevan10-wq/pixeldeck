@@ -48,7 +48,8 @@ struct EditorView: View {
         _model = State(initialValue: EditorModel(project: project))
     }
 
-    static let sidePanelWidth: CGFloat = 340
+    /// nonisolated: a constant, read by the nonisolated `prefersSidePanel` too.
+    nonisolated static let sidePanelWidth: CGFloat = 340
 
     nonisolated static func prefersSidePanel(_ size: CGSize) -> Bool {
         size.width > size.height * 1.15 && size.width >= sidePanelWidth + 320
