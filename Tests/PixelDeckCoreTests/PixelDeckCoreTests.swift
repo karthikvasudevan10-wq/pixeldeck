@@ -884,3 +884,41 @@ final class PalettePresetTests: XCTestCase {
         XCTAssertEqual(m.palette, PalettePreset.ocean.colors)
     }
 }
+
+final class ShowcaseSpriteTests: XCTestCase {
+    private func load(_ name: String) throws -> [String: CharacterSprite] {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("PixelDeck/Resources/Starter/\(name).json")
+        return CharacterSpriteLibrary.parse(try Data(contentsOf: url))
+    }
+
+    func testShowcaseScenesParseAndNeedPro() throws {
+        let lib = try load("showcase")
+        for key in CharacterSpriteLibrary.showcaseOrder {
+            let s = try XCTUnwrap(lib[key], key)
+            XCTAssertEqual(s.frames.count, 16)
+            XCTAssertGreaterThan(max(s.width, s.height), FeatureAccess.freeMaxArtSide, "\(key) is a Pro-size sprite")
+            XCTAssertLessThanOrEqual(max(s.width, s.height), FeatureAccess.proMaxArtSide)
+            XCTAssertTrue(s.frames.allSatisfy { $0.width == s.width && $0.height == s.height })
+            XCTAssertNotEqual(s.frames[0], s.frames[1], "\(key) is animated")
+            // Fully painted scenes: no transparent pixels.
+            XCTAssertNil(s.frames[0].pixels.first { $0.a == 0 })
+            let p = s.makeProject(name: key)
+            XCTAssertFalse(FeatureAccess.free.allowsArt(p.visibleContentBounds!))
+            XCTAssertTrue(FeatureAccess.pro.allowsArt(p.visibleContentBounds!))
+        }
+    }
+
+    func testSpritePaletteAddsToTheSharedOne() {
+        let json = ##"{"pal":{"a":"#000000"},"s":{"w":2,"h":1,"pal":{"b":"#FFFFFF"},"frames":[["ab"]]}}"##
+        let s = CharacterSpriteLibrary.parse(Data(json.utf8))["s"]!
+        XCTAssertEqual(s.frames[0][0, 0], RGBA(hex: 0x000000))
+        XCTAssertEqual(s.frames[0][1, 0], RGBA(hex: 0xFFFFFF))
+    }
+
+    func testStartersStillLoad() throws {
+        let lib = try load("sprites")
+        for key in CharacterSpriteLibrary.order { XCTAssertNotNil(lib[key], key) }
+    }
+}

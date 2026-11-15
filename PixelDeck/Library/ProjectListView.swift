@@ -8,6 +8,10 @@ struct ProjectListView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
     @AppStorage("starterSpritesAdded") private var starterSpritesAdded = false
+    /// The showcase scenes arrived in a later version, so they're added once to every gallery,
+    /// new or existing.
+    @AppStorage("showcaseSpritesAdded") private var showcaseSpritesAdded = false
+    @Environment(PurchaseManager.self) private var purchases
     @State private var path: [UUID] = []
     @State private var filter: GalleryFilter = .moving
     @State private var showingWelcome = false
@@ -46,7 +50,7 @@ struct ProjectListView: View {
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { i, project in
                             NavigationLink(value: project.id) {
                                 ProjectTile(project: project, tile: Self.tileColors[i % Self.tileColors.count],
-                                            animating: galleryVisible)
+                                            animating: galleryVisible, isPro: purchases.isPro)
                             }
                             .buttonStyle(.plain)
                             .contextMenu { menu(for: project) }
@@ -253,6 +257,21 @@ struct ProjectListView: View {
             }
             if store.projects.isEmpty { store.add(starters) }
         }
+        if !showcaseSpritesAdded {
+            showcaseSpritesAdded = true
+            let names: [String: String] = [
+                "highstreet": String(localized: "Spring high street", comment: "Showcase sprite name: a Japanese shopping street with cherry blossom"),
+                "valley": String(localized: "Valley mixtape", comment: "Showcase sprite name: a boy with a cassette player above a mountain valley"),
+            ]
+            let scenes = CharacterSpriteLibrary.showcaseOrder.compactMap { key in
+                StarterArt.sprite(key)?.makeProject(name: names[key] ?? key)
+            }
+            // Newest first, so they're the first thing in the gallery.
+            for var p in scenes.reversed() {
+                p.modifiedAt = Date()
+                store.save(p)
+            }
+        }
         if !hasSeenOnboarding {
             hasSeenOnboarding = true
             showingWelcome = true
@@ -266,6 +285,7 @@ private struct ProjectTile: View {
     let project: SpriteProject
     let tile: Color
     var animating = true
+    var isPro = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var sizeText: String {
@@ -285,6 +305,18 @@ private struct ProjectTile: View {
                     .padding(.vertical, 2)
                     .background(Theme.ink.opacity(0.75))
                     .padding(8)
+                if !isPro && ArtSizeCache.size(of: project).exceedsFreeArtSize {
+                    // Bigger than free art: it can be watched and exported, but editing needs Pro.
+                    Text(verbatim: "PRO")
+                        .font(AppFont.pixel(10))
+                        .foregroundStyle(Theme.onAccent)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Theme.accent)
+                        .padding(8)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .accessibilityLabel("Pro sprite: editing needs Pixel Deck Pro")
+                }
             }
             .frame(height: 148)
             VStack(alignment: .leading, spacing: 2) {
@@ -325,5 +357,11 @@ private enum ArtSizeCache {
         let r = p.visibleContentBounds ?? PixelRect(x: 0, y: 0, width: 0, height: 0)
         cache[p.id] = (p.modifiedAt, r)
         return r
+    }
+}
+
+private extension PixelRect {
+    var exceedsFreeArtSize: Bool {
+        width > FeatureAccess.freeMaxArtSide || height > FeatureAccess.freeMaxArtSide
     }
 }

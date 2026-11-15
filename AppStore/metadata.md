@@ -40,7 +40,7 @@ SHARE IT
 • Scale up to 16× (Pro) with no blurring
 
 STARTER CAST
-A slime, a campfire, a coin, a ghost, a sprout and a moon are waiting in your gallery to study, remix or animate further.
+A slime, a campfire, a coin, a ghost, a sprout and a moon are waiting in your gallery to study, remix or animate further. With Pro, open the two big showcase scenes too: a spring high street in Japan, and a mountain valley where a boy listens to his cassette player.
 
 PRIVATE BY DESIGN
 No account, no ads, no tracking. Your art stays on your device.
