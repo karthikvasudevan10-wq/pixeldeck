@@ -922,3 +922,122 @@ final class ShowcaseSpriteTests: XCTestCase {
         for key in CharacterSpriteLibrary.order { XCTAssertNotNil(lib[key], key) }
     }
 }
+
+final class SyncStoreTests: XCTestCase {
+    private func tempDir() -> URL {
+        let d = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
+        return d
+    }
+
+    func testRelocateMergesKeepingTheNewerVersion() {
+        let local = ProjectStore(directory: tempDir())
+        var shared = SpriteProject(name: "Local edit")
+        shared.modifiedAt = Date(timeIntervalSince1970: 2_000)
+        local.save(shared)
+        local.save(SpriteProject(name: "Only local"))
+        local.flush()
+
+        let cloudDir = tempDir()
+        let cloud = ProjectStore(directory: cloudDir)
+        var older = shared; older.name = "Cloud (older)"; older.modifiedAt = Date(timeIntervalSince1970: 1_000)
+        cloud.save(older)
+        cloud.save(SpriteProject(name: "Only cloud"))
+        cloud.flush()
+
+        let oldDir = local.directory
+        local.relocate(to: cloudDir, removingOld: true)
+        XCTAssertEqual(Set(local.projects.map(\.name)), ["Local edit", "Only local", "Only cloud"])
+        XCTAssertEqual(Set(ProjectStore(directory: cloudDir).projects.map(\.name)), ["Local edit", "Only local", "Only cloud"])
+        XCTAssertTrue(ProjectStore(directory: oldDir).projects.isEmpty, "local copies removed once in iCloud")
+    }
+
+    func testMergeFromDiskPicksUpOtherDevices() {
+        let dir = tempDir()
+        let here = ProjectStore(directory: dir)
+        let kept = here.create(baseName: "Kept")
+        let doomed = here.create(baseName: "Doomed")
+        var changed = here.create(baseName: "Changed")
+        here.flush()
+
+        // Another device: edits one, deletes one, adds one (through the shared folder).
+        let there = ProjectStore(directory: dir)
+        changed.name = "Changed elsewhere"; changed.modifiedAt = Date().addingTimeInterval(60)
+        there.save(changed)
+        there.delete(id: doomed.id)
+        there.save(SpriteProject(name: "New elsewhere"))
+        there.flush()
+
+        // And an unsaved edit here must survive.
+        let fresh = here.create(baseName: "Fresh")
+        here.mergeFromDisk()
+        let names = Set(here.projects.map(\.name))
+        XCTAssertTrue(names.contains("Changed elsewhere"))
+        XCTAssertTrue(names.contains("New elsewhere"))
+        XCTAssertTrue(names.contains(kept.name))
+        XCTAssertTrue(names.contains(fresh.name), "not-yet-written work is kept")
+        XCTAssertFalse(names.contains(doomed.name), "deleted on the other device")
+    }
+
+    func testStartersHaveTheSameIdOnEveryDevice() {
+        XCTAssertEqual(UUID(stableName: "pixeldeck.starter.slime"), UUID(stableName: "pixeldeck.starter.slime"))
+        XCTAssertNotEqual(UUID(stableName: "pixeldeck.starter.slime"), UUID(stableName: "pixeldeck.starter.coin"))
+        let s = CharacterSprite(key: "slime", width: 2, height: 2, fps: 8, frames: [PixelGrid(width: 2, height: 2)])
+        XCTAssertEqual(s.makeProject(name: "A").id, s.makeProject(name: "B").id)
+    }
+
+    func testFixedDatesLetStartersMergeAndEditsWin() {
+        let dir = tempDir()
+        let a = ProjectStore(directory: dir)
+        let s = CharacterSprite(key: "coin", width: 2, height: 2, fps: 8, frames: [PixelGrid(width: 2, height: 2)])
+        let date = Date(timeIntervalSince1970: 1_600_000_000)
+        a.add([s.makeProject(name: "Coin")], before: date)
+        var edited = a.projects[0]; edited.name = "My coin"; edited.modifiedAt = Date()
+        a.save(edited); a.flush()
+        // A second device seeds the same starter, then merges.
+        let b = ProjectStore(directory: tempDir())
+        b.add([s.makeProject(name: "Coin")], before: date)
+        b.relocate(to: dir, removingOld: true)
+        XCTAssertEqual(b.projects.count, 1)
+        XCTAssertEqual(b.projects[0].name, "My coin")
+    }
+}
+
+final class StaleSaveTests: XCTestCase {
+    func testAnOlderCopyNeverOverwritesANewerOne() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = ProjectStore(directory: dir)
+        var p = store.create()
+        let stale = p
+        p.name = "Newer"; p.modifiedAt = Date().addingTimeInterval(10)
+        store.save(p)
+        store.save(stale)                       // e.g. an editor closing with the old version
+        XCTAssertEqual(store.project(id: p.id)?.name, "Newer")
+    }
+}
+
+final class CloudPlaceholderTests: XCTestCase {
+    func testEvictedFilesAreNotTreatedAsDeleted() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = ProjectStore(directory: dir)
+        let p = store.create()
+        store.flush()
+        // iCloud evicts the file, leaving a placeholder.
+        let file = dir.appendingPathComponent("\(p.id.uuidString).json")
+        try FileManager.default.moveItem(at: file, to: dir.appendingPathComponent(".\(p.id.uuidString).json.icloud"))
+        store.mergeFromDisk()
+        XCTAssertNotNil(store.project(id: p.id))
+    }
+
+    func testOwnWritesAreNotReadBack() {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let store = ProjectStore(directory: dir)
+        var p = store.create()
+        p.name = "Edited"; p.modifiedAt = Date().addingTimeInterval(5)
+        store.save(p)
+        store.flush()
+        store.mergeFromDisk()
+        XCTAssertEqual(store.project(id: p.id)?.name, "Edited")
+        XCTAssertEqual(store.projects.count, 1)
+    }
+}

@@ -22,10 +22,13 @@ struct CharacterSprite: Sendable {
         return frames[max(0, i)]
     }
 
-    /// A new sprite with these frames, centred on world (0, 0).
+    /// A new sprite with these frames, centred on world (0, 0). Its id comes from `key`, so the
+    /// same starter added on two devices syncs as one sprite rather than two.
     func makeProject(name: String) -> SpriteProject {
         let bounds = PixelRect(x: -width / 2, y: -height / 2, width: width, height: height)
-        return SpriteProject(name: name, bounds: bounds, frames: frames, fps: fps)
+        var p = SpriteProject(name: name, bounds: bounds, frames: frames, fps: fps)
+        p.id = UUID(stableName: "pixeldeck.starter.\(key)")
+        return p
     }
 }
 
@@ -77,5 +80,23 @@ extension RGBA {
         let s = hexString.hasPrefix("#") ? String(hexString.dropFirst()) : hexString
         guard s.count == 6, let v = UInt32(s, radix: 16) else { return nil }
         self.init(hex: v)
+    }
+}
+
+extension UUID {
+    /// The same UUID for the same name, on every device (two FNV-1a hashes, version 8 layout).
+    init(stableName: String) {
+        func fnv(_ seed: UInt64) -> UInt64 {
+            var h: UInt64 = 0xcbf29ce484222325 ^ seed
+            for b in stableName.utf8 { h = (h ^ UInt64(b)) &* 0x100000001b3 }
+            return h
+        }
+        let a = fnv(0), b = fnv(0x9E3779B97F4A7C15)
+        var bytes = [UInt8](repeating: 0, count: 16)
+        for i in 0..<8 { bytes[i] = UInt8(truncatingIfNeeded: a >> (8 * UInt64(i))); bytes[8 + i] = UInt8(truncatingIfNeeded: b >> (8 * UInt64(i))) }
+        bytes[6] = (bytes[6] & 0x0F) | 0x80        // version 8 (custom)
+        bytes[8] = (bytes[8] & 0x3F) | 0x80        // RFC 4122 variant
+        self.init(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                         bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
     }
 }

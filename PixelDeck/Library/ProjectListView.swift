@@ -255,7 +255,9 @@ struct ProjectListView: View {
             let starters = CharacterSpriteLibrary.order.compactMap { key in
                 StarterArt.sprite(key)?.makeProject(name: names[key] ?? key)
             }
-            if store.projects.isEmpty { store.add(starters) }
+            // Fixed dates (and ids): on a second device these merge with the iCloud copies, and
+            // any edits made to them win.
+            if store.projects.isEmpty { store.add(starters, before: Date(timeIntervalSince1970: 1_600_000_000)) }
         }
         if !showcaseSpritesAdded {
             showcaseSpritesAdded = true
@@ -266,11 +268,8 @@ struct ProjectListView: View {
             let scenes = CharacterSpriteLibrary.showcaseOrder.compactMap { key in
                 StarterArt.sprite(key)?.makeProject(name: names[key] ?? key)
             }
-            // Newest first, so they're the first thing in the gallery.
-            for var p in scenes.reversed() {
-                p.modifiedAt = Date()
-                store.save(p)
-            }
+            // Fixed release date, newest first; edits made on any device win over a fresh copy.
+            store.add(Array(scenes.reversed()), before: Date(timeIntervalSince1970: 1_794_700_800))
         }
         if !hasSeenOnboarding {
             hasSeenOnboarding = true

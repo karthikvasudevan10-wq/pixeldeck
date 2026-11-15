@@ -2,11 +2,22 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(PurchaseManager.self) private var purchases
+    @Environment(CloudSync.self) private var cloud
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var showingUpgrade = false
     @State private var showingSwipes = false
     @AppStorage("pencilOnly") private var pencilOnly = false
+
+    private var cloudStatus: LocalizedStringKey {
+        switch cloud.status {
+        case .off: "Your sprites are kept on this device only. Turn on to keep them in your iCloud and open them on your other devices."
+        case .checking: "Checking iCloud…"
+        case .unavailable: "iCloud isn't available. Sign in to your Apple Account and turn on iCloud Drive in the Settings app. Your sprites are kept on this device until then."
+        case .syncing: "Syncing your sprites with iCloud…"
+        case .upToDate: "Your sprites are in your iCloud and on every device signed in to it. Only you can see them."
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -31,6 +42,24 @@ struct SettingsView: View {
                                         .font(AppFont.body(15, .medium, relativeTo: .body))
                                         .foregroundStyle(Theme.text)
                                     Text("Fingers move and zoom the canvas, and a resting palm can't draw. Turns on by itself the first time you use a Pencil.")
+                                        .font(AppFont.body(12, relativeTo: .caption))
+                                        .foregroundStyle(Theme.muted)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            }
+                            .tint(Theme.accent)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 10)
+                            .background(Theme.surface)
+                        }
+
+                        group("iCloud") {
+                            Toggle(isOn: Binding(get: { cloud.enabled }, set: { cloud.enabled = $0 })) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Sync with iCloud")
+                                        .font(AppFont.body(15, .medium, relativeTo: .body))
+                                        .foregroundStyle(Theme.text)
+                                    Text(cloudStatus)
                                         .font(AppFont.body(12, relativeTo: .caption))
                                         .foregroundStyle(Theme.muted)
                                         .fixedSize(horizontal: false, vertical: true)

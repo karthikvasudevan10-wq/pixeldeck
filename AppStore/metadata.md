@@ -43,7 +43,7 @@ STARTER CAST
 A slime, a campfire, a coin, a ghost, a sprout and a moon are waiting in your gallery to study, remix or animate further. With Pro, open the two big showcase scenes too: a spring high street in Japan, and a mountain valley where a boy listens to his cassette player.
 
 PRIVATE BY DESIGN
-No account, no ads, no tracking. Your art stays on your device.
+No sign-up, no ads, no tracking. Your art syncs through your own private iCloud, so it's on your iPhone, iPad and any device signed in to your Apple Account, and nowhere else.
 
 PIXEL DECK PRO
 One purchase, no subscription: art up to 512×512, up to 999 frames per sprite, GIF and video export, exports up to 16×, and eased playback timing so your animations speed up and slow down naturally. Family Sharing supported.

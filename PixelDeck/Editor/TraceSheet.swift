@@ -3,7 +3,7 @@ import PhotosUI
 
 /// The tracing picture: a photo or sketch laid under every layer, at its own opacity, to draw
 /// over. It is a guide only: never part of frames, the onion skin, thumbnails or exports.
-/// Chosen with the system photo picker (no photo-library permission); saved on the device.
+/// Chosen with the system photo picker (no photo-library permission); saved with the sprite.
 struct TraceSheet: View {
     let model: EditorModel
     @Binding var image: UIImage?

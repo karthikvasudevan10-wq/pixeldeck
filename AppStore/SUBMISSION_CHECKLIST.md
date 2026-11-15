@@ -74,7 +74,8 @@ You still need to do this, and no review can replace it:
 - [ ] If you change what the app does with data, update both the in-app copy (`PrivacyPolicyView.swift`) and the HTML.
 
 ### App Store Connect answers
-- [ ] **App Privacy**: "Data Not Collected" is accurate for this code.
+- [ ] **App Privacy**: "Data Not Collected" is accurate for this code. iCloud sync stores sprites in the user's own private iCloud container, which the developer can't access, so it isn't collection.
+- [ ] **iCloud capability** (needs a paid Apple Developer Program membership): target → Signing & Capabilities → **+ Capability** → **iCloud**. Tick **iCloud Documents**, add a container named `iCloud.<your bundle ID>`, and tick it. Without this the app builds and works, but sprites stay on each device. Before release, test with two devices on the same Apple Account, and check the container in CloudKit Console → your container is created.
 - [ ] **Age rating questionnaire**: answer None or No throughout. That includes the newer questions on social media, in-app controls, Shared Location and Dating, which every app must answer by 12 Jan 2027. The result should be the lowest rating.
 - [ ] **Category**: Graphics & Design (primary). Entertainment or Productivity are possible secondaries.
 - [ ] **Pricing**: Free, with the in-app purchase. See the business model notes below.
@@ -143,10 +144,7 @@ Why this model:
 
 Ideas for later versions:
 - Import a photo and turn it into pixel art
-- Layers
-- iCloud sync
 - Custom palettes, including .hex and .gpl palette files
-- Apple Pencil hover preview
 - A seasonal discount using a promotional offer
 
 ## Review notes (paste into App Store Connect → App Review Information)

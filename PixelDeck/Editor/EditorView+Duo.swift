@@ -445,7 +445,7 @@ struct EaselStage: View {
 
 /// A photo or sketch pinned beside the canvas (Flipbook left page). With the colour picker tool,
 /// tapping it samples a colour. Chosen with the system photo picker, which needs no photo-library
-/// permission; saved on the device only, per sprite.
+/// permission; saved per sprite (and synced with it through iCloud when sync is on).
 struct ReferencePanel: View {
     @Binding var image: UIImage?
     let model: EditorModel
@@ -528,24 +528,35 @@ struct ReferencePanel: View {
     }
 }
 
-/// Pictures kept beside a sprite, one per sprite, in Application Support (on the device only):
-/// the Flipbook's reference image and the tracing picture.
+/// Pictures kept beside a sprite, one per sprite: the Flipbook's reference image and the tracing
+/// picture. In Application Support on the device, or in the iCloud container with iCloud sync on
+/// (`root`), so they follow the sprite to the user's other devices.
 struct ImageStore {
     static let references = ImageStore(folder: "References", png: false)
     /// PNG, so transparent sketches stay transparent.
     static let traces = ImageStore(folder: "Trace", png: true)
+    static let all = [references, traces]
+
+    /// The iCloud container, when syncing; nil for the device.
+    nonisolated(unsafe) static var root: URL?
 
     let folder: String
     let png: Bool
 
-    private var directory: URL? {
-        guard let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
+    private static var localRoot: URL? {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+    }
+
+    private func directory(in base: URL?) -> URL? {
+        guard let base = base ?? Self.localRoot else { return nil }
         let dir = base.appendingPathComponent(folder, isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
 
-    private func url(_ id: UUID) -> URL? { directory?.appendingPathComponent(id.uuidString).appendingPathExtension(png ? "png" : "jpg") }
+    private func url(_ id: UUID, in base: URL? = ImageStore.root) -> URL? {
+        directory(in: base)?.appendingPathComponent(id.uuidString).appendingPathExtension(png ? "png" : "jpg")
+    }
 
     func load(for id: UUID) -> UIImage? {
         guard let u = url(id), let data = try? Data(contentsOf: u) else { return nil }
@@ -555,9 +566,9 @@ struct ImageStore {
     func save(_ image: UIImage?, for id: UUID) {
         guard let u = url(id) else { return }
         if let data = png ? image?.pngData() : image?.jpegData(compressionQuality: 0.85) {
-            try? data.write(to: u, options: .atomic)
-        } else {
-            try? FileManager.default.removeItem(at: u)
+            try? CloudFiles.write(data, to: u)
+        } else if FileManager.default.fileExists(atPath: u.path) {
+            CloudFiles.remove(u)
         }
     }
 
@@ -565,18 +576,32 @@ struct ImageStore {
 
     func copy(from id: UUID, to newID: UUID) {
         guard let a = url(id), let b = url(newID), FileManager.default.fileExists(atPath: a.path) else { return }
-        try? FileManager.default.copyItem(at: a, to: b)
+        CloudFiles.copy(from: a, to: b)
     }
 
-    /// Removes the pictures of every sprite a sprite was deleted for.
+    /// Removes every picture kept for a sprite that was deleted.
     static func deleteAll(for id: UUID) {
-        references.delete(for: id)
-        traces.delete(for: id)
+        for s in all { s.delete(for: id) }
     }
 
     static func copyAll(from id: UUID, to newID: UUID) {
-        references.copy(from: id, to: newID)
-        traces.copy(from: id, to: newID)
+        for s in all { s.copy(from: id, to: newID) }
+    }
+
+    /// Switches between the device and iCloud (`newRoot`), copying pictures that aren't there yet.
+    static func move(to newRoot: URL?, removingOld: Bool) {
+        let oldRoot = root
+        guard oldRoot?.standardizedFileURL != newRoot?.standardizedFileURL else { return }
+        for s in all {
+            guard let from = s.directory(in: oldRoot), let to = s.directory(in: newRoot) else { continue }
+            let files = (try? FileManager.default.contentsOfDirectory(at: from, includingPropertiesForKeys: nil)) ?? []
+            for f in files {
+                let target = to.appendingPathComponent(f.lastPathComponent)
+                if !FileManager.default.fileExists(atPath: target.path) { CloudFiles.copy(from: f, to: target) }
+                if removingOld { CloudFiles.remove(f) }
+            }
+        }
+        root = newRoot
     }
 }
 

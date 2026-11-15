@@ -1,7 +1,7 @@
 import Foundation
 
 /// A picture laid under every layer to trace over. Only these settings live in the sprite; the
-/// image itself is stored beside it on the device. It is never drawn into frames, thumbnails,
+/// image itself is stored beside it (see ImageStore). It is never drawn into frames, thumbnails,
 /// the onion skin or exports.
 struct TraceSettings: Codable, Equatable, Sendable {
     var opacity: Double = 0.5
