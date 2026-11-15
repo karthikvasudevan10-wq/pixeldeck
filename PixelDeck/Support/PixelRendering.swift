@@ -111,3 +111,35 @@ struct PixelImage: View {
 struct CheckerBackground: View {
     var body: some View { Checkerboard(cell: 6) }
 }
+
+/// Looping playback that follows a sprite's (possibly eased) per-frame durations.
+enum PlaybackClock {
+    static func index(_ date: Date, durations: [Double]) -> Int {
+        PlaybackTiming.frameIndex(at: date.timeIntervalSinceReferenceDate, durations: durations)
+    }
+
+    /// How often a looping view needs to update: often enough for the shortest frame.
+    static func tick(_ durations: [Double]) -> TimeInterval {
+        max(1.0 / 60, durations.min() ?? 0.125)
+    }
+}
+
+/// Playback easing choices for the frame-rate menus (Pro; Linear is free).
+struct TimingPicker: View {
+    let model: EditorModel
+
+    var body: some View {
+        Picker(selection: Binding(get: { model.project.playbackEasing }, set: { model.setPlaybackEasing($0) })) {
+            ForEach(Easing.allCases) { e in
+                if e == .linear || model.access.allowsEasedPlayback {
+                    Text(e.title).tag(e)
+                } else {
+                    Text("\(Text(e.title)) · Pro", comment: "A locked option; the placeholder is the option name").tag(e)
+                }
+            }
+        } label: {
+            Label("Timing", systemImage: "point.topleft.down.to.point.bottomright.curvepath")
+        }
+        .pickerStyle(.menu)
+    }
+}

@@ -95,7 +95,7 @@ struct ExportView: View {
     private var preview: some View {
         ZStack(alignment: .topLeading) {
             Checkerboard(cell: 20)
-            TweenPreview(frames: source.grids, fps: project.fps)
+            TweenPreview(frames: source.grids, fps: project.fps, durations: source.durations)
                 .padding(24)
             Text("Loop preview")
                 .font(AppFont.pixel(11))

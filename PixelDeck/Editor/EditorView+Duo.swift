@@ -131,7 +131,7 @@ extension EditorView {
                             .padding(32)
                     }
                 case .playback:
-                    FrameLoop(frames: model.project.frames, fps: model.project.fps).padding(24)
+                    FrameLoop(frames: model.project.frames, durations: model.frameDurations).padding(24)
                 case .reference:
                     ReferencePanel(image: $reference, model: model)
                 }
@@ -246,6 +246,7 @@ extension EditorView {
             Picker("Frame rate", selection: Binding(get: { model.project.fps }, set: { model.setFPS($0) })) {
                 ForEach([1, 2, 3, 4, 6, 8, 10, 12, 15, 24, 30], id: \.self) { Text("\($0) fps").tag($0) }
             }
+            TimingPicker(model: model)
         } label: {
             Text(verbatim: "\(model.project.fps) fps")
                 .font(AppFont.pixel(11))
@@ -430,10 +431,7 @@ struct EaselStage: View {
         let frames = model.project.frames
         Group {
             if frames.count > 1 && !reduceMotion {
-                TimelineView(.periodic(from: .now, by: 1 / Double(model.project.fps))) { ctx in
-                    let i = Int(ctx.date.timeIntervalSinceReferenceDate * Double(model.project.fps)) % frames.count
-                    PixelImage(frame: frames[i], checker: false)
-                }
+                FrameLoop(frames: frames, durations: model.frameDurations)
             } else {
                 PixelImage(frame: frames[model.currentIndex], checker: false)
             }
@@ -613,13 +611,14 @@ struct PageTurnEffect: ViewModifier, Animatable {
 /// that updates on every touch). Shows the first frame with Reduce Motion.
 struct FrameLoop: View {
     let frames: [Frame]
-    let fps: Int
+    /// Seconds per frame (the sprite's eased timing).
+    let durations: [Double]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         if frames.count > 1 && !reduceMotion {
-            TimelineView(.periodic(from: .now, by: 1 / Double(max(fps, 1)))) { ctx in
-                let i = Int(ctx.date.timeIntervalSinceReferenceDate * Double(max(fps, 1))) % frames.count
+            TimelineView(.periodic(from: .now, by: PlaybackClock.tick(durations))) { ctx in
+                let i = min(PlaybackClock.index(ctx.date, durations: durations), frames.count - 1)
                 PixelImage(frame: frames[i], checker: false)
             }
         } else if let first = frames.first {

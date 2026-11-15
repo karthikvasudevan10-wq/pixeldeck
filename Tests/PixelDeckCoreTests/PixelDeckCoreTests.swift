@@ -636,3 +636,54 @@ final class ToolSwitchTests: XCTestCase {
         }
     }
 }
+
+final class PlaybackTimingTests: XCTestCase {
+    func testLinearIsEvenAndEasingKeepsTheLoopLength() {
+        XCTAssertEqual(PlaybackTiming.durations(count: 4, fps: 8, easing: .linear), [0.125, 0.125, 0.125, 0.125])
+        for e in Easing.allCases {
+            let d = PlaybackTiming.durations(count: 10, fps: 10, easing: e)
+            XCTAssertEqual(d.reduce(0, +), 1.0, accuracy: 0.001, "\(e) keeps a 1 s loop")
+            XCTAssertTrue(d.allSatisfy { $0 >= PlaybackTiming.minimumDuration })
+        }
+    }
+
+    func testEasingShapesTheTiming() {
+        let easeIn = PlaybackTiming.durations(count: 8, fps: 8, easing: .easeIn)
+        XCTAssertGreaterThan(easeIn.first!, easeIn.last!, "ease in: slow start, so early frames last longer")
+        let easeOut = PlaybackTiming.durations(count: 8, fps: 8, easing: .easeOut)
+        XCTAssertLessThan(easeOut.first!, easeOut.last!)
+        let inOut = PlaybackTiming.durations(count: 8, fps: 8, easing: .easeInOut)
+        XCTAssertGreaterThan(inOut.first!, inOut[3])
+        XCTAssertGreaterThan(inOut.last!, inOut[4])
+        XCTAssertEqual(inOut.first!, inOut.last!, accuracy: 0.0001, "symmetric")
+    }
+
+    func testFrameIndexFollowsDurations() {
+        let d = [0.5, 0.1, 0.4]
+        XCTAssertEqual(PlaybackTiming.frameIndex(at: 0.2, durations: d), 0)
+        XCTAssertEqual(PlaybackTiming.frameIndex(at: 0.55, durations: d), 1)
+        XCTAssertEqual(PlaybackTiming.frameIndex(at: 0.7, durations: d), 2)
+        XCTAssertEqual(PlaybackTiming.frameIndex(at: 1.2, durations: d), 0, "loops")
+    }
+
+    func testEasedPlaybackIsProAndPersists() throws {
+        let m = makeModel()
+        var asked: ProFeature?
+        m.onProRequired = { asked = $0 }
+        m.setPlaybackEasing(.easeInOut)
+        XCTAssertEqual(asked, .timing)
+        XCTAssertEqual(m.project.playbackEasing, .linear)
+        m.access = .pro
+        m.setPlaybackEasing(.easeInOut)
+        XCTAssertEqual(m.project.playbackEasing, .easeInOut)
+        let back = try JSONDecoder().decode(SpriteProject.self, from: JSONEncoder().encode(m.project))
+        XCTAssertEqual(back.playbackEasing, .easeInOut)
+    }
+
+    func testSheetMetadataCarriesPerFrameDurations() {
+        let sheet = SpriteSheet(grids: [PixelGrid(size: 2), PixelGrid(size: 2)], scale: 1, layout: .strip)
+        let meta = sheet.metadata(fps: 10, imageName: "s.png", durations: [0.15, 0.05])
+        XCTAssertEqual(meta.frames.map(\.durationMs), [150, 50])
+        XCTAssertEqual(sheet.metadata(fps: 10, imageName: "s.png").frames.map(\.durationMs), [100, 100])
+    }
+}

@@ -134,6 +134,7 @@ The app is free to download, with **Pixel Deck Pro** as a one-time non-consumabl
 - **Frames per sprite**: free allows 12; Pro allows 999, or fewer for very large sprites to stay within memory on older iPhones.
 - **Drawing tools, mirror, onion skin, motion tweening**: all included free.
 - **Export**: free gets PNG frames and sprite sheets with JSON at up to 4×; Pro adds animated GIF, MP4 video and up to 16×.
+- **Playback timing**: free plays every frame for the same time (Linear); Pro adds Ease in, Ease out and Ease in & out, carried into GIF, video and the sheet JSON. Tween easing for moved selections stays free.
 
 Why this model:
 - A one-time unlock suits an offline tool with no running costs. A subscription needs continuing value to justify it (3.1.2), and reviewers and users push back when there isn't any.
@@ -159,7 +160,7 @@ Ideas for later versions:
 > - Long-press a palette colour to change it.
 > - The shapes tool (4th tile) draws lines, rectangles, circles and triangles; the first shape goes on its own layer. The layers button at the top right of the canvas opens the layers panel.
 >
-> In-app purchase: "Pixel Deck Pro" (non-consumable) unlocks art larger than 64 × 64, more than 12 frames, GIF and video export, and exports above 4×. To see the paywall, go to Settings (the icon at the top of the gallery) → Unlock Pro, or pick GIF on the export screen. Restore Purchases is in Settings and on the paywall.
+> In-app purchase: "Pixel Deck Pro" (non-consumable) unlocks art larger than 64 × 64, more than 12 frames, GIF and video export, exports above 4×, and eased playback timing (frame-rate menu → Timing). To see the paywall, go to Settings (the icon at the top of the gallery) → Unlock Pro, or pick GIF on the export screen. Restore Purchases is in Settings and on the paywall.
 >
 > **Save** on the export screen asks for add-only Photos access; **Share** uses the share sheet.
 >

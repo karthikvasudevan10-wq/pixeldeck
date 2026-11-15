@@ -145,6 +145,8 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     var bounds: PixelRect
     var frames: [Frame]
     var fps: Int = 8
+    /// How playback is paced across the frames (Pro). Linear: every frame lasts 1/fps.
+    var playbackEasing: Easing = .linear
     var palette: [RGBA] = SpriteProject.defaultPalette
     /// Bottom to top. Every frame has one cel per layer.
     var layers: [LayerInfo] = [LayerInfo(name: "Layer 1")]
@@ -198,7 +200,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         frames.map { $0.grid.reframed(from: bounds, to: world) }
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, palette, layers, createdAt, modifiedAt }
+    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, layers, createdAt, modifiedAt }
 
     /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
     /// crashing the app (the editor assumes at least one frame, all the same size). Files from
@@ -235,6 +237,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         }
         frames = normalized.isEmpty ? [Frame.blank(width: w, height: h, layers: n)] : normalized
         fps = min(max((try? c.decode(Int.self, forKey: .fps)) ?? 8, 1), 30)
+        playbackEasing = (try? c.decode(Easing.self, forKey: .playbackEasing)) ?? .linear
         let pal = ((try? c.decode([RGBA].self, forKey: .palette)) ?? []).map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         palette = pal.count == SpriteProject.defaultPalette.count ? pal : SpriteProject.defaultPalette
         createdAt = (try? c.decode(Date.self, forKey: .createdAt)) ?? Date()
@@ -248,6 +251,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         try c.encode(bounds, forKey: .bounds)
         try c.encode(frames, forKey: .frames)
         try c.encode(fps, forKey: .fps)
+        try c.encode(playbackEasing, forKey: .playbackEasing)
         try c.encode(palette, forKey: .palette)
         try c.encode(layers, forKey: .layers)
         try c.encode(createdAt, forKey: .createdAt)

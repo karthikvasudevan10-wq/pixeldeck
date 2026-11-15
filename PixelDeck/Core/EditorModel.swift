@@ -826,6 +826,20 @@ final class EditorModel {
         finishEdit()
     }
 
+    /// Paces playback across the frames. Anything but Linear needs Pro.
+    func setPlaybackEasing(_ easing: Easing) {
+        guard easing != project.playbackEasing else { return }
+        if easing != .linear && !access.allowsEasedPlayback {
+            onProRequired?(.timing)
+            return
+        }
+        project.playbackEasing = easing
+        finishEdit()
+    }
+
+    /// Seconds each frame is shown when playing.
+    var frameDurations: [Double] { project.frameDurations }
+
     func rename(_ name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

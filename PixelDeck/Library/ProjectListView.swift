@@ -306,10 +306,7 @@ private struct ProjectTile: View {
     @ViewBuilder
     private var preview: some View {
         if project.frames.count > 1 && !reduceMotion && animating {
-            TimelineView(.periodic(from: .now, by: 1 / Double(project.fps))) { ctx in
-                let i = Int((ctx.date.timeIntervalSinceReferenceDate * Double(project.fps)).rounded(.down)) % project.frames.count
-                PixelImage(frame: project.frames[i], checker: false)
-            }
+            FrameLoop(frames: project.frames, durations: project.frameDurations)
         } else {
             PixelImage(frame: project.frames[0], checker: false)
         }

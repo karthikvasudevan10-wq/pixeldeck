@@ -111,6 +111,7 @@ extension ProFeature {
         case .unlimitedFrames: "Up to \(FeatureAccess.absoluteFrameLimit) frames per sprite"
         case .gifExport: "Animated GIF & video export"
         case .largeExport: "Export up to 16× size"
+        case .timing: "Eased playback timing"
         }
     }
 
@@ -120,6 +121,7 @@ extension ProFeature {
         case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. Very large sprites have a lower limit to protect your device's memory."
         case .gifExport: "Share looping GIFs and MP4 videos for Reels, Shorts and TikTok."
         case .largeExport: "Crisp, large images for stores, social posts and print."
+        case .timing: "Let animations speed up and slow down — ease in, ease out or both — in playback, GIFs, videos and sprite sheets."
         }
     }
 }

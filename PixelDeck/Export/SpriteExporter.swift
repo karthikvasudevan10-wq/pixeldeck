@@ -36,6 +36,8 @@ struct ExportSource {
     let name: String
     let fps: Int
     let grids: [PixelGrid]
+    /// Seconds per frame, with the sprite's playback easing.
+    let durations: [Double]
     let width: Int
     let height: Int
 
@@ -45,6 +47,7 @@ struct ExportSource {
         name = project.name
         fps = project.fps
         grids = project.grids(croppedTo: rect)
+        durations = project.frameDurations
         width = rect.width
         height = rect.height
     }
@@ -109,14 +112,14 @@ enum SpriteExporter {
                 let json = dir.appendingPathComponent("\(base)_sheet.json")
                 let encoder = JSONEncoder()
                 encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-                try encoder.encode(sheet.metadata(fps: src.fps, imageName: name)).write(to: json)
+                try encoder.encode(sheet.metadata(fps: src.fps, imageName: name, durations: src.durations)).write(to: json)
                 urls.append(json)
             }
             return urls
 
         case .gif:
             let url = dir.appendingPathComponent("\(base).gif")
-            try writeGIF(grids: src.grids, scale: scale, fps: src.fps, to: url)
+            try writeGIF(grids: src.grids, scale: scale, durations: src.durations, to: url)
             return [url]
 
         case .frames:
@@ -128,7 +131,7 @@ enum SpriteExporter {
 
         case .video:
             let url = dir.appendingPathComponent("\(base).mp4")
-            try VideoExporter.write(grids: src.grids, fps: src.fps, to: url)
+            try VideoExporter.write(grids: src.grids, durations: src.durations, to: url)
             return [url]
         }
     }
@@ -150,17 +153,18 @@ enum SpriteExporter {
         guard CGImageDestinationFinalize(dest) else { throw ExportError.couldNotWrite(url.lastPathComponent) }
     }
 
-    static func writeGIF(grids: [PixelGrid], scale: Int, fps: Int, to url: URL) throws {
+    /// Each frame gets its own delay, so eased timing survives in the GIF.
+    static func writeGIF(grids: [PixelGrid], scale: Int, durations: [Double], to url: URL) throws {
         guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.gif.identifier as CFString, grids.count, nil)
         else { throw ExportError.couldNotWrite(url.lastPathComponent) }
         let loop: [String: Any] = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFLoopCount as String: 0]]
         CGImageDestinationSetProperties(dest, loop as CFDictionary)
-        let delay = 1 / Double(max(1, fps))
-        let frameProps: [String: Any] = [kCGImagePropertyGIFDictionary as String: [
-            kCGImagePropertyGIFDelayTime as String: delay,
-            kCGImagePropertyGIFUnclampedDelayTime as String: delay,
-        ]]
-        for grid in grids {
+        for (i, grid) in grids.enumerated() {
+            let delay = max(PlaybackTiming.minimumDuration, i < durations.count ? durations[i] : 0.125)
+            let frameProps: [String: Any] = [kCGImagePropertyGIFDictionary as String: [
+                kCGImagePropertyGIFDelayTime as String: delay,
+                kCGImagePropertyGIFUnclampedDelayTime as String: delay,
+            ]]
             try autoreleasepool {
                 guard let image = PixelRenderer.cgImage(grid, scale: scale) else { throw ExportError.couldNotWrite(url.lastPathComponent) }
                 CGImageDestinationAddImage(dest, image, frameProps as CFDictionary)

@@ -45,7 +45,7 @@ PRIVATE BY DESIGN
 No account, no ads, no tracking. Your art stays on your device.
 
 PIXEL DECK PRO
-One purchase, no subscription: art up to 512×512, up to 999 frames per sprite, GIF and video export, and exports up to 16×. Family Sharing supported.
+One purchase, no subscription: art up to 512×512, up to 999 frames per sprite, GIF and video export, exports up to 16×, and eased playback timing so your animations speed up and slow down naturally. Family Sharing supported.
 
 **What's New** (first version): First release. Happy pixelling!
 

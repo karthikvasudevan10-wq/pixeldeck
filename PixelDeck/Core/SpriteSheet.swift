@@ -60,21 +60,24 @@ struct SpriteSheet: Sendable {
         bytes = out
     }
 
-    func metadata(fps: Int, imageName: String) -> SpriteSheetMetadata {
-        let duration = 1000 / max(1, fps)
-        return SpriteSheetMetadata(
-            image: imageName,
-            width: width,
-            height: height,
-            frameWidth: frameWidth,
-            frameHeight: frameHeight,
-            fps: fps,
-            frames: (0..<frameCount).map { i in
-                .init(index: i, x: (i % columns) * frameWidth, y: (i / columns) * frameHeight,
-                      w: frameWidth, h: frameHeight, durationMs: duration)
-            }
-        )
+    /// `durations` (seconds per frame) carries eased timing into the JSON; default is 1/fps each.
+    func metadata(fps: Int, imageName: String, durations: [Double]? = nil) -> SpriteSheetMetadata {
+        let even = 1000 / max(1, fps)
+        // Milliseconds per frame: the eased durations when given, otherwise 1/fps each.
+        var ms = [Int](repeating: even, count: frameCount)
+        if let durations {
+            for i in 0..<min(frameCount, durations.count) { ms[i] = Int((durations[i] * 1000).rounded()) }
+        }
+        var rects: [SpriteSheetMetadata.FrameRect] = []
+        for i in 0..<frameCount {
+            let x = (i % columns) * frameWidth
+            let y = (i / columns) * frameHeight
+            rects.append(.init(index: i, x: x, y: y, w: frameWidth, h: frameHeight, durationMs: ms[i]))
+        }
+        return SpriteSheetMetadata(image: imageName, width: width, height: height,
+                                   frameWidth: frameWidth, frameHeight: frameHeight, fps: fps, frames: rects)
     }
+
 }
 
 /// JSON sidecar for game engines: where each frame sits in the sheet.

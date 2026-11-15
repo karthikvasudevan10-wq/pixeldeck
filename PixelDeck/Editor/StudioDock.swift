@@ -244,6 +244,7 @@ private struct ActionRow: View {
                 Picker("Frame rate", selection: Binding(get: { model.project.fps }, set: { model.setFPS($0) })) {
                     ForEach(Self.fpsChoices, id: \.self) { Text("\($0) fps").tag($0) }
                 }
+                TimingPicker(model: model)
             } label: {
                 Text(verbatim: "\(model.project.fps)fps")
                     .font(AppFont.pixel(11))

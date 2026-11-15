@@ -1,7 +1,7 @@
 import Foundation
 
 /// Timing curve applied to a tween.
-enum Easing: String, CaseIterable, Identifiable, Sendable {
+enum Easing: String, CaseIterable, Identifiable, Codable, Sendable {
     case linear, easeIn, easeOut, easeInOut
 
     var id: String { rawValue }

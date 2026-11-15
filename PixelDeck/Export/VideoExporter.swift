@@ -12,10 +12,13 @@ enum VideoExporter {
     /// The design's ink colour, as BGRA bytes.
     private static let background: (b: UInt8, g: UInt8, r: UInt8) = (0x1F, 0x0E, 0x12)
 
-    static func write(grids: [PixelGrid], fps: Int, to url: URL) throws {
+    /// `durations`: seconds per frame (eased timing gives frames different lengths).
+    static func write(grids: [PixelGrid], durations: [Double], to url: URL) throws {
         guard let first = grids.first else { throw ExportError.empty }
         guard first.width <= side, first.height <= side else { throw ExportError.couldNotWrite(url.lastPathComponent) }
-        let fps = max(1, fps)
+        let durations = grids.indices.map { i in max(PlaybackTiming.minimumDuration, i < durations.count ? durations[i] : 0.125) }
+        // A fine timescale so each frame can last any length.
+        let timescale: CMTimeScale = 600
         let writer = try AVAssetWriter(outputURL: url, fileType: .mp4)
         let settings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.h264,
@@ -41,15 +44,13 @@ enum VideoExporter {
         // Largest integer scale with a margin; frames are rendered one at a time to keep memory low.
         let margin = 120
         let scale = max(1, min((side - 2 * margin) / max(first.width, 1), (side - 2 * margin) / max(first.height, 1)))
-        let loopSeconds = Double(grids.count) / Double(fps)
-        var loops = max(1, Int((minimumSeconds / loopSeconds).rounded(.up)))
-        while Double(loops - 1) * loopSeconds >= maximumSeconds, loops > 1 { loops -= 1 }
-        let maxFrames = Int(maximumSeconds * Double(fps))
+        let loopSeconds = durations.reduce(0, +)
+        let loops = max(1, Int((minimumSeconds / loopSeconds).rounded(.up)))
 
-        var index: Int64 = 0
+        var time = 0.0
         outer: for _ in 0..<loops {
-            for grid in grids {
-                if index >= maxFrames { break outer }
+            for (i, grid) in grids.enumerated() {
+                if time >= maximumSeconds { break outer }
                 try autoreleasepool {
                     let buffer = try makeBuffer(grid, scale: scale)
                     while !input.isReadyForMoreMediaData {
@@ -57,16 +58,17 @@ enum VideoExporter {
                         if writer.status != .writing { throw writer.error ?? ExportError.couldNotWrite(url.lastPathComponent) }
                         Thread.sleep(forTimeInterval: 0.005)
                     }
-                    guard adaptor.append(buffer, withPresentationTime: CMTime(value: index, timescale: CMTimeScale(fps))) else {
+                    let at = CMTime(value: CMTimeValue((time * Double(timescale)).rounded()), timescale: timescale)
+                    guard adaptor.append(buffer, withPresentationTime: at) else {
                         throw writer.error ?? ExportError.couldNotWrite(url.lastPathComponent)
                     }
                 }
-                index += 1
+                time += durations[i]
             }
         }
         input.markAsFinished()
         // Hold the last frame for its full duration.
-        writer.endSession(atSourceTime: CMTime(value: index, timescale: CMTimeScale(fps)))
+        writer.endSession(atSourceTime: CMTime(value: CMTimeValue((time * Double(timescale)).rounded()), timescale: timescale))
         let done = DispatchSemaphore(value: 0)
         writer.finishWriting { done.signal() }
         done.wait()

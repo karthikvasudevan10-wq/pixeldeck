@@ -176,10 +176,9 @@ struct EditorView: View {
 
     /// While playing, the canvas shows each frame in turn at the sprite's frame rate.
     var canvas: some View {
-        TimelineView(.animation(minimumInterval: 1 / Double(model.project.fps), paused: !model.isPlaying)) { ctx in
-            let frame: Int? = model.isPlaying
-                ? Int((ctx.date.timeIntervalSinceReferenceDate * Double(model.project.fps)).rounded(.down)) % max(model.frameCount, 1)
-                : nil
+        let durations = model.frameDurations
+        return TimelineView(.animation(minimumInterval: PlaybackClock.tick(durations), paused: !model.isPlaying)) { ctx in
+            let frame: Int? = model.isPlaying ? PlaybackClock.index(ctx.date, durations: durations) : nil
             PixelCanvas(state: model.canvasState(playingFrame: frame), model: model, fit: fit,
                         drawingEnabled: !swipeAnywhere && !model.isPlaying,
                         pencilOnly: pencilOnly,
@@ -204,6 +203,7 @@ struct EditorView: View {
                 showingRename = true
             } label: { Label("Rename", systemImage: "pencil") }
             Button { canvas(.fit) } label: { Label("Fit art to screen", systemImage: "arrow.down.right.and.arrow.up.left") }
+            TimingPicker(model: model)
             Toggle(isOn: Binding(get: { model.showGrid }, set: { model.showGrid = $0 })) {
                 Label("Pixel grid", systemImage: "grid")
             }

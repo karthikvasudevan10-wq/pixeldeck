@@ -5,6 +5,8 @@ import Foundation
 enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case largeCanvas
     case unlimitedFrames
+    /// Eased playback timing (frames held for different lengths of time).
+    case timing
     /// GIF and MP4 video.
     case gifExport
     case largeExport
@@ -50,6 +52,9 @@ struct FeatureAccess: Equatable, Sendable {
 
     /// GIF and MP4 video.
     var allowsAnimatedExport: Bool { isPro }
+
+    /// Playback easing other than Linear.
+    var allowsEasedPlayback: Bool { isPro }
 
     var maxExportScale: Int { isPro ? 16 : FeatureAccess.freeMaxExportScale }
 }

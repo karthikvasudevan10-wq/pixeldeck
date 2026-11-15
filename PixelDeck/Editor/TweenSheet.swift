@@ -121,13 +121,15 @@ struct TweenSheet: View {
 
 /// Loops a list of frames on the checkerboard.
 struct TweenPreview: View {
-    let fps: Int
+    /// Seconds per frame: even at `fps`, or a sprite's eased timing.
+    private let durations: [Double]
     /// Rendered once here, not on every tick.
     private let images: [CGImage?]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(frames: [PixelGrid], fps: Int) {
-        self.fps = max(fps, 1)
+    init(frames: [PixelGrid], fps: Int, durations: [Double]? = nil) {
+        let even = Array(repeating: 1 / Double(max(fps, 1)), count: frames.count)
+        self.durations = durations?.count == frames.count ? durations! : even
         self.images = frames.map { PixelRenderer.cgImage($0) }
     }
 
@@ -135,8 +137,8 @@ struct TweenPreview: View {
         ZStack {
             Checkerboard(cell: 16)
             if images.count > 1 && !reduceMotion {
-                TimelineView(.periodic(from: .now, by: 1 / Double(fps))) { context in
-                    let i = Int(context.date.timeIntervalSinceReferenceDate * Double(fps)) % images.count
+                TimelineView(.periodic(from: .now, by: PlaybackClock.tick(durations))) { context in
+                    let i = min(PlaybackClock.index(context.date, durations: durations), images.count - 1)
                     PixelImage(image: images[i]).padding(16)
                 }
             } else if let first = images.first {

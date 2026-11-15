@@ -31,7 +31,7 @@ The look follows the design handoff and **follows the system appearance**. Dark 
   **Save** adds the files to Photos, asking only for permission to add. **Share** opens the share sheet.
 - **Pixel Deck Pro** (a one-time in-app purchase, StoreKit 2):
   - Free: art up to 64 × 64 px, 12 frames per sprite, every tool including mirror and tweening, and PNG or sprite sheet export up to 4×.
-  - Pro: art up to 512 × 512, up to 999 frames (fewer for very large sprites, to protect memory), GIF and video export, and exports up to 16×.
+  - Pro: art up to 512 × 512, up to 999 frames (fewer for very large sprites, to protect memory), GIF and video export, exports up to 16×, and **eased playback timing**: Ease in, Ease out or Ease in & out, chosen from the frame-rate menu or the sprite menu. Frames are held for different lengths of time, so motion speeds up or slows down while the loop stays the same length. The timing applies to playback, every preview, GIF frame delays, MP4 frame timing and the sprite sheet JSON's per-frame `durationMs`.
   - All the limits are in `Core/FeatureAccess.swift`.
 - **iPad and Apple Pencil**:
   - **Pencil-only drawing** (palm rejection): the first Pencil touch switches it on. The Pencil draws while one finger pans and two fingers pinch, and a resting palm can't draw or interrupt a stroke. You can switch it in the sprite menu or Settings.
