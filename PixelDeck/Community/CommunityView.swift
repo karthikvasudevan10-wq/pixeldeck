@@ -3,6 +3,8 @@ import SwiftUI
 /// Community: everyone's shared sprites, newest first, as live looping tiles. "Mine" lists your
 /// own posts so you can delete them.
 struct CommunityView: View {
+    /// A post to open straight away (tapped in the Home Screen widget).
+    var openPostID: String? = nil
     @Environment(CommunityService.self) private var community
     @Environment(\.dismiss) private var dismiss
     @State private var selected: CommunityPost?
@@ -24,7 +26,10 @@ struct CommunityView: View {
             content
         }
         .screenBackground()
-        .task { if community.posts.isEmpty { await community.refresh() } }
+        .task {
+            if let id = openPostID, let post = await community.fetchPost(id: id) { selected = post }
+            if community.posts.isEmpty { await community.refresh() }
+        }
         .sheet(item: $selected) { post in CommunityPostView(post: post) }
         .sheet(isPresented: $showingRules) { CommunityRulesView() }
     }
@@ -32,6 +37,7 @@ struct CommunityView: View {
     private var tabs: some View {
         HStack(spacing: 0) {
             tab("Newest", .newest)
+            tab("Popular", .popular)
             tab("Mine", .mine)
         }
         .padding(3)
@@ -59,7 +65,9 @@ struct CommunityView: View {
             case .failed(let text):
                 message(Text(verbatim: text), detail: nil, retry: true)
             case .loaded:
-                message(community.feed == .mine ? Text("You haven't shared anything yet.") : Text("Nothing here yet."),
+                message(community.feed == .mine ? Text("You haven't shared anything yet.")
+                        : community.feed == .popular ? Text("No hearts yet. Open a post and tap the heart to cheer someone on!")
+                        : Text("Nothing here yet."),
                         detail: Text("Share a sprite from its menu in the gallery or the studio."))
             default:
                 ProgressView().tint(Theme.accent).frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -117,10 +125,16 @@ struct CommunityTile: View {
                     .font(AppFont.body(14, .bold, relativeTo: .subheadline))
                     .foregroundStyle(Theme.cream)
                     .lineLimit(1)
-                Text(post.isMine ? String(localized: "by you") : String(localized: "by \(post.author)", comment: "Community post credit; the placeholder is a nickname"))
-                    .font(AppFont.body(12, relativeTo: .caption))
-                    .foregroundStyle(Theme.muted)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(post.isMine ? String(localized: "by you") : String(localized: "by \(post.author)", comment: "Community post credit; the placeholder is a nickname"))
+                        .font(AppFont.body(12, relativeTo: .caption))
+                        .foregroundStyle(Theme.muted)
+                        .lineLimit(1)
+                    Spacer(minLength: 4)
+                    if post.hearts > 0 || post.heartedByMe {
+                        HeartCount(count: post.hearts, filled: post.heartedByMe)
+                    }
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -142,6 +156,9 @@ struct CommunityPostView: View {
     @State private var confirmingDelete = false
     @State private var remixed = false
     @State private var error: String?
+    @State private var heartError: String?
+    /// The live copy from the service (hearts change while this is open).
+    private var current: CommunityPost { community.posts.first { $0.id == post.id } ?? post }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -160,6 +177,38 @@ struct CommunityPostView: View {
                         Text("\(post.art.frames.count) frames · \(post.art.width)×\(post.art.height) · \(post.created.formatted(date: .abbreviated, time: .omitted))",
                              comment: "Community post details: frame count (plural), size and date")
                             .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                    }
+
+                    if !current.isMine {
+                        Button {
+                            Task { heartError = await community.toggleHeart(current) }
+                        } label: {
+                            HStack(spacing: 10) {
+                                HeartShape(filled: current.heartedByMe).frame(width: 22, height: 20)
+                                Text(current.heartedByMe ? "Hearted" : "Give a heart").font(AppFont.pixel(14))
+                                Spacer()
+                                Text(verbatim: "\(current.hearts)").font(AppFont.pixel(14)).monospacedDigit()
+                            }
+                            .foregroundStyle(current.heartedByMe ? Theme.onAccent : Theme.accent)
+                            .padding(.horizontal, 16)
+                            .frame(height: 50)
+                            .background(current.heartedByMe ? Theme.accent : Theme.surface)
+                            .overlay(Rectangle().strokeBorder(Theme.accent, lineWidth: 2))
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .sensoryFeedback(.impact(weight: .light), trigger: current.heartedByMe)
+                        .accessibilityLabel(current.heartedByMe ? Text("Remove your heart") : Text("Give a heart"))
+                        .accessibilityValue(Text("\(current.hearts) hearts"))
+                        if let heartError {
+                            Text(verbatim: heartError).font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.accent)
+                        }
+                    } else if current.hearts > 0 {
+                        HStack(spacing: 8) {
+                            HeartShape(filled: true).frame(width: 18, height: 16)
+                            Text("\(current.hearts) hearts", comment: "Hearts on your own post (plural)")
+                                .font(AppFont.body(14, .bold, relativeTo: .body)).foregroundStyle(Theme.cream)
+                        }
                     }
 
                     Button(action: remix) {
@@ -261,4 +310,42 @@ struct CommunityRulesView: View {
 
     Remix copies a post into your own gallery. Please credit the original artist if you share a remix.
     """
+}
+
+/// A pixel heart: filled when you've given one, outlined otherwise.
+struct HeartShape: View {
+    var filled: Bool
+
+    private static let rows = [".##.##.", "#######", "#######", ".#####.", "..###..", "...#..."]
+    private static let outline = [".##.##.", "#..#..#", "#.....#", ".#...#.", "..#.#..", "...#..."]
+
+    var body: some View {
+        Canvas { ctx, size in
+            let grid = filled ? Self.rows : Self.outline
+            let cw = size.width / 7, ch = size.height / 6
+            for (y, row) in grid.enumerated() {
+                for (x, c) in row.enumerated() where c == "#" {
+                    ctx.fill(Path(CGRect(x: CGFloat(x) * cw, y: CGFloat(y) * ch, width: cw.rounded(.up), height: ch.rounded(.up))),
+                             with: .foreground)
+                }
+            }
+        }
+        .accessibilityHidden(true)
+    }
+}
+
+/// "♥ 12" on a tile.
+struct HeartCount: View {
+    let count: Int
+    var filled = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            HeartShape(filled: true).frame(width: 11, height: 10)
+            Text(verbatim: "\(count)").font(AppFont.pixel(10)).monospacedDigit()
+        }
+        .foregroundStyle(filled ? Theme.accent : Theme.muted)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("\(count) hearts"))
+    }
 }

@@ -23,6 +23,8 @@ struct ProjectListView: View {
     @State private var showingWelcome = false
     @State private var showingSettings = false
     @State private var showingCommunity = false
+    /// A Community post to open (from the Home Screen widget).
+    @State private var communityPostID: String?
     @State private var sharing: SpriteProject?
     @State private var exporting: SpriteProject?
     @State private var renamingID: UUID?
@@ -121,7 +123,16 @@ struct ProjectListView: View {
                 }
             })
         }
-        .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
+        .fullScreenCover(isPresented: $showingCommunity, onDismiss: { communityPostID = nil }) {
+            CommunityView(openPostID: communityPostID)
+        }
+        // pixeldeck://community/<post id>, from the Home Screen widget.
+        .onOpenURL { url in
+            guard url.scheme == "pixeldeck", url.host == "community" else { return }
+            path = []
+            communityPostID = url.pathComponents.dropFirst().first
+            showingCommunity = true
+        }
         .sheet(item: $sharing) { ShareToCommunityView(project: $0) }
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
         .alert("Rename sprite", isPresented: Binding(get: { renamingID != nil }, set: { if !$0 { renamingID = nil } })) {

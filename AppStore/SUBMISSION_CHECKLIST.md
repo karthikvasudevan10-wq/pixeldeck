@@ -155,7 +155,17 @@ You still need to do this, and no review can replace it:
   3. In **CloudKit Console** → your container → Schema → Indexes, add:
      - `Post`: **recordName** Queryable, **createdTimestamp** Sortable, **createdUserRecordName** Queryable (for "Mine").
      - `Report`: **post** Queryable.
-  4. Security Roles: keep the defaults (World: Read; Authenticated: Create; Creator: Write).
+  4. Security Roles: keep the defaults (World: Read; Authenticated: Create; Creator: Write). There's one exception, for hearts: give **`HeartTally`** the permission **Authenticated: Write**, so anyone signed in can update a post's heart count.
+  4b. Hearts and the widget add more record types and fields, which the app creates the first time someone hearts a post:
+     - `Heart` (field `post`, a Reference);
+     - `HeartTally` (fields `post`, a Reference, and `count`, an Int64);
+     - a new `thumb` (Asset) field on `Post`.
+
+     Add these indexes:
+     - `HeartTally`: **count** Queryable *and* Sortable, and **recordName** Queryable.
+     - `Heart`: **recordName** Queryable.
+
+     Then deploy to Production again.
   5. For in-app moderation, create a **Moderator** role with Read/Write on `Post` and assign it to your own user record. Then add your id (Settings › Community › Show my Community ID) to `AppConfig.communityModeratorIDs`. You can also delete posts directly in CloudKit Console → Records (Public Database).
   6. **Deploy Schema Changes to Production** before you submit. Review uses production.
 - [ ] **Guideline 1.2 (user-generated content)**. The app has:

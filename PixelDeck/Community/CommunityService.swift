@@ -1,4 +1,5 @@
 import CloudKit
+import UIKit
 import Foundation
 import Observation
 
@@ -13,8 +14,13 @@ struct CommunityPost: Identifiable, Equatable {
     let isMine: Bool
     /// Built once, for the looping previews.
     let frames: [Frame]
+    /// Hearts from everyone, and whether this person gave one.
+    var hearts = 0
+    var heartedByMe = false
 
-    static func == (l: CommunityPost, r: CommunityPost) -> Bool { l.id == r.id && l.isMine == r.isMine }
+    static func == (l: CommunityPost, r: CommunityPost) -> Bool {
+        l.id == r.id && l.isMine == r.isMine && l.hearts == r.hearts && l.heartedByMe == r.heartedByMe
+    }
 }
 
 /// Community: sharing sprites publicly through CloudKit's public database. Apple hosts it; there's
@@ -33,9 +39,14 @@ struct CommunityPost: Identifiable, Equatable {
 /// - `Post`: title, author, width, height, frames, fps (all plain fields) and art (an asset: the
 ///   PostArt JSON).
 /// - `Report`: post (a reference to the Post), reason. One per person per post.
+/// - `Heart`: post (reference). One per person per post (record name `heart-<post>-<user>`),
+///   so a heart can't be counted twice. Only its creator can delete it.
+/// - `HeartTally`: post (reference), count. One per post (record name `tally-<post>`), kept up
+///   to date by the app when people heart and unheart (CloudKit can't count on the server). It's
+///   what Popular and the Home Screen widget sort by, so it needs the "Authenticated: Write" role.
 @MainActor @Observable
 final class CommunityService {
-    enum Feed: Hashable { case newest, mine }
+    enum Feed: Hashable { case newest, popular, mine }
     enum Phase: Equatable { case idle, loading, loaded, failed(String) }
 
     private(set) var posts: [CommunityPost] = []
@@ -96,13 +107,17 @@ final class CommunityService {
         phase = .loading
         do {
             await identify()
+            if feed == .popular {
+                try await loadPopularPage(db, token: token)
+                return
+            }
             let page: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
             if let cursor {
                 page = try await db.records(continuingMatchFrom: cursor, resultsLimit: Self.pageSize)
             } else {
                 let predicate: NSPredicate
                 switch feed {
-                case .newest:
+                case .newest, .popular:
                     predicate = NSPredicate(value: true)
                 case .mine:
                     guard let me = myUserID else {
@@ -119,21 +134,149 @@ final class CommunityService {
             let records = page.matchResults.compactMap { try? $0.1.get() }
             cursor = page.queryCursor
             canLoadMore = page.queryCursor != nil
-            let reporters = feed == .mine ? [:] : await reports(for: records.map(\.recordID))
+            await append(records, token: token)
             guard token == loadToken else { return }
-            let known = Set(posts.map(\.id))
-            for r in records {
-                guard let post = makePost(r), !known.contains(post.id) else { continue }
-                let visible = post.isMine || CommunityModeration.isVisible(
-                    postID: post.id, authorID: post.authorID, title: post.title, author: post.author,
-                    reporters: reporters[post.id] ?? [], blockedAuthors: blockedAuthors, reportedByMe: reportedByMe)
-                if visible { posts.append(post) }
-            }
             phase = .loaded
         } catch {
             guard token == loadToken else { return }
             phase = .failed(Self.message(for: error))
         }
+    }
+
+    /// Popular: the most-hearted posts of all time, from the tallies.
+    private func loadPopularPage(_ db: CKDatabase, token: Int) async throws {
+        let page: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
+        if let cursor {
+            page = try await db.records(continuingMatchFrom: cursor, resultsLimit: Self.pageSize)
+        } else {
+            let query = CKQuery(recordType: "HeartTally", predicate: NSPredicate(format: "count > 0"))
+            query.sortDescriptors = [NSSortDescriptor(key: "count", ascending: false)]
+            page = try await db.records(matching: query, resultsLimit: Self.pageSize)
+        }
+        guard token == loadToken else { return }
+        cursor = page.queryCursor
+        canLoadMore = page.queryCursor != nil
+        let ids = page.matchResults.compactMap { try? $0.1.get() }
+            .compactMap { ($0["post"] as? CKRecord.Reference)?.recordID }
+        let fetched = (try? await db.records(for: ids)) ?? [:]
+        let records = ids.compactMap { try? fetched[$0]?.get() }   // in tally order
+        await append(records, token: token)
+        guard token == loadToken else { return }
+        phase = .loaded
+    }
+
+    /// Adds posts that pass moderation, then fills in their hearts.
+    private func append(_ records: [CKRecord], token: Int) async {
+        let reporters = feed == .mine ? [:] : await reports(for: records.map(\.recordID))
+        guard token == loadToken else { return }
+        var known = Set(posts.map(\.id))
+        var added: [String] = []
+        for r in records {
+            guard let post = makePost(r), !known.contains(post.id) else { continue }
+            let visible = post.isMine || CommunityModeration.isVisible(
+                postID: post.id, authorID: post.authorID, title: post.title, author: post.author,
+                reporters: reporters[post.id] ?? [], blockedAuthors: blockedAuthors, reportedByMe: reportedByMe)
+            if visible {
+                posts.append(post)
+                known.insert(post.id)
+                added.append(post.id)
+            }
+        }
+        await loadHearts(for: added)
+    }
+
+    // MARK: Hearts
+
+    private static func tallyID(_ post: String) -> CKRecord.ID { CKRecord.ID(recordName: "tally-\(post)") }
+    private func heartID(_ post: String, by me: String) -> CKRecord.ID {
+        CKRecord.ID(recordName: String("heart-\(post)-\(me)".prefix(255)))
+    }
+
+    /// Fetches the heart counts, and which of these posts this person hearted.
+    private func loadHearts(for ids: [String]) async {
+        guard let db, !ids.isEmpty else { return }
+        let tallies = (try? await db.records(for: ids.map(Self.tallyID), desiredKeys: ["count"])) ?? [:]
+        var mine: [CKRecord.ID: Result<CKRecord, Error>] = [:]
+        if let me = myUserID {
+            mine = (try? await db.records(for: ids.map { heartID($0, by: me) }, desiredKeys: [])) ?? [:]
+        }
+        for id in ids {
+            guard let i = posts.firstIndex(where: { $0.id == id }) else { continue }
+            if case .success(let t)? = tallies[Self.tallyID(id)] { posts[i].hearts = max(0, (t["count"] as? Int) ?? 0) }
+            if let me = myUserID, case .success? = mine[heartID(id, by: me)] { posts[i].heartedByMe = true }
+        }
+    }
+
+    /// Hearts or unhearts someone else's post. The change shows at once; if CloudKit refuses
+    /// (offline, no iCloud account), it's undone and the reason returned.
+    @discardableResult
+    func toggleHeart(_ post: CommunityPost) async -> String? {
+        guard let db, !post.isMine else { return nil }
+        await identify()
+        guard let me = myUserID else { return String(localized: "Sign in to iCloud to give hearts.") }
+        guard let i = posts.firstIndex(where: { $0.id == post.id }) else { return nil }
+        let adding = !posts[i].heartedByMe
+        posts[i].heartedByMe = adding
+        posts[i].hearts = max(0, posts[i].hearts + (adding ? 1 : -1))
+        do {
+            let hid = heartID(post.id, by: me)
+            if adding {
+                let heart = CKRecord(recordType: "Heart", recordID: hid)
+                heart["post"] = CKRecord.Reference(recordID: CKRecord.ID(recordName: post.id), action: .deleteSelf)
+                do {
+                    _ = try await db.save(heart)
+                } catch let e as CKError where e.code == .serverRecordChanged {
+                    return nil                                // already hearted on another device
+                }
+            } else {
+                _ = try await db.deleteRecord(withID: hid)
+            }
+            try await adjustTally(post.id, by: adding ? 1 : -1, db: db)
+            return nil
+        } catch {
+            if let j = posts.firstIndex(where: { $0.id == post.id }) {
+                posts[j].heartedByMe = !adding
+                posts[j].hearts = max(0, posts[j].hearts + (adding ? -1 : 1))
+            }
+            return Self.message(for: error)
+        }
+    }
+
+    /// Adds `delta` to a post's tally, retrying if someone else changed it at the same moment.
+    private func adjustTally(_ post: String, by delta: Int, db: CKDatabase) async throws {
+        let id = Self.tallyID(post)
+        for _ in 0..<5 {
+            let record: CKRecord
+            do {
+                record = try await db.record(for: id)
+            } catch let e as CKError where e.code == .unknownItem {
+                record = CKRecord(recordType: "HeartTally", recordID: id)
+                record["post"] = CKRecord.Reference(recordID: CKRecord.ID(recordName: post), action: .deleteSelf)
+            }
+            record["count"] = max(0, ((record["count"] as? Int) ?? 0) + delta)
+            do {
+                let result = try await db.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged, atomically: false)
+                try result.saveResults[id]?.get()
+                return
+            } catch let e as CKError where e.code == .serverRecordChanged || e.code == .partialFailure {
+                continue                                      // someone else hearted at the same time
+            }
+        }
+    }
+
+    /// One post, for opening it from the Home Screen widget.
+    func fetchPost(id: String) async -> CommunityPost? {
+        if let p = posts.first(where: { $0.id == id }) { return p }
+        guard let db, let r = try? await db.record(for: CKRecord.ID(recordName: id)) else { return nil }
+        await identify()
+        guard var post = makePost(r) else { return nil }
+        let reporters = await reports(for: [r.recordID])
+        guard post.isMine || CommunityModeration.isVisible(
+            postID: post.id, authorID: post.authorID, title: post.title, author: post.author,
+            reporters: reporters[post.id] ?? [], blockedAuthors: blockedAuthors, reportedByMe: reportedByMe) else { return nil }
+        if let t = try? await db.record(for: Self.tallyID(id)) { post.hearts = (t["count"] as? Int) ?? 0 }
+        if let me = myUserID, (try? await db.record(for: heartID(id, by: me))) != nil { post.heartedByMe = true }
+        return post
     }
 
     /// Who reported each of these posts (record name → reporter ids).
@@ -215,6 +358,13 @@ final class CommunityService {
             record["frames"] = art.frames.count
             record["fps"] = art.fps
             record["art"] = CKAsset(fileURL: url)
+            // A small PNG of the first frame, for the Home Screen widget.
+            let thumbURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
+            defer { try? FileManager.default.removeItem(at: thumbURL) }
+            if let thumb = Self.thumbnailPNG(art) {
+                try thumb.write(to: thumbURL)
+                record["thumb"] = CKAsset(fileURL: thumbURL)
+            }
             let saved = try await db.save(record)
             if let post = makePost(saved) {
                 posts.removeAll { $0.id == post.id }
@@ -225,6 +375,14 @@ final class CommunityService {
         } catch {
             throw NSError(domain: "Community", code: 1, userInfo: [NSLocalizedDescriptionKey: Self.message(for: error)])
         }
+    }
+
+    /// The first frame at a whole-number scale, about 256 px on its long side, with crisp pixels.
+    static func thumbnailPNG(_ art: PostArt) -> Data? {
+        guard let first = art.frames.first else { return nil }
+        let scale = max(1, 256 / max(art.width, art.height))
+        guard let image = PixelRenderer.cgImage(first, scale: scale) else { return nil }
+        return UIImage(cgImage: image).pngData()
     }
 
     // MARK: Moderation

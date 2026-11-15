@@ -121,6 +121,13 @@ The look follows the design handoff and **follows the system appearance**. Dark 
     - a moderator mode lets your own account remove any post.
   - **Code**: `Core/Community.swift` holds the payload, filter and visibility rules, and it's unit-tested. `Community/` holds the CloudKit service and screens.
   - **Setup**: set `AppConfig.cloudKitContainerID`, then add the CloudKit indexes and roles from the submission checklist. Until the container ID is set, Community stays off.
+- **Hearts and the Home Screen widget**: you can heart other people's Community posts, but not your own; tap again to take it back. Tiles show the heart count, and the **Popular** tab lists the most-hearted posts of all time.
+  - **Storage:** a heart is a CloudKit record, one per person per post, so it can't be counted twice. Each post's total is a `HeartTally` record that the app updates (CloudKit can't count on the server), retrying if two people heart at once.
+  - **The widget** (*Community favourites*, in small, medium and large) shows the most-hearted posts and moves to the next one **every hour**. Large shows four.
+    - It reads the public database directly, using each post's small `thumb` preview image. Posts made before the widget existed have no preview, so they're skipped.
+    - It skips posts hidden by reports, and tapping it opens the post in the app.
+  - **Code:** the widget is the `PixelDeckWidgetExtension` target, with its code in `PixelDeckWidget/`.
+  - **Entitlements:** both targets' iCloud settings are in `PixelDeck.entitlements` and `PixelDeckWidget.entitlements`, so they no longer have to be set up by hand in Xcode.
 - **Localisation-ready**: the text uses a String Catalog with English plurals, and the layout mirrors for right-to-left languages.
 - **Accessibility**: Reduce Motion pauses the decorative animations (stars, swipe hints and gallery previews). Controls have VoiceOver labels, and body text scales with Dynamic Type.
 
