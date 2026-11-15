@@ -1,6 +1,79 @@
 # App Store submission checklist
 
-What's already done in the code, and what only you can do. Checked against Apple's
+What's already done in the code, and what only you can do. Start with the launch plan; the
+sections below it have the details.
+
+## Launch plan (in order)
+
+Identifiers already set in the code:
+
+| | |
+|---|---|
+| Bundle ID | `karthikvasudevan.pixeldeck` |
+| In-app purchase | `karthikvasudevan.pixeldeck.pro`, Non-Consumable, US$4.99 |
+| iCloud / CloudKit container | `iCloud.karthikvasudevan.pixeldeck` |
+| Support | karthik.vasudevan.10@gmail.com · https://mithralaya.github.io/Xylo/support.html |
+| Privacy policy | https://mithralaya.github.io/Xylo/privacy.html |
+| Seller / copyright | Karthik Vasudevan |
+
+**1. Accounts (allow 1–2 days for approval)**
+- [ ] Enrol in the Apple Developer Program (US$99 a year) as an individual. Your legal name is shown as the seller.
+- [ ] In App Store Connect › Business, accept the agreements, including **Paid Apps**, and add bank and tax details. Until these are active, the in-app purchase won't load, even in TestFlight.
+
+**2. Website (10 minutes)**
+- [ ] Get this branch onto GitHub (pull the bundle on your Mac and push), then merge it into `main`.
+- [ ] In the repository's Settings › Pages, set Source to **GitHub Actions**. The *Pixel Deck website* workflow publishes `iOS/Website` only. Pages on a **private** repository needs a paid GitHub plan; otherwise make the repo public, or upload the three files in `iOS/Website` to any static host and update `AppConfig.websiteURL`.
+- [ ] Open both URLs in the table above and check they load. App Review rejects broken links.
+
+**3. Xcode project (once)**
+- [ ] Copy the latest files into `~/Documents/PixelDeck` (everything except `PixelDeck.xcodeproj`).
+- [ ] Target › Signing & Capabilities: choose your Team, and set the Bundle Identifier to `karthikvasudevan.pixeldeck`. Your copy of the project still has the old `com.example` one.
+- [ ] **+ Capability › iCloud**: tick **iCloud Documents** and **CloudKit**, then add and tick the container `iCloud.karthikvasudevan.pixeldeck`.
+- [ ] **+ Capability › In-App Purchase**.
+- [ ] Build (⌘B) and fix any compile errors. Much of the recent work (tracing image, palettes, iCloud, Community) has only been checked by unit tests on Linux, not compiled for iOS. Send any errors back to Claude to fix.
+
+**4. CloudKit (30 minutes, development environment)**
+- [ ] Run on a real device signed in to iCloud. Share a sprite to Community, then report it from a second Apple Account (a second device or a simulator signed in to another account). This creates the `Post` and `Report` record types.
+- [ ] In CloudKit Console, add the indexes and the Moderator role (see *Community* below). Put your id from Settings › Community › Show my Community ID into `AppConfig.communityModeratorIDs`.
+- [ ] **Deploy Schema Changes to Production.** TestFlight and App Store builds use production, so Community fails without this.
+
+**5. App Store Connect records**
+- [ ] Apps › **+** › New App: iOS, name `Pixel Deck: Sprite Animator`, bundle ID `karthikvasudevan.pixeldeck`, SKU `pixeldeck`, primary language English. If the name is taken, try `Pixel Deck – Pixel Animator`.
+- [ ] Monetization › In-App Purchases › **+** Non-Consumable `karthikvasudevan.pixeldeck.pro`, US$4.99, Family Sharing on, with the display name and description from `metadata.md`. Add the review screenshot (the paywall, from Settings › Unlock Pro).
+- [ ] App Privacy: answer as in *App Store Connect answers* below. Add the privacy policy URL.
+- [ ] Age rating questionnaire (user-generated content: **Yes**).
+- [ ] Pricing: Free, all territories (or exclude any you don't want).
+
+**6. TestFlight (allow about a week)**
+- [ ] Product › Archive, then Distribute › App Store Connect.
+- [ ] Install from TestFlight on your iPhone (and an iPad if you have one). Test:
+  - buying Pro, then Restore on a second device;
+  - iCloud sync between two devices;
+  - Community: post, report, block and delete;
+  - export to Photos;
+  - light and dark appearance.
+- [ ] Invite a few friends as external testers. The first external build needs a short Beta App Review.
+- [ ] Wait until Xcode › Organizer › Crashes shows zero crashes.
+
+**7. Screenshots and listing**
+- [ ] Screenshots (Dark appearance, real content such as the showcase scenes):
+  - iPhone 6.9" (1320 × 2868), required. Smaller iPhone sizes are scaled from it.
+  - iPad 13" (2064 × 2752), required because the app runs on iPad.
+  - Up to 10 per device. Suggested: gallery with the showcase scenes, drawing, onion-skin swipe, tween path, layers and shapes, export, Community.
+- [ ] Optional: a 15–30 second app preview video of the swipe-and-tween flow. It converts well for creative apps.
+- [ ] Paste the name, subtitle, keywords, promotional text, description and URLs from `metadata.md`.
+
+**8. Submit**
+- [ ] In the version page, select the build, attach the **Pixel Deck Pro** in-app purchase, and paste the review notes from the bottom of this file.
+- [ ] Choose **Manually release this version**, so you control launch day.
+- [ ] Submit for Review. It usually takes 24–48 hours. If rejected, reply in Resolution Center; most first-time rejections are about metadata or links, and are quick to fix.
+
+**9. Launch day and after**
+- [ ] Release, then share the App Store link along with your own Community posts.
+- [ ] Check CloudKit Console › Public Database › `Report` at least daily. Delete offending posts within 24 hours (a guideline 1.2 requirement).
+- [ ] Watch Organizer › Crashes, and answer reviews in App Store Connect.
+- [ ] Next update: translations (Japanese first), Duo screenshots, and Community likes.
+ Checked against Apple's
 [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) (last updated
 16 Oct 2026) and [Upcoming Requirements](https://developer.apple.com/news/upcoming-requirements/)
 as of 13 Nov 2026.
@@ -13,12 +86,12 @@ How Pixel Deck holds up:
 
 | Concern | Status | Evidence |
 |---|---|---|
-| **2.5.2 running code** | Not applicable | No web views, JavaScript, scripting, plug-ins or downloaded content. The app makes no network requests apart from StoreKit. Tweening creates pixel data, not code. |
+| **2.5.2 running code** | Not applicable | No web views, JavaScript, scripting or plug-ins. Network use is limited to StoreKit, the user's private iCloud (sync) and CloudKit's public database (Community). Community downloads pixel data (validated JSON), never code. Tweening creates pixel data, not code. |
 | **Hidden permissions** | One, explained | The only permission is Photos **add-only**. It's asked for the first time the user taps **Save** on the export screen, never at launch, and it can't read the photo library. There is no camera, microphone, location, contacts, tracking or network access. `PrivacyInfo.xcprivacy` declares the only required-reason API used (UserDefaults). |
 | **Hidden features (2.5.19)** | None | Every paid feature is listed on the paywall and in the review notes. There are no feature flags, remote config or debug unlocks. |
-| **Code bloat** | Small | About 5,000 lines of Swift with no third-party dependencies or SDKs. The only bundled assets are two open-licence fonts (OFL, licence shown in Settings) and a 7 KB sprite data file. |
+| **Code bloat** | Small | About 10,000 lines of Swift with no third-party dependencies or SDKs. The only bundled assets are two open-licence fonts (OFL, licence shown in Settings) and the starter and showcase sprites (about 650 KB of JSON). |
 | **Original functionality (4.2, 4.3)** | Original | The swipe-to-keyframe deck, path-traced tweening with jitter removal and smoothing, and the sprite-sheet and JSON exporter are original features, not a template or a wrapped website. |
-| **Crashes (2.1)** | Mitigated, but needs device testing | See the hardening list below. 25 unit tests run on Linux. **The iOS interface has not yet been built or run, so TestFlight testing is essential.** |
+| **Crashes (2.1)** | Mitigated, but needs device testing | See the hardening list below. 84 unit tests cover the editing, storage, sync-merge and Community logic, and run on Linux. **The latest iOS interface code hasn't been compiled yet, so build it in Xcode and test it in TestFlight before submitting.** |
 
 Crash hardening done:
 - **Damaged save files** load as something editable instead of crashing. Bad or wrong-sized frames are dropped, a project with no frames gets a blank one, and impossible sizes are rejected.
@@ -28,7 +101,8 @@ Crash hardening done:
   - The thumbnail cache is an `NSCache` capped at 48 MB, and the frame strip only draws the thumbnails on screen.
 - **Saves are run-length encoded**, so a 256×256 frame is usually under 3 KB instead of 256 KB. Writes are batched off the main thread and atomic. If the disk is full, the app shows an alert instead of silently losing work.
 - **Old export files are deleted**, so the temporary folder doesn't fill up.
-- **Undo is capped at 50 steps**, and its snapshots share unchanged frames with the current project instead of copying them.
+- **Undo is capped at 50 steps and 256 MB**, and its snapshots share unchanged frames with the current project instead of copying them.
+- **Community posts are validated** before display: size, frame count and frame rate are checked, and malformed posts are skipped. Titles and nicknames are filtered.
 
 You still need to do this, and no review can replace it:
 - [ ] Build in Xcode and fix any compile errors.
@@ -62,23 +136,22 @@ You still need to do this, and no review can replace it:
 
 ### Account and identifiers
 - [ ] Join the Apple Developer Program, which costs 99 USD a year. In App Store Connect, accept the latest Program License Agreement (updated 13 Oct 2026) and the **Paid Apps agreement**. Fill in banking and tax details, or the in-app purchase won't load.
-- [ ] Pick a unique bundle ID, for example `com.yourname.pixeldeck`, and set it in Xcode (target → Signing & Capabilities). Set your Team there too.
+- [x] Bundle ID chosen: `karthikvasudevan.pixeldeck`. Set it (and your Team) in Xcode, under target → Signing & Capabilities.
 - [ ] Create the app record in App Store Connect. Check the name is available, since "Pixel Deck" may already be taken. Do a quick trademark search as well.
-- [ ] Create a **Non-Consumable** in-app purchase with product ID `<your bundle ID>.pro`. Turn on Family Sharing (the paywall says it's supported), add a display name and description, a price, and a review screenshot of the paywall.
-- [ ] Put the same product ID in `AppConfig.proProductID` and in `PixelDeck.storekit`.
+- [ ] Create a **Non-Consumable** in-app purchase with product ID `karthikvasudevan.pixeldeck.pro`. Turn on Family Sharing (the paywall says it's supported), add a display name and description, a price, and a review screenshot of the paywall.
+- [x] The same product ID is in `AppConfig.proProductID` and in `PixelDeck.storekit`.
 - [ ] Attach the in-app purchase to the first app version before submitting (guideline 2.1(b): in-app purchases must be reviewable).
 
 ### Links (guideline 2.1: no placeholder or broken URLs)
-- [ ] Host `privacy-policy.html` somewhere public, such as GitHub Pages. Put its URL in App Store Connect and in `AppConfig.privacyPolicyURL`.
-- [ ] Set up a support URL (a simple page with a contact email is enough), required by App Store Connect. Put it in `AppConfig.supportURL` and `AppConfig.supportEmail`.
+- [ ] Publish `iOS/Website` (privacy policy, support and home pages) with GitHub Pages (launch plan step 2). The URLs are already in `AppConfig` and `metadata.md`.
 - [ ] If you change what the app does with data, update both the in-app copy (`PrivacyPolicyView.swift`) and the HTML.
 
 ### App Store Connect answers
 - [ ] **App Privacy**: with Community, declare **User Content → Other User Content** and **Identifiers → User ID**. Both are linked to the user, not used for tracking, and used for App Functionality. (Community posts and their CloudKit user ids are visible to you in CloudKit Console. `PrivacyInfo.xcprivacy` declares the same.) iCloud sync on its own isn't collection, because it uses the user's private container.
-- [ ] **iCloud capability** (needs a paid Apple Developer Program membership): target → Signing & Capabilities → **+ Capability** → **iCloud**. Tick **iCloud Documents**, add a container named `iCloud.<your bundle ID>`, and tick it. Without this the app builds and works, but sprites stay on each device. Before release, test with two devices on the same Apple Account, and check the container in CloudKit Console → your container is created.
+- [ ] **iCloud capability** (needs a paid Apple Developer Program membership): target → Signing & Capabilities → **+ Capability** → **iCloud**. Tick **iCloud Documents**, add the container `iCloud.karthikvasudevan.pixeldeck`, and tick it. Without this the app builds and works, but sprites stay on each device. Before release, test with two devices on the same Apple Account, and check the container in CloudKit Console → your container is created.
 - [ ] **Age rating questionnaire**: answer **Yes** to user-generated content (Community lets people share art that others can see). Answer None or No to everything else, including the newer questions on social media, in-app controls, Shared Location and Dating, which every app must answer by 12 Jan 2027.
 - [ ] **Community (CloudKit public database)**. See also guideline 1.2 below.
-  1. Under the iCloud capability, also tick **CloudKit**, using the same `iCloud.<your bundle ID>` container. Set `AppConfig.cloudKitContainerID` to that ID. While it's nil, Community shows "not set up", because CloudKit crashes apps that use a container they aren't entitled to.
+  1. Under the iCloud capability, also tick **CloudKit**, using the same `iCloud.karthikvasudevan.pixeldeck` container (already set in `AppConfig.cloudKitContainerID`). Add the capability before opening Community, because CloudKit crashes apps that use a container they aren't entitled to. Setting `cloudKitContainerID` to nil turns Community off.
   2. Run the app in development, post one sprite and report it from a second Apple Account. That creates the `Post` and `Report` record types.
   3. In **CloudKit Console** → your container → Schema → Indexes, add:
      - `Post`: **recordName** Queryable, **createdTimestamp** Sortable, **createdUserRecordName** Queryable (for "Mine").

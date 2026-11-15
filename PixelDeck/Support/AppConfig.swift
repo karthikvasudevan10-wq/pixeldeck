@@ -4,22 +4,24 @@ import Foundation
 enum AppConfig {
     /// Must match the non-consumable in-app purchase created in App Store Connect,
     /// and the product in PixelDeck.storekit (used for testing in Xcode).
-    static let proProductID = "com.example.pixeldeck.pro"
+    static let proProductID = "karthikvasudevan.pixeldeck.pro"
 
-    /// Public web address of your privacy policy (a hosted copy of AppStore/privacy-policy.html).
-    /// Leave nil to show only the in-app copy. App Store Connect still needs the URL.
-    static let privacyPolicyURL: URL? = nil
+    /// The website (iOS/Website), published to GitHub Pages by .github/workflows/pixeldeck-pages.yml.
+    static let websiteURL = URL(string: "https://mithralaya.github.io/Xylo/")!
 
-    /// Support page or contact form. App Store Connect requires a support URL.
-    static let supportURL: URL? = nil
+    /// Public web address of the privacy policy (Website/privacy.html). Also entered in App Store Connect.
+    static let privacyPolicyURL: URL? = URL(string: "privacy.html", relativeTo: websiteURL)?.absoluteURL
 
-    /// Shown in Settings as "Contact support" if set.
-    static let supportEmail: String? = nil
+    /// Support page (Website/support.html). App Store Connect requires a support URL.
+    static let supportURL: URL? = URL(string: "support.html", relativeTo: websiteURL)?.absoluteURL
+
+    /// Shown in Settings as "Contact support", and the contact for Community reports.
+    static let supportEmail: String? = "karthik.vasudevan.10@gmail.com"
 
     /// The CloudKit container for Community (public sharing), e.g. "iCloud.com.yourname.pixeldeck".
     /// Must be ticked under the iCloud capability's CloudKit service. Nil turns Community off
     /// (CloudKit crashes an app that uses a container it isn't entitled to).
-    static let cloudKitContainerID: String? = nil
+    static let cloudKitContainerID: String? = "iCloud.karthikvasudevan.pixeldeck"
 
     /// CloudKit user ids allowed to remove anyone's post in the app (give that account the
     /// Moderator security role in CloudKit Console). Find yours in Settings › Community.

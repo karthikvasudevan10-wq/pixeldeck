@@ -47,10 +47,12 @@ final class CommunityService {
     private(set) var blockedAuthors: Set<String>
     private(set) var reportedByMe: Set<String>
 
-    var isConfigured: Bool { container != nil }
+    var isConfigured: Bool { AppConfig.cloudKitContainerID != nil }
     var isModerator: Bool { myUserID.map { AppConfig.communityModeratorIDs.contains($0) } ?? false }
 
-    @ObservationIgnored private let container: CKContainer?
+    /// Made on first use (opening Community), not at launch, so a build that's missing the CloudKit
+    /// capability can still start.
+    @ObservationIgnored private lazy var container: CKContainer? = AppConfig.cloudKitContainerID.map { CKContainer(identifier: $0) }
     @ObservationIgnored private var cursor: CKQueryOperation.Cursor?
     @ObservationIgnored private var loadToken = 0
 
@@ -60,8 +62,7 @@ final class CommunityService {
 
     init() {
         // CKContainer.default() crashes when the app lacks the CloudKit entitlement, so the
-        // container is named explicitly and Community stays off until it's set (AppConfig).
-        container = AppConfig.cloudKitContainerID.map { CKContainer(identifier: $0) }
+        // container is named explicitly (AppConfig) and created lazily.
         let d = UserDefaults.standard
         blockedAuthors = Set(d.stringArray(forKey: Self.blockedKey) ?? [])
         reportedByMe = Set(d.stringArray(forKey: Self.reportedKey) ?? [])

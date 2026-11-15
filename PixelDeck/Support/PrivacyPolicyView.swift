@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// In-app copy of the privacy policy (App Review 5.1.1 requires one to be reachable in the app).
-/// Keep in sync with AppStore/privacy-policy.html.
+/// Keep in sync with Website/privacy.html.
 struct PrivacyPolicyView: View {
     static let lastUpdated = DateComponents(calendar: Calendar(identifier: .gregorian), year: 2026, month: 11, day: 15).date ?? .now
 

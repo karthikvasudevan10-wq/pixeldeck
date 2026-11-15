@@ -107,14 +107,14 @@ The look follows the design handoff and **follows the system appearance**. Dark 
 
 ## Selling it on the App Store
 
-See [`AppStore/SUBMISSION_CHECKLIST.md`](AppStore/SUBMISSION_CHECKLIST.md) for what's done and what you need to do, the business model, and review notes. [`AppStore/metadata.md`](AppStore/metadata.md) has the listing text, and [`AppStore/privacy-policy.html`](AppStore/privacy-policy.html) is the policy to host.
+See [`AppStore/SUBMISSION_CHECKLIST.md`](AppStore/SUBMISSION_CHECKLIST.md) for what's done and what you need to do, the business model, and review notes. [`AppStore/metadata.md`](AppStore/metadata.md) has the listing text. [`Website/`](Website) holds the public website: home, privacy policy and support pages. `.github/workflows/pixeldeck-pages.yml` publishes it to GitHub Pages at https://mithralaya.github.io/Xylo/.
 
 ## Building
 
 Requirements: **Xcode 26 or newer** (27.1+ for full iPhone Duo support) (App Store uploads have required the iOS 26 SDK since April 2026; Xcode 16 still builds it for testing) and **iOS 17+** on devices.
 
 1. Open `iOS/PixelDeck.xcodeproj`.
-2. Select the **PixelDeck** target. Under *Signing & Capabilities*, pick your team. A free Apple ID works for running on your own phone. Change the bundle identifier (`com.example.pixeldeck`) to something unique.
+2. Select the **PixelDeck** target. Under *Signing & Capabilities*, pick your team. The bundle identifier is `karthikvasudevan.pixeldeck`. A free Apple ID can run it on your own phone, but iCloud sync, Community and App Store uploads need the paid Apple Developer Program.
 3. Choose an iPhone simulator or your device, then press **Run**.
 4. To test the in-app purchase locally, go to Product → Scheme → Edit Scheme → Run → Options and set **StoreKit Configuration** to `PixelDeck.storekit`.
 

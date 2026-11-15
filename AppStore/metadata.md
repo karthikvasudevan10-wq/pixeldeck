@@ -53,4 +53,14 @@ One purchase, no subscription: art up to 512×512, up to 999 frames per sprite, 
 
 **Category**: Graphics & Design
 
-**Copyright**: `2026 <Your name or company>`
+**Copyright**: `2026 Karthik Vasudevan`
+
+**Support URL**: https://mithralaya.github.io/Xylo/support.html
+
+**Privacy Policy URL**: https://mithralaya.github.io/Xylo/privacy.html
+
+**Marketing URL** (optional): https://mithralaya.github.io/Xylo/
+
+**Pixel Deck Pro**: Non-Consumable, product ID `karthikvasudevan.pixeldeck.pro`, price **US$4.99** (App Store Connect fills in the other countries), Family Sharing on.
+- Display name (30): `Pixel Deck Pro`
+- Description (45): `Bigger art, unlimited frames, GIF & video`
