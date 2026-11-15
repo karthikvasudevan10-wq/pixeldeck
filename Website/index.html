@@ -3,22 +3,266 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pixel Deck: draw and animate pixel art</title>
-<style>
-  :root { color-scheme: light dark; --accent: #E5406F; }
-  @media (prefers-color-scheme: dark) { :root { --accent: #FF5C8A; } }
-  body { font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 680px; margin: 0 auto; padding: 32px 16px; }
-  h1 { font-size: 28px; margin-bottom: 4px; }
-  h2 { font-size: 19px; margin-top: 28px; }
-  a { color: var(--accent); }
-  .muted { opacity: .65; font-size: 15px; }
-</style>
+<title>Pixel Deck — Draw it. Flip it. Make it move.</title>
+<meta name="description" content="Pixel art and frame-by-frame animation for iPhone and iPad. Swipe left for a new frame with onion skin, swipe right for a new canvas, and tween motion along any path.">
+<meta name="theme-color" content="#120E1F">
+<meta property="og:title" content="Pixel Deck — Draw it. Flip it. Make it move.">
+<meta property="og:description" content="Pixel art and frame-by-frame animation, built for your thumb.">
+<meta property="og:image" content="https://karthikvasudevan10-wq.github.io/pixeldeck/og.png">
+<meta property="og:url" content="https://karthikvasudevan10-wq.github.io/pixeldeck/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen&family=Space+Grotesk:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-<h1>Pixel Deck</h1>
-<p class="muted">Draw it. Flip it. Make it move.</p>
-<p>Pixel Deck is a pocket-sized pixel-art studio made for animation, on iPhone and iPad. Draw on an endless canvas, swipe left for the next frame with an onion skin underneath, drag pixels along a path and let the app tween the frames in between, then export GIFs, sprite sheets and videos. Share your animations with the Community and remix others'.</p>
-<p><a href="support.html">Support</a> · <a href="privacy.html">Privacy policy</a> · <a href="mailto:karthik.vasudevan.10@gmail.com">Contact</a></p>
-<p class="muted">© 2026 Karthik Vasudevan</p>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Pixel Deck home">
+      <span class="tile"><canvas class="spr" data-sprite="slime" data-frame="0" aria-hidden="true"></canvas></span>
+      Pixel Deck
+    </a>
+    <ul>
+      <li><a href="#studio">Studio</a></li>
+      <li><a href="#swipes">Swipes</a></li>
+      <li><a href="#more">Features</a></li>
+      <li><a href="#duo">iPhone Duo</a></li>
+    </ul>
+    <!-- When the app is live, point this at the App Store link. -->
+    <a class="btn btn-primary" href="#download">Get the app</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero" id="top" style="padding:0">
+    <div class="sky" aria-hidden="true"></div>
+    <div class="stars" aria-hidden="true">
+      <i style="left:6%;top:9%"></i><i style="left:14%;top:30%;animation-delay:-.6s"></i><i style="left:22%;top:12%;animation-delay:-1.2s"></i>
+      <i style="left:31%;top:44%;animation-delay:-.3s"></i><i style="left:40%;top:6%;animation-delay:-1.8s"></i><i style="left:58%;top:10%;animation-delay:-.9s"></i>
+      <i style="left:66%;top:38%;animation-delay:-1.5s"></i><i style="left:74%;top:16%;animation-delay:-.4s"></i><i style="left:84%;top:46%;animation-delay:-2s"></i>
+      <i style="left:92%;top:24%;animation-delay:-1.1s"></i><i style="left:49%;top:52%;animation-delay:-.7s"></i><i style="left:8%;top:58%;animation-delay:-1.4s"></i>
+    </div>
+    <div class="wrap hero-copy">
+      <h1>Draw it. Flip it.<br><span>Make it move.</span></h1>
+      <p class="lead">Pixel art and frame-by-frame animation for iPhone and iPad, built for your thumb. Swipe left for the next frame, and the last one stays underneath as an onion skin.</p>
+      <div class="cta">
+        <a class="btn btn-primary" href="#download">Get Pixel Deck</a>
+        <a class="btn btn-ghost" href="#swipes">See how it works</a>
+      </div>
+    </div>
+    <div class="stage" aria-hidden="true">
+      <div class="hill" style="left:0;width:18%;height:46px"></div>
+      <div class="hill" style="left:0;width:9%;height:76px"></div>
+      <div class="hill" style="right:0;width:22%;height:56px"></div>
+      <div class="hill" style="right:0;width:11%;height:86px"></div>
+      <div class="float" style="right:12%;top:-10px"><canvas class="spr moon" data-sprite="moon"></canvas></div>
+      <div class="float" style="left:14%;top:30px"><canvas class="spr ghost" data-sprite="ghost"></canvas></div>
+      <div class="float" style="left:58%;top:10px"><canvas class="spr coin" data-sprite="coin"></canvas></div>
+      <div class="float" style="left:66%;top:60px"><canvas class="spr coin" data-sprite="coin" data-fps="6" style="--px:4"></canvas></div>
+      <div class="actors">
+        <canvas class="spr slime" data-sprite="slime"></canvas>
+        <canvas class="spr flame" data-sprite="flame"></canvas>
+      </div>
+      <div class="ground"></div>
+    </div>
+  </section>
+
+  <section id="studio">
+    <div class="wrap split">
+      <div>
+        <div class="eyebrow">The studio</div>
+        <h2>A big canvas.<br>Everything else under your thumb.</h2>
+        <p class="sec-lead">The canvas gets the whole screen. Tools, colours and your timeline sit in one dock at the bottom, where your thumb already is.</p>
+        <ul class="feats">
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 4l9 5-9 5-9-5z"/><path d="M3 14l9 5 9-5"/></svg></span>
+            <div><b>Onion skin, always there</b><span>Your previous frame glows pink underneath, so every pose lines up.</span></div>
+          </li>
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M13 7l4 4"/></svg></span>
+            <div><b>Pixel-perfect tools</b><span>Pencil, eraser, fill, colour picker, mirror, select and ten shapes, each one tap away.</span></div>
+          </li>
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3l15 9-15 9z"/></svg></span>
+            <div><b>Hit play any time</b><span>Watch your loop instantly and tune the speed frame by frame.</span></div>
+          </li>
+        </ul>
+      </div>
+      <div class="phone" role="img" aria-label="Pixel Deck studio screen: a green slime drawn on a pixel canvas with a pink onion skin, and a dock of tools at the bottom">
+        <div class="ph-canvas">
+          <canvas class="spr" data-sprite="slime" data-onion data-fps="4"></canvas>
+          <div class="ph-chip"><span style="font-weight:500">Slime bounce</span><span class="px muted">04/10</span></div>
+          <svg class="chev l" viewBox="0 0 3 5" shape-rendering="crispEdges" fill="#FFD23F"><rect x="0" y="0" width="1" height="1"/><rect x="1" y="1" width="1" height="1"/><rect x="2" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="0" y="4" width="1" height="1"/></svg>
+          <svg class="chev r" viewBox="0 0 3 5" shape-rendering="crispEdges" fill="#FF5C8A"><rect x="2" y="0" width="1" height="1"/><rect x="1" y="1" width="1" height="1"/><rect x="0" y="2" width="1" height="1"/><rect x="1" y="3" width="1" height="1"/><rect x="2" y="4" width="1" height="1"/></svg>
+          <div class="dots"><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="dock">
+          <div class="row">
+            <span class="play"><svg width="14" height="14" viewBox="0 0 24 24" fill="#120E1F"><path d="M6 3l15 9-15 9z"/></svg></span>
+            <span class="fr"><canvas class="spr" data-sprite="slime" data-frame="0"></canvas></span>
+            <span class="fr"><canvas class="spr" data-sprite="slime" data-frame="1"></canvas></span>
+            <span class="fr"><canvas class="spr" data-sprite="slime" data-frame="2"></canvas></span>
+            <span class="fr on"><canvas class="spr" data-sprite="slime" data-frame="3"></canvas></span>
+            <span class="fr"><canvas class="spr" data-sprite="slime" data-frame="4"></canvas></span>
+            <span class="fr"><canvas class="spr" data-sprite="slime" data-frame="5"></canvas></span>
+            <span class="fr"><canvas class="spr" data-sprite="slime" data-frame="6"></canvas></span>
+          </div>
+          <div class="row">
+            <span class="sw" style="background:#1B1530;box-shadow:inset 0 0 0 1px #2E2650"></span><span class="sw" style="background:#FFF6E0"></span><span class="sw on" style="background:#7BE07B"></span><span class="sw" style="background:#2E9E5B"></span><span class="sw" style="background:#FFD23F"></span><span class="sw" style="background:#FF8B3D"></span><span class="sw" style="background:#FF5C8A"></span><span class="sw" style="background:#C8B6FF"></span><span class="sw" style="background:#3A86FF"></span><span class="sw" style="background:#9C6B3C"></span>
+          </div>
+          <div class="tools">
+            <span class="on"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M13 7l4 4"/></svg></span>
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M9 20h11"/><path d="M4 15l9-10 7 7-8 8H9z"/><path d="M8 11l6 6"/></svg></span>
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M4 11l7-7 8 8-7 7z"/><path d="M4 11h15"/><path d="M20 16v4"/></svg></span>
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M15 4l5 5-3 1-7 7-4 1 1-4 7-7z"/><path d="M4 20l2-2"/></svg></span>
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 3v18"/><path d="M8 7l-5 5 5 5z"/><path d="M16 7l5 5-5 5z"/></svg></span>
+            <span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3"><rect x="4" y="4" width="16" height="16"/></svg></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="swipes" style="padding-top:20px">
+    <div class="wrap">
+      <div class="eyebrow">Two swipes</div>
+      <h2>That's the whole workflow.</h2>
+      <p class="sec-lead">No menus to open to keep going. Animating is as quick as flicking through a flipbook.</p>
+      <div class="cards">
+        <article class="card">
+          <div class="demo" aria-hidden="true">
+            <canvas class="spr" data-sprite="slime" data-onion data-fps="3"></canvas>
+            <span class="finger left"></span>
+          </div>
+          <h3><span class="k" style="background:var(--pink)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></span>Swipe left · new frame</h3>
+          <p>A fresh frame appears with the last one underneath in pink, ready for the next pose.</p>
+        </article>
+        <article class="card">
+          <div class="demo canvas-swap" aria-hidden="true">
+            <div class="pane old"><canvas class="spr" data-sprite="flame"></canvas></div>
+            <div class="pane new px">Blank canvas</div>
+            <span class="finger right"></span>
+          </div>
+          <h3><span class="k" style="background:var(--yellow)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>Swipe right · new canvas</h3>
+          <p>Start a new piece the moment an idea hits.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="more">
+    <div class="wrap">
+      <div class="eyebrow">More than a flipbook</div>
+      <h2>Make it move, then share it.</h2>
+      <p class="sec-lead">Everything you need to go from a doodle to a looping animation, on any device you own.</p>
+      <div class="split" style="align-items:start;gap:0 64px">
+        <ul class="feats">
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M4 18c4-10 8 4 16-12"/><path d="M16 6h4v4"/></svg></span>
+            <div><b>Motion tweening</b><span>Select some pixels and drag them along any path. Pixel Deck smooths your path and draws every frame in between.</span></div>
+          </li>
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 16l9 5 9-5"/></svg></span>
+            <div><b>Layers and shapes</b><span>Up to eight layers per sprite, plus lines, rectangles, circles, hexagons, stars and more, outlined or filled.</span></div>
+          </li>
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><rect x="3" y="5" width="18" height="14"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg></span>
+            <div><b>Trace a photo</b><span>Pin any picture under your layers at the opacity you like, and draw over it.</span></div>
+          </li>
+        </ul>
+        <ul class="feats">
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></svg></span>
+            <div><b>Export anywhere</b><span>Looping GIFs, sprite sheets with JSON for game engines, PNG frames and 1080×1080 videos, all razor sharp.</span></div>
+          </li>
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 7 18z"/></svg></span>
+            <div><b>On all your devices</b><span>Your sprites sync through your own private iCloud to every iPhone and iPad you sign in to.</span></div>
+          </li>
+          <li>
+            <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M8 3h8l5 5v8l-5 5H8l-5-5V8z"/><path d="M3 12h18"/><path d="M12 3c-4 5-4 13 0 18"/><path d="M12 3c4 5 4 13 0 18"/></svg></span>
+            <div><b>Community</b><span>Share your animations, browse what others made, and remix them into your own gallery.</span></div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="duo" id="duo">
+    <div class="wrap">
+      <div class="eyebrow">Made for iPhone Duo</div>
+      <h2>One app, three shapes.</h2>
+      <p class="sec-lead">Pixel Deck reshapes itself as you fold and unfold. Your frame, tool and colour come with you, so nothing reloads.</p>
+      <div class="duo-grid">
+        <article class="mode">
+          <div class="dev closed" aria-hidden="true"><div class="shell"><div class="scr"><canvas class="spr" data-sprite="slime"></canvas></div><div class="bar"></div></div></div>
+          <span class="tag">Closed</span>
+          <h3>Pocket studio</h3>
+          <p>The full studio on the cover screen, controls in one bottom dock for quick sketches on the go.</p>
+        </article>
+        <article class="mode">
+          <div class="dev spread" aria-hidden="true"><div class="shell"><div class="scr" style="background:#1C1633"><canvas class="spr" data-sprite="slime" data-frame="2"></canvas></div><div class="scr"><canvas class="spr" data-sprite="slime" data-frame="3" data-onion></canvas></div></div></div>
+          <span class="tag">Open flat</span>
+          <h3>Flipbook spread</h3>
+          <p>Your last frame on the left page, today's drawing on the right. Swipe left and the page turns.</p>
+        </article>
+        <article class="mode">
+          <div class="dev easel" aria-hidden="true"><div class="shell top"><div class="scr"><canvas class="spr" data-sprite="slime"></canvas></div></div><div class="shell flat"><i></i><i></i><i></i></div></div>
+          <span class="tag">Half open on a desk</span>
+          <h3>Easel</h3>
+          <p>The upright half loops your animation live while you draw on the flat half. Every stroke moves as you make it.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="cast">
+    <div class="wrap">
+      <div class="eyebrow">Made in Pixel Deck</div>
+      <h2>Tiny canvases, big personality.</h2>
+      <div class="cast">
+        <figure><div class="tile" style="background:#2B1F47"><canvas class="spr" data-sprite="slime" role="img" aria-label="Bouncing slime"></canvas></div><figcaption>Slime</figcaption></figure>
+        <figure><div class="tile" style="background:#3A1F2E"><canvas class="spr" data-sprite="flame" role="img" aria-label="Campfire"></canvas></div><figcaption>Campfire</figcaption></figure>
+        <figure><div class="tile" style="background:#3A321C"><canvas class="spr coin" data-sprite="coin" role="img" aria-label="Spinning coin"></canvas></div><figcaption>Coin</figcaption></figure>
+        <figure><div class="tile" style="background:#1F3340"><canvas class="spr" data-sprite="ghost" role="img" aria-label="Floating ghost"></canvas></div><figcaption>Ghost</figcaption></figure>
+        <figure><div class="tile" style="background:#1F3A2A"><canvas class="spr" data-sprite="sprout" role="img" aria-label="Sprout growing into a flower"></canvas></div><figcaption>Sprout</figcaption></figure>
+        <figure><div class="tile" style="background:#171129"><canvas class="spr moon" data-sprite="moon" role="img" aria-label="Pixel moon"></canvas></div><figcaption>Moon</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="final" id="download">
+    <div class="wrap">
+      <div class="tile"><canvas class="spr" data-sprite="slime" data-frame="0" aria-hidden="true"></canvas></div>
+      <h2>Your first animation<br>is two swipes away.</h2>
+      <p class="sec-lead" style="margin-inline:auto">Free to download. Pixel Deck Pro is a one-time unlock for bigger art, unlimited frames, GIF and video export.</p>
+      <div class="cta">
+        <!-- When the app is live, replace this with:
+             <a class="btn btn-primary" href="https://apps.apple.com/app/idXXXXXXXXXX">Download on the App Store</a> -->
+        <span class="btn btn-primary" aria-disabled="true">Coming soon to the App Store</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© <span id="yr">2026</span> Karthik Vasudevan · Pixel Deck</span>
+    <nav aria-label="Footer">
+      <a href="support.html">Support</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="mailto:karthik.vasudevan.10@gmail.com">Contact</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="assets/sprites.js"></script>
+<script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
 </body>
 </html>
