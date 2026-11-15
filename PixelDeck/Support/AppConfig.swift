@@ -6,8 +6,8 @@ enum AppConfig {
     /// and the product in PixelDeck.storekit (used for testing in Xcode).
     static let proProductID = "karthikvasudevan.pixeldeck.pro"
 
-    /// The website (iOS/Website), published to GitHub Pages by .github/workflows/pixeldeck-pages.yml.
-    static let websiteURL = URL(string: "https://mithralaya.github.io/Xylo/")!
+    /// The website (Website/), published to GitHub Pages by .github/workflows/pixeldeck-pages.yml.
+    static let websiteURL = URL(string: "https://karthikvasudevan10-wq.github.io/pixeldeck/")!
 
     /// Public web address of the privacy policy (Website/privacy.html). Also entered in App Store Connect.
     static let privacyPolicyURL: URL? = URL(string: "privacy.html", relativeTo: websiteURL)?.absoluteURL

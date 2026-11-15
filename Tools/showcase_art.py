@@ -2,7 +2,7 @@
 """Draws the two large animated showcase sprites for the gallery and writes them to
 PixelDeck/Resources/Starter/showcase.json, in the same character-grid format as sprites.json.
 
-    python3 iOS/Tools/showcase_art.py [--preview DIR]
+    python3 Tools/showcase_art.py [--preview DIR]
 
 --preview also writes each scene as an upscaled PNG strip (needs Pillow). Both scenes loop
 seamlessly: every moving thing completes a whole number of cycles in FRAMES frames.

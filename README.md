@@ -1,6 +1,6 @@
-# Pixel Deck (iOS)
+# Pixel Deck
 
-A native SwiftUI pixel-art and sprite-animation app for iPhone (and iPad).
+App to doodle pixel art, make it move and have fun: a native SwiftUI pixel-art and sprite-animation app for iPhone and iPad.
 
 ## Features
 
@@ -107,25 +107,24 @@ The look follows the design handoff and **follows the system appearance**. Dark 
 
 ## Selling it on the App Store
 
-See [`AppStore/SUBMISSION_CHECKLIST.md`](AppStore/SUBMISSION_CHECKLIST.md) for what's done and what you need to do, the business model, and review notes. [`AppStore/metadata.md`](AppStore/metadata.md) has the listing text. [`Website/`](Website) holds the public website: home, privacy policy and support pages. `.github/workflows/pixeldeck-pages.yml` publishes it to GitHub Pages at https://mithralaya.github.io/Xylo/.
+See [`AppStore/SUBMISSION_CHECKLIST.md`](AppStore/SUBMISSION_CHECKLIST.md) for what's done and what you need to do, the business model, and review notes. [`AppStore/metadata.md`](AppStore/metadata.md) has the listing text. [`Website/`](Website) holds the public website: home, privacy policy and support pages. `.github/workflows/pixeldeck-pages.yml` publishes it to GitHub Pages at https://karthikvasudevan10-wq.github.io/pixeldeck/.
 
 ## Building
 
 Requirements: **Xcode 26 or newer** (27.1+ for full iPhone Duo support) (App Store uploads have required the iOS 26 SDK since April 2026; Xcode 16 still builds it for testing) and **iOS 17+** on devices.
 
-1. Open `iOS/PixelDeck.xcodeproj`.
+1. Open `PixelDeck.xcodeproj`.
 2. Select the **PixelDeck** target. Under *Signing & Capabilities*, pick your team. The bundle identifier is `karthikvasudevan.pixeldeck`. A free Apple ID can run it on your own phone, but iCloud sync, Community and App Store uploads need the paid Apple Developer Program.
 3. Choose an iPhone simulator or your device, then press **Run**.
 4. To test the in-app purchase locally, go to Product → Scheme → Edit Scheme → Run → Options and set **StoreKit Configuration** to `PixelDeck.storekit`.
 
-The project uses folder-synced groups, so any file you add under `iOS/PixelDeck/` is picked up automatically.
+The project uses folder-synced groups, so any file you add under `PixelDeck/` is picked up automatically.
 
 ## Tests
 
 The editing logic (drawing, flood fill, selection, path smoothing, tweening, undo, sprite-sheet layout and saving) is in `PixelDeck/Core`. It has no UIKit or SwiftUI dependencies, so it is also a Swift package:
 
 ```sh
-cd iOS
 swift test
 ```
 

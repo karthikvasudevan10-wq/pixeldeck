@@ -12,8 +12,8 @@ Identifiers already set in the code:
 | Bundle ID | `karthikvasudevan.pixeldeck` |
 | In-app purchase | `karthikvasudevan.pixeldeck.pro`, Non-Consumable, US$4.99 |
 | iCloud / CloudKit container | `iCloud.karthikvasudevan.pixeldeck` |
-| Support | karthik.vasudevan.10@gmail.com · https://mithralaya.github.io/Xylo/support.html |
-| Privacy policy | https://mithralaya.github.io/Xylo/privacy.html |
+| Support | karthik.vasudevan.10@gmail.com · https://karthikvasudevan10-wq.github.io/pixeldeck/support.html |
+| Privacy policy | https://karthikvasudevan10-wq.github.io/pixeldeck/privacy.html |
 | Seller / copyright | Karthik Vasudevan |
 
 **1. Accounts (allow 1–2 days for approval)**
@@ -21,8 +21,7 @@ Identifiers already set in the code:
 - [ ] In App Store Connect › Business, accept the agreements, including **Paid Apps**, and add bank and tax details. Until these are active, the in-app purchase won't load, even in TestFlight.
 
 **2. Website (10 minutes)**
-- [ ] Get this branch onto GitHub (pull the bundle on your Mac and push), then merge it into `main`.
-- [ ] In the repository's Settings › Pages, set Source to **GitHub Actions**. The *Pixel Deck website* workflow publishes `iOS/Website` only. Pages on a **private** repository needs a paid GitHub plan; otherwise make the repo public, or upload the three files in `iOS/Website` to any static host and update `AppConfig.websiteURL`.
+- [ ] In github.com/karthikvasudevan10-wq/pixeldeck › Settings › Pages, set Source to **GitHub Actions**. Then, in the Actions tab, run *Pixel Deck website* once (it also runs on every push to `main` that changes `Website/`). It publishes the `Website` folder only. The repo is public, so Pages is free.
 - [ ] Open both URLs in the table above and check they load. App Review rejects broken links.
 
 **3. Xcode project (once)**
@@ -143,7 +142,7 @@ You still need to do this, and no review can replace it:
 - [ ] Attach the in-app purchase to the first app version before submitting (guideline 2.1(b): in-app purchases must be reviewable).
 
 ### Links (guideline 2.1: no placeholder or broken URLs)
-- [ ] Publish `iOS/Website` (privacy policy, support and home pages) with GitHub Pages (launch plan step 2). The URLs are already in `AppConfig` and `metadata.md`.
+- [ ] Publish `Website` (privacy policy, support and home pages) with GitHub Pages (launch plan step 2). The URLs are already in `AppConfig` and `metadata.md`.
 - [ ] If you change what the app does with data, update both the in-app copy (`PrivacyPolicyView.swift`) and the HTML.
 
 ### App Store Connect answers
@@ -208,7 +207,7 @@ You still need to do this, and no review can replace it:
 
 ### Testing (guideline 2.1: crashes and bugs are the top rejection reason)
 - [ ] In Xcode, go to Product → Scheme → Edit Scheme → Run → Options → StoreKit Configuration and choose `PixelDeck.storekit`. Then test buying, cancelling, restoring, and Ask to Buy (pending) in the simulator.
-- [ ] Run `swift test` in `iOS/`.
+- [ ] Run `swift test` in the repository folder.
 - [ ] Test on a real iPhone and iPad: every canvas size, around 100 frames at 256×256, export at the largest scale, low-storage behaviour, and dark mode.
 - [ ] Ship a TestFlight build to a few people. Ask them to try the swipes without being told how.
 - [ ] Use a sandbox Apple Account to buy and restore on a TestFlight build.
