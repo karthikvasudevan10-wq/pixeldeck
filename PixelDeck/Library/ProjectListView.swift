@@ -211,7 +211,7 @@ struct ProjectListView: View {
             }
             .buttonStyle(PrimaryButtonStyle(depth: 5))
             .frame(maxWidth: .infinity)
-            .accessibilityLabel("Create")
+            .accessibilityLabel("New canvas")
             barItem(.export, "Export", color: Theme.muted) { exporting = store.projects.first }
                 .disabled(store.projects.isEmpty)
         }
