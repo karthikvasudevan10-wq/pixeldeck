@@ -72,7 +72,7 @@ private struct WelcomeView: View {
 
     private var textBlock: some View {
         VStack(alignment: .leading, spacing: 16) {
-            (Text("Draw it.\nFlip it.\n") + Text("Make it move.").foregroundStyle(Theme.accent))
+            (Text("Draw it.\nMove it.\n") + Text("Love it.").foregroundStyle(Theme.accent))
                 .font(AppFont.pixel(36))
                 .foregroundStyle(Theme.cream)
                 .lineSpacing(2)
