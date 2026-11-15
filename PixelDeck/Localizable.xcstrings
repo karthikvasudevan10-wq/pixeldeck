@@ -1,122 +1,30 @@
 {
-  "sourceLanguage": "en",
-  "strings": {
-    "%lld new frames": {
-      "comment": "Tween frame count (plural)",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld new frame"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld new frames"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "Moves the selection through the next %lld frames, keeping everything else in them.": {
-      "comment": "Tween into existing frames (plural)",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Moves the selection through the next frame, keeping everything else in it."
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Moves the selection through the next %lld frames, keeping everything else in them."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%lld animations": {
-      "comment": "Gallery count (plural)",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld animation"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld animations"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%lld stills": {
-      "comment": "Gallery count of single-frame sprites (plural)",
-      "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld still"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld stills"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%lld frames · %@": {
-      "comment": "Gallery tile: frame count (plural) and art size",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%#@frames@ · %2$@"
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ · %lld×%lld px · %lld frames · %lld fps" : {
+      "comment" : "Export summary: name, art size, frame count (plural), frame rate",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · %2$lld×%3$lld px · %#@frames@ · %5$lld fps"
           },
-          "substitutions": {
-            "frames": {
-              "argNum": 1,
-              "formatSpecifier": "lld",
-              "variations": {
-                "plural": {
-                  "one": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "%arg frame"
+          "substitutions" : {
+            "frames" : {
+              "argNum" : 4,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg frame"
                     }
                   },
-                  "other": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "%arg frames"
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg frames"
                     }
                   }
                 }
@@ -126,30 +34,90 @@
         }
       }
     },
-    "%@ · %lld×%lld px · %lld frames · %lld fps": {
-      "comment": "Export summary: name, art size, frame count (plural), frame rate",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ · %2$lld×%3$lld px · %#@frames@ · %5$lld fps"
+    "%@ · Pro" : {
+      "comment" : "A locked option; the placeholder is the option name"
+    },
+    "%@ copy" : {
+      "comment" : "Name for a duplicated sprite; the placeholder is the original name"
+    },
+    "%@ remix" : {
+      "comment" : "Name for a sprite copied from Community; the placeholder is the post's title"
+    },
+    "%@, frame %lld of %lld. Sprite menu" : {
+      "comment" : "The accessibility label for the chip button, which includes the project name, the current frame number, and the total number of frames.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, frame %2$lld of %3$lld. Sprite menu"
+          }
+        }
+      }
+    },
+    "%lld × %lld px" : {
+      "comment" : "The size of the tracing image, in pixels.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld × %2$lld px"
+          }
+        }
+      }
+    },
+    "%lld animations" : {
+      "comment" : "Gallery count (plural)",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld animation"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld animations"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld fps" : {
+      "comment" : "A picker that lets the user select a frame rate in frames per second.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld frames · %@" : {
+      "comment" : "Gallery tile: frame count (plural) and art size",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@frames@ · %2$@"
           },
-          "substitutions": {
-            "frames": {
-              "argNum": 4,
-              "formatSpecifier": "lld",
-              "variations": {
-                "plural": {
-                  "one": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "%arg frame"
+          "substitutions" : {
+            "frames" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg frame"
                     }
                   },
-                  "other": {
-                    "stringUnit": {
-                      "state": "translated",
-                      "value": "%arg frames"
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg frames"
                     }
                   }
                 }
@@ -158,7 +126,1938 @@
           }
         }
       }
+    },
+    "%lld frames · %lld×%lld · %@" : {
+      "comment" : "Community post details: frame count (plural), size and date",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld frames · %2$lld×%3$lld · %4$@"
+          }
+        }
+      }
+    },
+    "%lld hearts" : {
+      "comment" : "Hearts on your own post (plural)"
+    },
+    "%lld new frames" : {
+      "comment" : "Tween frame count (plural)",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld new frame"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld new frames"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld pixels wide" : {
+      "comment" : "A description of the width of the tracing image, in pixels. The value is the width of the tracing image, rounded to the nearest integer.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld stills" : {
+      "comment" : "Gallery count of single-frame sprites (plural)",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld still"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld stills"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld times" : {
+      "comment" : "A button that triggers a purchase if the user hasn't already purchased Pro.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld times, requires Pro" : {
+      "comment" : "A button that triggers a purchase if the user hasn't already purchased Pro.",
+      "isCommentAutoGenerated" : true
+    },
+    "%lld%% · not exported" : {
+      "comment" : "The opacity of the tracing image, and whether it's exported.",
+      "isCommentAutoGenerated" : true
+    },
+    "2 of 2" : {
+      "comment" : "A label that shows the number of steps in a tutorial.",
+      "isCommentAutoGenerated" : true
+    },
+    "4K" : {
+      "comment" : "A button that opens a new screen to purchase Pro.",
+      "isCommentAutoGenerated" : true
+    },
+    "4K, requires Pro" : {
+      "comment" : "A description of the 4K option, including the requirement to purchase Pro.",
+      "isCommentAutoGenerated" : true
+    },
+    "A palette changes the swatches, not colours already in your art." : {
+      "comment" : "A description of the effect of using a palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "About" : {
+      "comment" : "Section title for the \"About\" section in the settings view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Add a frame" : {
+      "comment" : "A caption for a button that adds a frame to a drawing.",
+      "isCommentAutoGenerated" : true
+    },
+    "Add a picture to trace over" : {
+      "comment" : "A description of the action to add a tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Add frame" : {
+      "comment" : "A button that adds a new frame to the timeline.",
+      "isCommentAutoGenerated" : true
+    },
+    "Add reference" : {
+      "comment" : "A button label that adds a reference image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Added %lld palettes from %@." : {
+      "comment" : "Palette import result; plural; the second placeholder is the file's name",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Added %1$lld palettes from %2$@."
+          }
+        }
+      }
+    },
+    "Added to your gallery" : {
+      "comment" : "Button title for adding a post to the user's gallery.",
+      "isCommentAutoGenerated" : true
+    },
+    "All frames" : {
+      "comment" : "A section in the transform menu that applies the transform to all frames.",
+      "isCommentAutoGenerated" : true
+    },
+    "All frames in one image, for game engines" : {
+      "comment" : "Description of the sprite sheet export format.",
+      "isCommentAutoGenerated" : true
+    },
+    "All of its frames will be removed. This can't be undone." : {
+      "comment" : "Confirmation",
+      "isCommentAutoGenerated" : true
+    },
+    "Animated GIF" : {
+      "comment" : "Display name for the export format.",
+      "isCommentAutoGenerated" : true
+    },
+    "Animated GIF & video export" : {
+      "comment" : "Title of a pro feature that allows exporting GIFs and videos.",
+      "isCommentAutoGenerated" : true
+    },
+    "Animation preview" : {
+      "comment" : "A label for the preview of the animation that will be exported.",
+      "isCommentAutoGenerated" : true
+    },
+    "Animations you make show up here." : {
+      "comment" : "A description of the content of the \"",
+      "isCommentAutoGenerated" : true
+    },
+    "Apple Pencil draws. Fingers now move and zoom the canvas." : {
+
+    },
+    "Available on the App Store" : {
+      "comment" : "Watermark on free exports, under 'Made with Pixel Deck'"
+    },
+    "Back" : {
+      "comment" : "A button that dismisses the current view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Back to gallery" : {
+      "comment" : "A button that dismisses the current view and returns to the gallery.",
+      "isCommentAutoGenerated" : true
+    },
+    "Bigger brush" : {
+      "comment" : "The label of a keyboard shortcut that increases the brush size.",
+      "isCommentAutoGenerated" : true
+    },
+    "Blank canvas" : {
+      "comment" : "The name of a blank canvas.",
+      "isCommentAutoGenerated" : true
+    },
+    "Block" : {
+      "comment" : "A button that blocks a user.",
+      "isCommentAutoGenerated" : true
+    },
+    "Block %@?" : {
+      "comment" : "A confirmation dialog that lets the user block a user. The argument is the nickname of the user to be blocked.",
+      "isCommentAutoGenerated" : true
+    },
+    "Boo!" : {
+      "comment" : "Starter sprite name"
+    },
+    "Bring in palettes from Lospec and other apps: .hex, .gpl, .txt and palette images." : {
+      "comment" : "Text describing the palette import feature.",
+      "isCommentAutoGenerated" : true
+    },
+    "Brush size %lld" : {
+      "comment" : "A button that changes the size of the brush. The argument is the brush size.",
+      "isCommentAutoGenerated" : true
+    },
+    "by %@" : {
+      "comment" : "Community post credit; the placeholder is a nickname"
+    },
+    "by you" : {
+      "comment" : "Community post credit; the placeholder is a nickname",
+      "isCommentAutoGenerated" : true
+    },
+    "Cactus" : {
+      "comment" : "Starter still picture name"
+    },
+    "Campfire" : {
+      "comment" : "Starter sprite name"
+    },
+    "Cancel" : {
+      "comment" : "The button that cancels the report.",
+      "isCommentAutoGenerated" : true
+    },
+    "Candy" : {
+      "comment" : "Palette name: pastels"
+    },
+    "Canvas, frame %lld of %lld" : {
+      "comment" : "A label that describes the current frame of the drawing. The value is a localized string that includes the current frame number and the total number of frames.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Canvas, frame %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Change colour" : {
+      "comment" : "A label for a button that opens the colour picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "Change the picture, its opacity, size and position" : {
+      "comment" : "A hint for the user to change the tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Change this colour" : {
+      "comment" : "Label for a button that opens the colour picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "Changes" : {
+      "comment" : "A heading for a section of the privacy policy that describes changes to the policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "Checking iCloud…" : {
+      "comment" : "A description of the status of syncing the user's data to iCloud.",
+      "isCommentAutoGenerated" : true
+    },
+    "Children" : {
+      "comment" : "A section of the privacy policy explaining how the app handles children.",
+      "isCommentAutoGenerated" : true
+    },
+    "Choose a picture" : {
+      "comment" : "A title for the image picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "Choose a picture to trace over" : {
+      "comment" : "A hint for the user to choose a tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Circle" : {
+      "comment" : "Shape tool; ellipse when proportions aren't locked"
+    },
+    "Clear frame" : {
+      "comment" : "A button that clears the current frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Clear layer in this frame" : {
+      "comment" : "A button that clears the current layer in the current frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Close" : {
+      "comment" : "A label for the close button on the sheet header.",
+      "isCommentAutoGenerated" : true
+    },
+    "Colour %@" : {
+      "comment" : "A colour swatch. The text is the colour's hex code.",
+      "isCommentAutoGenerated" : true
+    },
+    "Colour %lld" : {
+      "comment" : "A button that sets the current colour to the colour at the given index in the palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Colour picker" : {
+      "comment" : "Eyedropper tool"
+    },
+    "Colours" : {
+      "comment" : "Title of the palette sheet.",
+      "isCommentAutoGenerated" : true
+    },
+    "Colours & palettes…" : {
+      "comment" : "A button that displays a sheet for choosing colors and palettes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Colours and palettes" : {
+      "comment" : "A label for the palette button in the Studio dock.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community" : {
+      "comment" : "Title of the Community screen",
+      "isCommentAutoGenerated" : true
+    },
+    "Community is a public space: anyone using Pixel Deck can see what you share.\n\n• Share only art you made or have the right to share.\n• Nothing hateful, violent, sexual, harassing or otherwise objectionable, in art, titles or nicknames. There is no tolerance for objectionable content or abusive users.\n• Don't share personal details: no real names, addresses, phone numbers or links.\n\nAnyone can report a post. A post reported by several people is hidden for everyone, and reports are reviewed within 24 hours; content that breaks these rules is removed, and people who break them are blocked from posting. You can block anyone so you don't see their posts, and you can delete your own posts at any time from Mine.\n\nRemix copies a post into your own gallery. Please credit the original artist if you share a remix." : {
+      "comment" : "The text of the community rules.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community is busy right now. Try again in a minute." : {
+      "comment" : "Error message when posting to Community is busy.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community is for ages 13 and up" : {
+      "comment" : "A message displayed when the user is under 13 and can't access Community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community is full right now. Try again later." : {
+
+    },
+    "Community is optional. If you share a sprite to Community, its art, the title and the nickname you choose are published in Pixel Deck's public CloudKit database, hosted by Apple, where anyone using the app can see and copy them. CloudKit links each post to an anonymous identifier for your iCloud account (not your name or email), so you can delete your posts and others can block or report them. Hearts you give and reports you make are stored the same way, and each post shows how many hearts it has. You can delete your posts at any time from Community, Mine. Posts that break the community rules are removed. The developer can see public posts and reports, and uses them only to run and moderate Community." : {
+      "comment" : "Privacy policy text.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community isn't ready yet. Please try again later." : {
+      "comment" : "Error message when the Community service isn't ready.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community isn't set up in this build." : {
+      "comment" : "Error message when loading the Community feed fails.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community needs your age range" : {
+      "comment" : "A message displayed when the user hasn't shared their age range.",
+      "isCommentAutoGenerated" : true
+    },
+    "Community rules" : {
+      "comment" : "Title of the community rules screen.",
+      "isCommentAutoGenerated" : true
+    },
+    "Contact support" : {
+      "comment" : "A button that opens the user's",
+      "isCommentAutoGenerated" : true
+    },
+    "Copies this sprite into your gallery so you can edit it" : {
+      "comment" : "A hint for the user that a post can be added to their gallery.",
+      "isCommentAutoGenerated" : true
+    },
+    "Copy" : {
+      "comment" : "A button that copies a frame to the clipboard.",
+      "isCommentAutoGenerated" : true
+    },
+    "Copy frame" : {
+      "comment" : "A button that copies the current frame to the clipboard.",
+      "isCommentAutoGenerated" : true
+    },
+    "Copy frame 1" : {
+      "comment" : "A step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Cottage" : {
+      "comment" : "Starter still picture name"
+    },
+    "Couldn't open that file." : {
+      "comment" : "Error message when a file can't be opened.",
+      "isCommentAutoGenerated" : true
+    },
+    "Couldn't save to your photo library." : {
+      "comment" : "Error message when saving photos to the photo library fails.",
+      "isCommentAutoGenerated" : true
+    },
+    "Couldn't save your sprite" : {
+      "comment" : "A title for an alert that appears when a user can't save their work.",
+      "isCommentAutoGenerated" : true
+    },
+    "Couldn't write %@." : {
+      "comment" : "Export error; the placeholder is a file name"
+    },
+    "Create frames" : {
+      "comment" : "Label for a button that creates tween frames.",
+      "isCommentAutoGenerated" : true
+    },
+    "Crisp, large images and 4K videos for stores, social posts and print." : {
+      "comment" : "Text describing the benefits of using Pro for exporting high-quality images and videos.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete" : {
+      "comment" : "A button that deletes a post.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete (%lld)" : {
+      "comment" : "A trash can icon.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete %lld sprites" : {
+      "comment" : "Gallery multi-delete button; plural"
+    },
+    "Delete %lld sprites?" : {
+      "comment" : "Gallery multi-delete confirmation title; plural"
+    },
+    "Delete frame" : {
+      "comment" : "A button that deletes the current frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete layer" : {
+      "comment" : "A button that deletes a layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete my post" : {
+      "comment" : "The text of a button that deletes a user's own post.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete selected pixels" : {
+      "comment" : "A button that deletes the selected pixels.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete selection" : {
+      "comment" : "A button that deletes the user's selection.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete this palette?" : {
+
+    },
+    "Delete this post?" : {
+      "comment" : "A confirmation dialog asking the user to delete a post.",
+      "isCommentAutoGenerated" : true
+    },
+    "Delete this sprite?" : {
+      "comment" : "A confirmation dialog asking the user to delete a sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "Deselect" : {
+      "comment" : "A button label that deselects the selected pixels.",
+      "isCommentAutoGenerated" : true
+    },
+    "Diamond" : {
+      "comment" : "Shape tool: a square turned 45°"
+    },
+    "Dither brush" : {
+      "comment" : "A toggle for dithering the brush.",
+      "isCommentAutoGenerated" : true
+    },
+    "Dither brush & 4-way symmetry" : {
+      "comment" : "Description of a pro feature that adds dithering to brushes and 4-way symmetry.",
+      "isCommentAutoGenerated" : true
+    },
+    "Done" : {
+      "comment" : "The text on the button that closes the selection of multiple projects.",
+      "isCommentAutoGenerated" : true
+    },
+    "Done!" : {
+      "comment" : "The title of the final step of the tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Drag inside to move" : {
+      "comment" : "A description of the Marquee tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "Drag into another app to drop the exported file" : {
+      "comment" : "A hint for the user on how to drag the exported file into another app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Drag over pixels to select them" : {
+      "comment" : "A description of how to select pixels in the editor.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw a heart" : {
+      "comment" : "A step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw it a little higher" : {
+      "comment" : "A step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw it.\nMove it.\n" : {
+      "comment" : "A description of the features of the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw on this layer" : {
+      "comment" : "A hint for the user to draw on a layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw something first: this sprite is empty." : {
+      "comment" : "Error message when the user tries to post an empty sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw with Apple Pencil only" : {
+      "comment" : "A toggle that allows users to draw only with the Apple Pencil.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw with Apple Pencil. Drag with one finger to move, pinch to change the pixel size, tap with two fingers to fit the art." : {
+      "comment" : "A hint for the user on how to interact with the canvas.",
+      "isCommentAutoGenerated" : true
+    },
+    "Draw with one finger. Pinch to change the pixel size, drag with two fingers to move, tap with two fingers to fit the art." : {
+      "comment" : "A hint for the user on how to interact with the canvas.",
+      "isCommentAutoGenerated" : true
+    },
+    "Drawing" : {
+      "comment" : "Section title for settings related to drawing.",
+      "isCommentAutoGenerated" : true
+    },
+    "Drawing frame %@" : {
+      "comment" : "A label that shows the current drawing frame number. The argument is the string “%02d”.",
+      "isCommentAutoGenerated" : true
+    },
+    "Drawing here" : {
+      "comment" : "A hint for the user to draw on a layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Drop" : {
+      "comment" : "A button label that says \"Drop\" and is used to drop a selection.",
+      "isCommentAutoGenerated" : true
+    },
+    "Duplicate" : {
+      "comment" : "A button that duplicates a frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Duplicate frame" : {
+      "comment" : "A button that duplicates the current frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Ease in" : {
+      "comment" : "Animation timing: starts slow"
+    },
+    "Ease in & out" : {
+      "comment" : "Animation timing: slow at both ends"
+    },
+    "Ease out" : {
+      "comment" : "Animation timing: ends slow"
+    },
+    "Eased playback timing" : {
+      "comment" : "Description of a pro feature that adds eased playback timing to a sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "Easel mode" : {
+      "comment" : "A label displayed above the Easel mode button.",
+      "isCommentAutoGenerated" : true
+    },
+    "Eraser" : {
+      "comment" : "A keyboard shortcut to use the eraser tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "Everyone using Pixel Deck can see, and remix, what you share. You can delete it later from Community › Mine." : {
+      "comment" : "A description of the sharing process.",
+      "isCommentAutoGenerated" : true
+    },
+    "Export" : {
+      "comment" : "A button that triggers the export of a drawing.",
+      "isCommentAutoGenerated" : true
+    },
+    "Export up to 16× and 4K" : {
+      "comment" : "Description of a pro feature that allows exporting high-resolution images.",
+      "isCommentAutoGenerated" : true
+    },
+    "Exports and sharing" : {
+      "comment" : "A section of the privacy policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "Faster" : {
+      "comment" : "A button that increases the frame rate.",
+      "isCommentAutoGenerated" : true
+    },
+    "Fewer frames" : {
+      "comment" : "A button that reduces the number of tween frames.",
+      "isCommentAutoGenerated" : true
+    },
+    "Fill" : {
+      "comment" : "A keyboard shortcut to fill a shape.",
+      "isCommentAutoGenerated" : true
+    },
+    "Fill in the blinking dots. Tap a square, or drag your finger to paint several at once." : {
+      "comment" : "A description of how to draw in a drawing tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "Filled" : {
+      "comment" : "A label for a button that toggles between filled and outline shapes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Filled shapes" : {
+      "comment" : "A label for a button that toggles between filled and outline shapes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Fingers move and zoom the canvas, and a resting palm can't draw. Turns on by itself the first time you use a Pencil." : {
+
+    },
+    "Fire" : {
+      "comment" : "Palette name"
+    },
+    "Fit art" : {
+      "comment" : "A keyboard shortcut to fit the art to the screen.",
+      "isCommentAutoGenerated" : true
+    },
+    "Fit art to screen" : {
+      "comment" : "A button that fits the art to the screen.",
+      "isCommentAutoGenerated" : true
+    },
+    "Fit to art" : {
+      "comment" : "A button that fits the tracing image to the artwork.",
+      "isCommentAutoGenerated" : true
+    },
+    "Flip & rotate" : {
+      "comment" : "The title of a menu that lets you flip and rotate a frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Flip left to right" : {
+      "comment" : "Text displayed in the UI for a frame transform.",
+      "isCommentAutoGenerated" : true
+    },
+    "Flip upside down" : {
+      "comment" : "Tooltip for the flip-vertical transform.",
+      "isCommentAutoGenerated" : true
+    },
+    "Follow my drag" : {
+      "comment" : "Tween route option"
+    },
+    "Font licences" : {
+      "comment" : "A heading displayed above the licence information.",
+      "isCommentAutoGenerated" : true
+    },
+    "For Reels, Shorts and TikTok" : {
+      "comment" : "Text describing the purpose of a video export.",
+      "isCommentAutoGenerated" : true
+    },
+    "Forest" : {
+      "comment" : "Palette name"
+    },
+    "Format" : {
+      "comment" : "Section label for the export format options.",
+      "isCommentAutoGenerated" : true
+    },
+    "fps" : {
+      "comment" : "A label for the frame rate of a video.",
+      "isCommentAutoGenerated" : true
+    },
+    "Frame %@" : {
+      "comment" : "A caption for the \"Last frame\" panel. The argument is the string “%02d”.",
+      "isCommentAutoGenerated" : true
+    },
+    "Frame %lld" : {
+      "comment" : "A button that triggers a contextual menu.",
+      "isCommentAutoGenerated" : true
+    },
+    "Frame %lld, selected" : {
+      "comment" : "A button that triggers a contextual menu.",
+      "isCommentAutoGenerated" : true
+    },
+    "Frame rate" : {
+      "comment" : "A label for the frame rate picker in the menu.",
+      "isCommentAutoGenerated" : true
+    },
+    "Frame rate, %lld frames per second" : {
+      "comment" : "A label that describes the frame rate of a video.",
+      "isCommentAutoGenerated" : true
+    },
+    "frames" : {
+      "comment" : "A label for the number of frames.",
+      "isCommentAutoGenerated" : true
+    },
+    "Frames" : {
+      "comment" : "Section label for tween frame count settings.",
+      "isCommentAutoGenerated" : true
+    },
+    "Free forever: every tool, mirror, onion skin, motion tweening, the infinite canvas up to 64 × 64 and PNG / sprite sheet export up to 4×." : {
+      "comment" : "A description of the benefits of the Pro version of Pixel Deck.",
+      "isCommentAutoGenerated" : true
+    },
+    "Free PNG exports carry a small \"Made with Pixel Deck\" footer. Pro exports are just your art." : {
+      "comment" : "Text describing the difference between free and Pro PNG exports.",
+      "isCommentAutoGenerated" : true
+    },
+    "Free PNG exports include a small \"Made with Pixel Deck\" footer below the art." : {
+
+    },
+    "Free sprites can have up to %lld frames (%lld left)." : {
+      "comment" : "A note that explains that the user can create up to 100 frames for free.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Free sprites can have up to %1$lld frames (%2$lld left)."
+          }
+        }
+      }
+    },
+    "Free sprites can have up to %lld frames. Very large sprites have a lower limit to protect your device's memory." : {
+      "comment" : "The second argument is the number of times larger.",
+      "isCommentAutoGenerated" : true
+    },
+    "From Lospec or other apps: .hex, .gpl, .txt or a palette image" : {
+      "comment" : "A hint for the user on how to import a palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Gallery" : {
+      "comment" : "A button that opens the user's photo library.",
+      "isCommentAutoGenerated" : true
+    },
+    "Give a heart" : {
+      "comment" : "A caption for a heart",
+      "isCommentAutoGenerated" : true
+    },
+    "Got it" : {
+      "comment" : "Label for a button that says \"Got it\".",
+      "isCommentAutoGenerated" : true
+    },
+    "Greys" : {
+      "comment" : "Palette name: black to white"
+    },
+    "Grid" : {
+      "comment" : "Sprite sheet layout: frames wrapped into a grid"
+    },
+    "Grow your art to %lld × %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Grow your art to %1$lld × %2$lld"
+          }
+        }
+      }
+    },
+    "Hearted" : {
+      "comment" : "The text of a heart.",
+      "isCommentAutoGenerated" : true
+    },
+    "Help" : {
+      "comment" : "Section title for help settings in the settings view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Hexagon" : {
+      "comment" : "Shape tool: a hexagon.",
+      "isCommentAutoGenerated" : true
+    },
+    "Hide layer" : {
+      "comment" : "A button that hides a layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Hide tracing image" : {
+      "comment" : "A button that hides the tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "How the swipes work" : {
+      "comment" : "A heading for the \"",
+      "isCommentAutoGenerated" : true
+    },
+    "I agree to the community rules. Objectionable content isn't allowed, and posts that break the rules are removed." : {
+      "comment" : "A description of the rules of the Pixel Deck community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Ice cream" : {
+      "comment" : "Starter still picture name"
+    },
+    "iCloud" : {
+      "comment" : "Section title for iCloud settings.",
+      "isCommentAutoGenerated" : true
+    },
+    "iCloud isn't available. Sign in to your Apple Account and turn on iCloud Drive in the Settings app. Your sprites are kept on this device until then." : {
+      "comment" : "A description of the iCloud settings for the user.",
+      "isCommentAutoGenerated" : true
+    },
+    "ID: %@" : {
+      "comment" : "A button that, when tapped, will unblock all blocked users.",
+      "isCommentAutoGenerated" : true
+    },
+    "If this policy ever changes, the updated version will be published here and on the App Store listing, with a new date above." : {
+      "comment" : "A description of the privacy policy's update notice.",
+      "isCommentAutoGenerated" : true
+    },
+    "Import a palette file" : {
+      "comment" : "A button that imports a palette from a file.",
+      "isCommentAutoGenerated" : true
+    },
+    "Import palettes" : {
+      "comment" : "Text for a feature that allows importing palettes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Include JSON frame data" : {
+
+    },
+    "Insert new frames" : {
+      "comment" : "Text for a button that inserts new frames into a tween.",
+      "isCommentAutoGenerated" : true
+    },
+    "It goes under every layer so you can trace over it. Set how see-through it is. It's never included in frames or exports." : {
+      "comment" : "A description of the tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "It's hidden for you straight away. Posts reported by several people are hidden for everyone and reviewed within 24 hours." : {
+
+    },
+    "It's removed from Community for everyone. Copies people remixed into their own galleries stay theirs." : {
+
+    },
+    "It's saved in your gallery. Have fun!" : {
+      "comment" : "A description of the end of the tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Last frame" : {
+      "comment" : "Titles for the three pages in the Flipbook.",
+      "isCommentAutoGenerated" : true
+    },
+    "Last updated %@" : {
+      "comment" : "The date and time of the last update to the privacy policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "Layer %lld" : {
+      "comment" : "Default name for a new layer"
+    },
+    "Layers" : {
+      "comment" : "A keyboard shortcut to open the Layers view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Layers. Drawing on %@" : {
+      "comment" : "A button that opens a panel showing the list of drawing layers.",
+      "isCommentAutoGenerated" : true
+    },
+    "Let animations speed up and slow down — ease in, ease out or both — in playback, GIFs, videos and sprite sheets." : {
+      "comment" : "Text for the Pro feature \"timing\".",
+      "isCommentAutoGenerated" : true
+    },
+    "Line" : {
+      "comment" : "Display name for a line shape.",
+      "isCommentAutoGenerated" : true
+    },
+    "Linear" : {
+      "comment" : "Animation timing: constant speed"
+    },
+    "Live loop of everything you draw below" : {
+      "comment" : "A description of the live loop feature.",
+      "isCommentAutoGenerated" : true
+    },
+    "Lock proportions" : {
+      "comment" : "A button that locks the aspect ratio of a shape.",
+      "isCommentAutoGenerated" : true
+    },
+    "Long-press a saved palette to rename, update or delete it." : {
+      "comment" : "A description of the long-press action on a saved palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Long-press the first frame in the frame strip and choose Duplicate. The same menu copies, pastes and deletes frames." : {
+      "comment" : "A description of how to duplicate a frame in the animation.",
+      "isCommentAutoGenerated" : true
+    },
+    "Long-press the new copy (frame 2) and choose Move later, so the heart goes down, up, down." : {
+      "comment" : "A description of how to move a frame in the animation.",
+      "isCommentAutoGenerated" : true
+    },
+    "Long-press the onion skin button in the bottom row and pick a strength. The same menu adds a tracing picture you can draw over." : {
+      "comment" : "A description of how to add a tracing picture over a heart.",
+      "isCommentAutoGenerated" : true
+    },
+    "Loop preview" : {
+      "comment" : "A label for the preview of the looped animation.",
+      "isCommentAutoGenerated" : true
+    },
+    "Loops anywhere you post it" : {
+      "comment" : "Description of the benefits of exporting an animated GIF.",
+      "isCommentAutoGenerated" : true
+    },
+    "Love it." : {
+      "comment" : "The name of the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Lucky coin" : {
+      "comment" : "Starter sprite name"
+    },
+    "Made with Pixel Deck" : {
+      "comment" : "Watermark on free exports"
+    },
+    "Make a bouncing heart and learn every gesture and hidden menu." : {
+      "comment" : "A description of the benefits of the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Make it bounce" : {
+      "comment" : "A step title for the animation of the frames bouncing.",
+      "isCommentAutoGenerated" : true
+    },
+    "Merge down" : {
+      "comment" : "A button that merges the layer above the current layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Mine" : {
+      "comment" : "The name of the \"Mine\" tab in the Community view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Mirror" : {
+      "comment" : "A keyboard shortcut to toggle mirroring the canvas horizontally.",
+      "isCommentAutoGenerated" : true
+    },
+    "Moon" : {
+      "comment" : "Starter sprite name"
+    },
+    "More for %@" : {
+      "comment" : "A button that opens a menu with options for a layer in a sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "More frames" : {
+      "comment" : "A button that adds more frames to a tween.",
+      "isCommentAutoGenerated" : true
+    },
+    "More to explore" : {
+      "comment" : "A title for a step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Move down" : {
+      "comment" : "A button that moves a layer down in the stack.",
+      "isCommentAutoGenerated" : true
+    },
+    "Move earlier" : {
+      "comment" : "A button that moves a frame earlier in the sequence.",
+      "isCommentAutoGenerated" : true
+    },
+    "Move later" : {
+      "comment" : "A button that moves a frame later in the sequence.",
+      "isCommentAutoGenerated" : true
+    },
+    "Move left" : {
+      "comment" : "A button that moves the tracing image left.",
+      "isCommentAutoGenerated" : true
+    },
+    "Move right" : {
+      "comment" : "A button that moves the tracing image to the right.",
+      "isCommentAutoGenerated" : true
+    },
+    "Move up" : {
+      "comment" : "A button that moves a layer up in the stack.",
+      "isCommentAutoGenerated" : true
+    },
+    "Moves the selection through the next %lld frames, keeping everything else in them." : {
+      "comment" : "Tween into existing frames (plural)",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moves the selection through the next frame, keeping everything else in it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Moves the selection through the next %lld frames, keeping everything else in them."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Moving" : {
+      "comment" : "The name of a tab in the gallery.",
+      "isCommentAutoGenerated" : true
+    },
+    "Mushroom" : {
+      "comment" : "Starter still picture name"
+    },
+    "My bouncing heart" : {
+      "comment" : "Name of the sprite made in the guided tour"
+    },
+    "My palettes" : {
+
+    },
+    "Name" : {
+
+    },
+    "Neon" : {
+      "comment" : "Palette name"
+    },
+    "New canvas" : {
+      "comment" : "A keyboard shortcut to create a new canvas.",
+      "isCommentAutoGenerated" : true
+    },
+    "New frame" : {
+      "comment" : "A keyboard shortcut to add a new frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "New layer" : {
+      "comment" : "Label for a button that adds a new layer to a sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "New layers go above the selected one." : {
+      "comment" : "A description of the behavior of the \"New layers\" button.",
+      "isCommentAutoGenerated" : true
+    },
+    "New: a 2-minute guided tour" : {
+      "comment" : "A title of a new feature in the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Newest" : {
+      "comment" : "The name of the \"Newest\" tab in the Community view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Next" : {
+      "comment" : "A button that triggers the next step in a guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Next frame" : {
+      "comment" : "A keyboard shortcut to move to the next frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "No colours found. Try a .hex, .gpl or .txt palette, or a palette image." : {
+      "comment" : "Error message when the palette file is empty or contains no colors.",
+      "isCommentAutoGenerated" : true
+    },
+    "No hearts yet. Open a post and tap the heart to cheer someone on!" : {
+      "comment" : "A message displayed when there are no hearts on a post.",
+      "isCommentAutoGenerated" : true
+    },
+    "No one blocked" : {
+      "comment" : "Text for the \"No one blocked\" row in the Community section of the settings.",
+      "isCommentAutoGenerated" : true
+    },
+    "No previous Pixel Deck Pro purchase was found for this Apple Account." : {
+      "comment" : "Error message shown when the user tries to restore purchases but no previous purchase was found.",
+      "isCommentAutoGenerated" : true
+    },
+    "No watermark" : {
+      "comment" : "Description of a pro feature that removes the watermark from exported images.",
+      "isCommentAutoGenerated" : true
+    },
+    "Not included in exports" : {
+
+    },
+    "Not now" : {
+      "comment" : "A button that dismisses a tour-related alert.",
+      "isCommentAutoGenerated" : true
+    },
+    "Nothing here yet." : {
+      "comment" : "A description of what to do when there is no content in the",
+      "isCommentAutoGenerated" : true
+    },
+    "Ocean" : {
+      "comment" : "Palette name"
+    },
+    "Octagon" : {
+      "comment" : "Name of a shape tool that looks like an octagon.",
+      "isCommentAutoGenerated" : true
+    },
+    "OK" : {
+      "comment" : "The label of a button that dismisses an alert.",
+      "isCommentAutoGenerated" : true
+    },
+    "One image per frame" : {
+      "comment" : "Label for the export format \"frames\".",
+      "isCommentAutoGenerated" : true
+    },
+    "One purchase. No subscription." : {
+      "comment" : "A description of the benefits of the Pro version of Pixel Deck.",
+      "isCommentAutoGenerated" : true
+    },
+    "One-time purchase of %@. Family Sharing supported." : {
+      "comment" : "A description of the one-time purchase of the Pro version of the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Onion" : {
+      "comment" : "A label for the \"Onion\" button in the Editor.",
+      "isCommentAutoGenerated" : true
+    },
+    "Onion skin" : {
+      "comment" : "A button that toggles the \"Onion skin\" feature.",
+      "isCommentAutoGenerated" : true
+    },
+    "Onion skin on" : {
+      "comment" : "The text that appears on the screen.",
+      "isCommentAutoGenerated" : true
+    },
+    "Onion skin strength" : {
+      "comment" : "A label for the strength of the onion skin.",
+      "isCommentAutoGenerated" : true
+    },
+    "Opacity" : {
+      "comment" : "A slider that adjusts the opacity of the tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Opens the colour picker with a grid, spectrum and sliders for the selected swatch" : {
+      "comment" : "A hint for the user that opens the colour picker.",
+      "isCommentAutoGenerated" : true
+    },
+    "or swipe right anywhere" : {
+      "comment" : "A description of the action to create a new project.",
+      "isCommentAutoGenerated" : true
+    },
+    "Outline" : {
+      "comment" : "A label for a button that toggles between filled and outline shapes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Outline shapes" : {
+      "comment" : "A button that toggles between filled and outline shapes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Palette" : {
+      "comment" : "A label for the palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Palettes" : {
+      "comment" : "A heading displayed above a list of pre-made colour palettes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Parallelogram" : {
+      "comment" : "Shape tool: a square turned 45°.",
+      "isCommentAutoGenerated" : true
+    },
+    "Paste as new frame" : {
+      "comment" : "A button that pastes the clipboard contents as a new frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Paste as new frame after" : {
+      "comment" : "A button that pastes a clipboard item as a new frame after the current frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Paste over frame" : {
+
+    },
+    "Paste over this frame" : {
+      "comment" : "A button that pastes the clipboard contents over the current frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pause" : {
+      "comment" : "The text for a button that pauses playback.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pencil" : {
+      "comment" : "A keyboard shortcut to use the pencil tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pentagon" : {
+      "comment" : "Name of a shape tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pick a colour" : {
+      "comment" : "A step title for the first step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pin a photo or sketch here while you draw on the right page. Tap it with the picker to sample colours." : {
+      "comment" : "A description of the reference panel.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pinch with two fingers to make pixels bigger or smaller, drag with two fingers to move around, and tap with two fingers to fit your art." : {
+      "comment" : "A description of how to zoom in and out, move around, and fit the canvas to the screen.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pixel art and frame-by-frame animation, built for your thumb. Swipe left for the next frame — the last one stays underneath as an onion skin." : {
+      "comment" : "A description of the features of the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pixel Deck" : {
+      "comment" : "Palette name: the app's starter colours"
+    },
+    "Pixel Deck doesn't collect personal information from anyone, including children. Community is switched off for anyone under 13: before it opens, Pixel Deck asks iOS for the person's age range (on iOS 26 and later). Only an age range is shared, never a birth date, and it stays on the device. On older iOS, parents can use Screen Time's age limits." : {
+      "comment" : "A section of the privacy policy explaining how the app handles children.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pixel Deck has no sign-up, no ads, no analytics and no tracking. Your sprites stay private unless you choose to share one to Community, which makes that sprite, its title and your nickname public." : {
+      "comment" : "A paragraph describing Pixel Deck's privacy policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pixel Deck isn't allowed to add to your photo library. You can allow it in Settings, or use Share instead." : {
+      "comment" : "Error message when the user has denied access to the photo library.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pixel Deck Pro" : {
+      "comment" : "The title of the Pixel Deck Pro upgrade",
+      "isCommentAutoGenerated" : true
+    },
+    "Pixel grid" : {
+      "comment" : "A toggle that enables or disables the pixel grid.",
+      "isCommentAutoGenerated" : true
+    },
+    "Play" : {
+      "comment" : "A label for the play button.",
+      "isCommentAutoGenerated" : true
+    },
+    "Play / pause" : {
+      "comment" : "A keyboard shortcut to play or pause the animation.",
+      "isCommentAutoGenerated" : true
+    },
+    "Play it!" : {
+      "comment" : "A button title that plays a video.",
+      "isCommentAutoGenerated" : true
+    },
+    "Playback" : {
+
+    },
+    "Playback · %lld fps" : {
+      "comment" : "A label for the \"Playback\" panel in the Flipbook. The value is the frame rate of the project.",
+      "isCommentAutoGenerated" : true
+    },
+    "PNG frames" : {
+      "comment" : "The title of the export format for PNG frames.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pocket greens" : {
+      "comment" : "Palette name: shades of green, like an old handheld screen"
+    },
+    "Popular" : {
+      "comment" : "The name of the \"Popular\" tab in the Community view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Position" : {
+      "comment" : "A slider that lets the user choose where in a timelapse to play.",
+      "isCommentAutoGenerated" : true
+    },
+    "Potion" : {
+      "comment" : "Starter still picture name"
+    },
+    "Previous frame" : {
+      "comment" : "A keyboard shortcut to go to the previous frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "Privacy" : {
+      "comment" : "A button that opens a privacy policy link.",
+      "isCommentAutoGenerated" : true
+    },
+    "Privacy policy" : {
+      "comment" : "A link to the app's privacy",
+      "isCommentAutoGenerated" : true
+    },
+    "Privacy Policy" : {
+      "comment" : "The title of a screen that displays the app's privacy policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pro is unlocked. Thank you!" : {
+      "comment" : "A message displayed when the user has purchased the Pro version of the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Pro sprite: editing needs Pixel Deck Pro" : {
+
+    },
+    "Purchases" : {
+      "comment" : "A description of how purchases are handled by the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Questions? Contact %@" : {
+      "comment" : "A link that opens the email app to the given email address.",
+      "isCommentAutoGenerated" : true
+    },
+    "Read the rules" : {
+      "comment" : "A button that opens a view with the rules for sharing content in Community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Rectangle" : {
+      "comment" : "Shape tool; square with proportions locked"
+    },
+    "Redo" : {
+      "comment" : "A button that opens a panel for selecting a color.",
+      "isCommentAutoGenerated" : true
+    },
+    "Reference" : {
+      "comment" : "The title of the \"Reference\" page in the Flipbook.",
+      "isCommentAutoGenerated" : true
+    },
+    "Reference image" : {
+      "comment" : "The title of the reference image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Remix" : {
+      "comment" : "Button title to remix a post.",
+      "isCommentAutoGenerated" : true
+    },
+    "Remove" : {
+      "comment" : "A button to remove the reference image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Remove (moderator)" : {
+      "comment" : "A button to remove a post from the Community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Remove with Pro" : {
+      "comment" : "A button that removes the watermark from a free PNG export.",
+      "isCommentAutoGenerated" : true
+    },
+    "Remove your heart" : {
+
+    },
+    "Rename" : {
+      "comment" : "A button that renames the project.",
+      "isCommentAutoGenerated" : true
+    },
+    "Rename layer" : {
+      "comment" : "The title of an alert that lets the user rename a layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Rename palette" : {
+      "comment" : "The title of an alert that appears when the user renames a palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Rename sprite" : {
+
+    },
+    "Replace" : {
+      "comment" : "A button to replace the reference image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Replace with this sprite's colours" : {
+      "comment" : "A button that replaces the palette's colours with the sprite's.",
+      "isCommentAutoGenerated" : true
+    },
+    "Report" : {
+      "comment" : "A button to report a post.",
+      "isCommentAutoGenerated" : true
+    },
+    "Report this post?" : {
+
+    },
+    "Requires Pro" : {
+      "comment" : "Accessibility label for the PRO badge.",
+      "isCommentAutoGenerated" : true
+    },
+    "Resolution" : {
+      "comment" : "Section label for the video resolution options.",
+      "isCommentAutoGenerated" : true
+    },
+    "Restore purchases" : {
+      "comment" : "A button that restores purchases.",
+      "isCommentAutoGenerated" : true
+    },
+    "Restore Purchases" : {
+      "comment" : "A button that restores purchases.",
+      "isCommentAutoGenerated" : true
+    },
+    "Ringed planet" : {
+      "comment" : "Starter still picture name"
+    },
+    "Rotate left" : {
+      "comment" : "Title of a frame transform that rotates a frame 90° counter-clockwise.",
+      "isCommentAutoGenerated" : true
+    },
+    "Rotate right" : {
+      "comment" : "Title of a frame transform: rotate right.",
+      "isCommentAutoGenerated" : true
+    },
+    "Round brush" : {
+      "comment" : "A toggle for whether the brush is round.",
+      "isCommentAutoGenerated" : true
+    },
+    "Route" : {
+      "comment" : "Section label for tween path style options.",
+      "isCommentAutoGenerated" : true
+    },
+    "Row" : {
+      "comment" : "Sprite sheet layout: all frames in one row"
+    },
+    "Rules" : {
+      "comment" : "A button that opens a view with the rules of the community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Save" : {
+
+    },
+    "Save frames" : {
+      "comment" : "Label for the button that saves the user's frames as PNG files.",
+      "isCommentAutoGenerated" : true
+    },
+    "Save GIF" : {
+      "comment" : "Label for the export button when exporting a GIF.",
+      "isCommentAutoGenerated" : true
+    },
+    "Save palette" : {
+      "comment" : "The title of a button that saves the current palette as a new palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Save sheet" : {
+      "comment" : "Label for the button that saves a sprite sheet.",
+      "isCommentAutoGenerated" : true
+    },
+    "Save this sprite's colours as a palette" : {
+      "comment" : "A button that saves the current palette as a new palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Save video" : {
+      "comment" : "A button that saves a video of a sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "Saved to Photos" : {
+      "comment" : "Confirmation message when a video is saved to the user's Photos.",
+      "isCommentAutoGenerated" : true
+    },
+    "Scale" : {
+      "comment" : "Section label for the scale selection in the export view.",
+      "isCommentAutoGenerated" : true
+    },
+    "See how the swipes work" : {
+      "comment" : "A button that shows how the swipes work.",
+      "isCommentAutoGenerated" : true
+    },
+    "Select" : {
+      "comment" : "A button that selects the current drawing.",
+      "isCommentAutoGenerated" : true
+    },
+    "Select & move" : {
+      "comment" : "Selection tool"
+    },
+    "Select all" : {
+      "comment" : "A button title that selects all items in a list.",
+      "isCommentAutoGenerated" : true
+    },
+    "Select none" : {
+      "comment" : "A button title that lets the user deselect all selected items.",
+      "isCommentAutoGenerated" : true
+    },
+    "Selects this sprite" : {
+      "comment" : "The accessibility hint for a button that selects a sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "Settings" : {
+      "comment" : "A button that opens settings.",
+      "isCommentAutoGenerated" : true
+    },
+    "Shade with a checkerboard dither brush, and draw with top-bottom or four-way symmetry." : {
+      "comment" : "Description of a Pro feature: artist brushes.",
+      "isCommentAutoGenerated" : true
+    },
+    "Shapes" : {
+      "comment" : "Name of the layer created for the first shape\nShape tools: line, rectangle, circle, triangle, hexagon and more"
+    },
+    "Share" : {
+      "comment" : "Button title for sharing a sprite to the Pixel Deck Community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Share a sprite from its menu in the gallery or the studio." : {
+      "comment" : "A description of the content of the \"Share\" section of the Community",
+      "isCommentAutoGenerated" : true
+    },
+    "Share looping GIFs and MP4 videos for Reels, Shorts and TikTok." : {
+      "comment" : "Description of a pro feature that allows users to export GIFs and MP4 videos.",
+      "isCommentAutoGenerated" : true
+    },
+    "Share to Community" : {
+      "comment" : "Title of the Share to Community screen.",
+      "isCommentAutoGenerated" : true
+    },
+    "Share to Community…" : {
+      "comment" : "A button that displays a sheet for sharing the sprite with the community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Share video" : {
+      "comment" : "A button that shares a video of a sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "Shared!" : {
+      "comment" : "Text for a button that appears after a post is successfully shared to Community.",
+      "isCommentAutoGenerated" : true
+    },
+    "Show layer" : {
+      "comment" : "A button that shows a hidden layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Show my Community ID" : {
+      "comment" : "Button title to show the user's Community ID.",
+      "isCommentAutoGenerated" : true
+    },
+    "Show tracing image" : {
+      "comment" : "A button that shows the tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Shown with your post. Don't use your real name." : {
+      "comment" : "A description of the nickname field.",
+      "isCommentAutoGenerated" : true
+    },
+    "Sign in to iCloud in the Settings app to post." : {
+      "comment" : "Error message when the user isn't signed in to iCloud.",
+      "isCommentAutoGenerated" : true
+    },
+    "Sign in to iCloud to give hearts." : {
+      "comment" : "Message shown when the user is not signed in to iCloud to give a heart.",
+      "isCommentAutoGenerated" : true
+    },
+    "Sign in to iCloud to see your posts." : {
+
+    },
+    "Single-frame pictures show up here." : {
+      "comment" : "A description of the content of the section",
+      "isCommentAutoGenerated" : true
+    },
+    "Size" : {
+      "comment" : "The size of the tracing image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Skin & hair" : {
+      "comment" : "Palette name: skin tones and hair colours for characters"
+    },
+    "Skip" : {
+      "comment" : "A button that skips the \"Two swipes\" tutorial.",
+      "isCommentAutoGenerated" : true
+    },
+    "Skip tour" : {
+      "comment" : "The label of a button that skips a guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Slime bounce" : {
+      "comment" : "Starter sprite name"
+    },
+    "Slower" : {
+      "comment" : "A button that reduces the frame rate.",
+      "isCommentAutoGenerated" : true
+    },
+    "Smaller brush" : {
+      "comment" : "A keyboard shortcut to reduce the brush size.",
+      "isCommentAutoGenerated" : true
+    },
+    "Spring high street" : {
+      "comment" : "Showcase sprite name: a Japanese shopping street with cherry blossom"
+    },
+    "Sprite" : {
+      "comment" : "Default name for a new sprite; a number is added after it"
+    },
+    "Sprite sheet" : {
+      "comment" : "Display name for the sprite sheet export format.",
+      "isCommentAutoGenerated" : true
+    },
+    "Sprites keep their colours; only the saved palette is removed." : {
+      "comment" : "A description of the effect of deleting a palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Sprites you create are saved in the app's own storage. With iCloud sync on (the default, if you're signed in to iCloud), they're also kept in your own private iCloud account, so you can open them on your other devices signed in to it. That storage belongs to your Apple Account: only you can see it, and the developer has no access to it. Turn sync off in Settings to keep sprites on this device only. Reference images and tracing pictures are picked with the system photo picker, which gives the app only the image you choose; they're stored alongside your sprites in the same way. Pixel Deck has no servers of its own, and your art is only made public if you share it to Community." : {
+      "comment" : "A paragraph describing how user-generated artwork is handled by Pixel Deck.",
+      "isCommentAutoGenerated" : true
+    },
+    "Sprout" : {
+      "comment" : "Starter sprite name"
+    },
+    "Stage: %@ playing at %lld frames per second" : {
+      "comment" : "A description of the stage, including the project name and frame rate.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Stage: %1$@ playing at %2$lld frames per second"
+          }
+        }
+      }
+    },
+    "Star" : {
+      "comment" : "Shape tool: a five-pointed star"
+    },
+    "Start" : {
+      "comment" : "A button title.",
+      "isCommentAutoGenerated" : true
+    },
+    "Start a fresh piece whenever an idea hits. Swipe from the left edge of the canvas." : {
+      "comment" : "A description of the second gesture in the Two swipes flow.",
+      "isCommentAutoGenerated" : true
+    },
+    "Start drawing" : {
+      "comment" : "Text for the button that starts the app.",
+      "isCommentAutoGenerated" : true
+    },
+    "Starting a new canvas comes last. Finish this step first!" : {
+      "comment" : "Text shown to the user when trying to start a new canvas during the tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Step %lld of %lld" : {
+      "comment" : "A step number, e.g. \"Step 1 of 3\". The first argument is the step number. The second argument is the total number of steps.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Step %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Stills" : {
+      "comment" : "A tab in the gallery view that filters for stills.",
+      "isCommentAutoGenerated" : true
+    },
+    "Straight line" : {
+      "comment" : "Tween route option"
+    },
+    "Strawberry" : {
+      "comment" : "Starter still picture name"
+    },
+    "Sunset" : {
+      "comment" : "Palette name"
+    },
+    "Sunset sail" : {
+      "comment" : "Starter still picture name"
+    },
+    "Support website" : {
+      "comment" : "A button that opens the Pixel Deck'",
+      "isCommentAutoGenerated" : true
+    },
+    "Swipe anywhere" : {
+      "comment" : "A toggle that enables users to swipe across the screen to move the camera.",
+      "isCommentAutoGenerated" : true
+    },
+    "Swipe left · new frame" : {
+      "comment" : "A title for a gesture card.",
+      "isCommentAutoGenerated" : true
+    },
+    "Swipe left, starting at the right edge of the canvas. Each swipe adds a new frame to your animation." : {
+      "comment" : "A description of how to add a new frame to an animation.",
+      "isCommentAutoGenerated" : true
+    },
+    "Swipe right · new canvas" : {
+      "comment" : "A description of the gesture to create a new canvas.",
+      "isCommentAutoGenerated" : true
+    },
+    "Swipe right, starting at the left edge, to start a fresh canvas of your own. Your heart stays in the gallery." : {
+      "comment" : "A description of the New Canvas step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Sync with iCloud" : {
+      "comment" : "A toggle to sync with iCloud.",
+      "isCommentAutoGenerated" : true
+    },
+    "Syncing your sprites with iCloud…" : {
+      "comment" : "A description of the syncing process for the user's sprites.",
+      "isCommentAutoGenerated" : true
+    },
+    "Take the guided tour" : {
+      "comment" : "A button that starts a guided",
+      "isCommentAutoGenerated" : true
+    },
+    "Tap a swatch to draw with it. Long-press any swatch to change it with the colour picker, then save the set below." : {
+      "comment" : "A description of how to use the palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Tap Play to watch your heart bounce. Tap it again to stop." : {
+      "comment" : "A description of the Play button in the animation editor.",
+      "isCommentAutoGenerated" : true
+    },
+    "Tap the pink square in the colour palette. Long-press any colour later to change it." : {
+      "comment" : "A description of the colour palette.",
+      "isCommentAutoGenerated" : true
+    },
+    "Tap Undo (the curly arrow) to take back your last change, then Redo to bring it back." : {
+      "comment" : "A description of the Undo and Redo buttons.",
+      "isCommentAutoGenerated" : true
+    },
+    "Terms of use" : {
+      "comment" : "A label for the terms of use",
+      "isCommentAutoGenerated" : true
+    },
+    "Terms of Use" : {
+      "comment" : "A button that opens the app's Terms of Use page.",
+      "isCommentAutoGenerated" : true
+    },
+    "That title or nickname isn't allowed. Please choose another." : {
+      "comment" : "Error message when the title or nickname is not allowed.",
+      "isCommentAutoGenerated" : true
+    },
+    "The App Store couldn't verify this purchase. Please try again." : {
+      "comment" : "Error message shown when the purchase of the Pixel Deck Pro product fails.",
+      "isCommentAutoGenerated" : true
+    },
+    "The App Store isn't reachable right now." : {
+      "comment" : "A message displayed when the App Store is unreachable.",
+      "isCommentAutoGenerated" : true
+    },
+    "The canvas is infinite for everyone. Free art can grow to %lld × %lld pixels; Pro gives it %lld times the room, for detailed scenes and tilesets." : {
+      "comment" : "Pro features that are not yet available.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The canvas is infinite for everyone. Free art can grow to %1$lld × %2$lld pixels; Pro gives it %3$lld times the room, for detailed scenes and tilesets."
+          }
+        }
+      }
+    },
+    "The developer needs to turn on CloudKit (see the submission checklist)." : {
+      "comment" : "A message that appears when the developer hasn't enabled CloudKit.",
+      "isCommentAutoGenerated" : true
+    },
+    "The onion skin" : {
+      "comment" : "A step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "The optional Pixel Deck Pro upgrade is processed by Apple through the App Store. Pixel Deck receives only a confirmation that the purchase is valid; it never sees your payment details or Apple Account information." : {
+      "comment" : "A paragraph describing how the Pixel Deck Pro upgrade is processed.",
+      "isCommentAutoGenerated" : true
+    },
+    "The short version" : {
+      "comment" : "The heading for the short version of the privacy policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "The tool row also has fill, shapes, mirror and select (drag pixels along a path, then Tween). The layers button is at the top right, and Export saves GIFs and videos." : {
+      "comment" : "A description of the tools and the layers button in the tool row.",
+      "isCommentAutoGenerated" : true
+    },
+    "There are no frames after this one yet." : {
+      "comment" : "A note displayed when the user tries to create tween frames but there are no frames after the selection.",
+      "isCommentAutoGenerated" : true
+    },
+    "There's nothing to export yet. Draw something first." : {
+      "comment" : "Error message when trying to export when there's nothing to export.",
+      "isCommentAutoGenerated" : true
+    },
+    "They'll be removed with all their frames, from this device and from iCloud on all your devices. This can't be undone." : {
+
+    },
+    "This frame" : {
+      "comment" : "A section title for the transform menu that applies to only the current frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "This frame goes back to the starting position. The last frame ends where you dropped the selection." : {
+      "comment" : "A description of the frames that can be created when using the tween tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "This is the first frame. Turn the page to start the next one." : {
+      "comment" : "A description of the first frame of a new frame.",
+      "isCommentAutoGenerated" : true
+    },
+    "This sprite" : {
+      "comment" : "A heading for the colours of the current sprite.",
+      "isCommentAutoGenerated" : true
+    },
+    "This sprite can have up to %lld frames (%lld left)." : {
+      "comment" : "A note that highlights that the user is using up their frame limit.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This sprite can have up to %1$lld frames (%2$lld left)."
+          }
+        }
+      }
+    },
+    "This sprite has as many layers as it can hold." : {
+      "comment" : "A description of the maximum number of layers a sprite can have.",
+      "isCommentAutoGenerated" : true
+    },
+    "This sprite is too big to share. Try fewer frames." : {
+      "comment" : "Error message when a user tries to post a sprite that's too big.",
+      "isCommentAutoGenerated" : true
+    },
+    "Timelapse" : {
+      "comment" : "A button that triggers a timelapse.",
+      "isCommentAutoGenerated" : true
+    },
+    "Timelapse of %@, step %lld of %lld" : {
+      "comment" : "A label describing the current step of the timelapse. The first argument is the name of the sprite. The second argument is the current step number. The third argument is the total number of steps.",
+      "isCommentAutoGenerated" : true,
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Timelapse of %1$@, step %2$lld of %3$lld"
+          }
+        }
+      }
+    },
+    "Timing" : {
+      "comment" : "Section label for tween timing options.",
+      "isCommentAutoGenerated" : true
+    },
+    "Title" : {
+      "comment" : "A label for the title of a post.",
+      "isCommentAutoGenerated" : true
+    },
+    "To keep younger artists safe, Community opens once your age range is shared. Only an age range is shared, never your birthday." : {
+      "comment" : "A description of the benefits of sharing your age range.",
+      "isCommentAutoGenerated" : true
+    },
+    "To keep younger artists safe, sharing and browsing other people's art is switched off. Everything else is yours: draw, animate, remix the starters and export." : {
+      "comment" : "A description of the limitations of Community for users under 13.",
+      "isCommentAutoGenerated" : true
+    },
+    "Toggle eraser" : {
+      "comment" : "A keyboard shortcut to toggle between using the pencil and eraser.",
+      "isCommentAutoGenerated" : true
+    },
+    "Top-bottom symmetry" : {
+      "comment" : "A toggle that flips the drawing vertically.",
+      "isCommentAutoGenerated" : true
+    },
+    "Tracing image" : {
+      "comment" : "A button that opens a new screen for tracing an image.",
+      "isCommentAutoGenerated" : true
+    },
+    "Tracing image…" : {
+      "comment" : "A button that triggers a tracing operation.",
+      "isCommentAutoGenerated" : true
+    },
+    "Triangle" : {
+      "comment" : "Display name for a shape tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "Try again" : {
+      "comment" : "A button title.",
+      "isCommentAutoGenerated" : true
+    },
+    "Turn the page: new frame" : {
+      "comment" : "A description of the button that turns a page in a Flipbook.",
+      "isCommentAutoGenerated" : true
+    },
+    "Tween" : {
+      "comment" : "A button to tween a pixel's color to the color of its neighbors.",
+      "isCommentAutoGenerated" : true
+    },
+    "Two swipes.\nThat’s the whole\nworkflow." : {
+      "comment" : "The text of the welcome view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Unblock everyone (%lld)" : {
+      "comment" : "Plural form of \"No one blocked\".",
+      "isCommentAutoGenerated" : true
+    },
+    "Under every layer" : {
+      "comment" : "A description of the tracing image being displayed under every layer.",
+      "isCommentAutoGenerated" : true
+    },
+    "Undo" : {
+      "comment" : "A button that triggers an undo action.",
+      "isCommentAutoGenerated" : true
+    },
+    "Undo and redo" : {
+      "comment" : "A step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Unlock for %@" : {
+      "comment" : "A button that unlocks Pro features for a fee.",
+      "isCommentAutoGenerated" : true
+    },
+    "Unlock Pro" : {
+      "comment" : "A button title that unlocks the Pro version",
+      "isCommentAutoGenerated" : true
+    },
+    "Up to %lld frames per sprite" : {
+      "comment" : "The value of `FeatureAccess.proMaxArtSide` is automatically inserted here.",
+      "isCommentAutoGenerated" : true
+    },
+    "Use existing next frames" : {
+      "comment" : "Text for a button that lets a user choose to use the next frames in a tween.",
+      "isCommentAutoGenerated" : true
+    },
+    "Use this palette for this sprite" : {
+      "comment" : "A hint that describes the purpose of the accessibility hint.",
+      "isCommentAutoGenerated" : true
+    },
+    "Valley mixtape" : {
+      "comment" : "Showcase sprite name: a boy with a cassette player above a mountain valley"
+    },
+    "Version" : {
+      "comment" : "A label displayed in the Settings view.",
+      "isCommentAutoGenerated" : true
+    },
+    "Video" : {
+      "comment" : "Display name for the video export format.",
+      "isCommentAutoGenerated" : true
+    },
+    "View this policy on the web" : {
+      "comment" : "A link to view the privacy policy on the web.",
+      "isCommentAutoGenerated" : true
+    },
+    "When you export, Pixel Deck creates image or video files on your device. If you choose Save to Photos, iOS asks whether Pixel Deck may add items to your photo library; it can only add, never read your photos. If you choose Share, the standard iOS share sheet opens, and where the files go next is your choice, handled by iOS or the app you pick." : {
+      "comment" : "A section of the privacy policy explaining how users can share their artwork.",
+      "isCommentAutoGenerated" : true
+    },
+    "With Mirror on too, it's four-way" : {
+      "comment" : "A hint for the top-bottom symmetry option.",
+      "isCommentAutoGenerated" : true
+    },
+    "With the colour picker tool, tap to sample a colour" : {
+      "comment" : "A hint for the colour picker tool.",
+      "isCommentAutoGenerated" : true
+    },
+    "You can't do that to this post." : {
+
+    },
+    "You haven't shared anything yet." : {
+      "comment" : "A message displayed when the user hasn't shared anything yet.",
+      "isCommentAutoGenerated" : true
+    },
+    "You made your first animation!" : {
+      "comment" : "A congratulatory message displayed after the user creates their first",
+      "isCommentAutoGenerated" : true
+    },
+    "You won't see their posts any more. You can unblock everyone in Settings." : {
+      "comment" : "Confirmation dialog text",
+      "isCommentAutoGenerated" : true
+    },
+    "You're offline. Check your connection and try again." : {
+      "comment" : "Error message when the user is offline and tries to post.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your artwork" : {
+      "comment" : "A heading for the user's artwork in the privacy policy.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your device may be out of storage. Free up some space; your last saved version is safe, and Pixel Deck will keep trying as you edit." : {
+
+    },
+    "Your first heart shows through in pink: that's the onion skin. Fill in the new dots, two squares higher." : {
+      "comment" : "A description of the second heart in the animation.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your last frame stays underneath in pink, so every pose lines up. Swipe from the right edge of the canvas." : {
+      "comment" : "The text describing the first gesture.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your nickname" : {
+      "comment" : "A label for the user's nickname.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your purchase is waiting for approval. Pro unlocks as soon as it's approved." : {
+      "comment" : "Shown for Ask to Buy / pending purchases"
+    },
+    "Your sprites are in your iCloud and on every device signed in to it. Only you can see them." : {
+      "comment" : "A description of the user's iCloud status.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your sprites are kept on this device only. Turn on to keep them in your iCloud and open them on your other devices." : {
+      "comment" : "A description of the user's iCloud status.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your timelapse records itself as you draw. Draw a little, then come back to watch it." : {
+      "comment" : "A description of the Timelapse feature.",
+      "isCommentAutoGenerated" : true
+    },
+    "Your turn" : {
+      "comment" : "A label displayed when the user is creating a new canvas.",
+      "isCommentAutoGenerated" : true
+    },
+    "Zoom and move" : {
+      "comment" : "A step in the guided tour.",
+      "isCommentAutoGenerated" : true
+    },
+    "Zoom in" : {
+      "comment" : "A keyboard shortcut to zoom in on the canvas.",
+      "isCommentAutoGenerated" : true
+    },
+    "Zoom out" : {
+      "comment" : "A keyboard shortcut to zoom out.",
+      "isCommentAutoGenerated" : true
     }
   },
-  "version": "1.0"
+  "version" : "1.1"
 }
