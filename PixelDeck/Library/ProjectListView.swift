@@ -206,10 +206,13 @@ struct ProjectListView: View {
         HStack {
             barItem(.gallery, "Gallery", color: Theme.accent) {}
                 .accessibilityAddTraits(.isSelected)
+            // Same look as the New canvas tile (yellow +), since it does the same thing.
             Button(action: createAndOpen) {
-                PixelIcon.create.view(size: 24, lineWidth: 2.5).frame(width: 56, height: 56)
+                PixelIcon.plus.view(size: 24, lineWidth: 3)
+                    .foregroundStyle(Theme.onAccent2)
+                    .frame(width: 56, height: 56)
             }
-            .buttonStyle(PrimaryButtonStyle(depth: 5))
+            .buttonStyle(PrimaryButtonStyle(fill: Theme.accent2, shadow: Theme.accent2Shadow, depth: 5))
             .frame(maxWidth: .infinity)
             .accessibilityLabel("New canvas")
             barItem(.export, "Export", color: Theme.muted) { exporting = store.projects.first }
