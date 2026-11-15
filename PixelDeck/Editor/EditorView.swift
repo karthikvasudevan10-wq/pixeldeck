@@ -232,6 +232,15 @@ struct EditorView: View {
             .pickerStyle(.menu)
             Divider()
             Button { model.duplicateFrame(at: model.currentIndex) } label: { Label("Duplicate frame", systemImage: "plus.square.on.square") }
+            Button { model.copyFrameToClipboard(at: model.currentIndex) } label: { Label("Copy frame", systemImage: "doc.on.doc") }
+            Button { model.pasteClipboard(at: model.currentIndex, asNewFrame: false) } label: {
+                Label("Paste over this frame", systemImage: "doc.on.clipboard")
+            }
+            .disabled(FrameClipboard.shared.clip == nil)
+            Button { model.pasteClipboard(at: model.currentIndex, asNewFrame: true) } label: {
+                Label("Paste as new frame", systemImage: "plus.rectangle.on.rectangle")
+            }
+            .disabled(FrameClipboard.shared.clip == nil)
             Button(role: .destructive) { model.clearCurrentFrame() } label: {
                 if model.layers.count > 1 {
                     Label("Clear layer in this frame", systemImage: "xmark.square")

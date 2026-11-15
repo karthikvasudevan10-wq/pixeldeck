@@ -40,6 +40,9 @@ struct KeyboardShortcuts: View {
             key("Next frame", .rightArrow) { model.stepFrame(1) }
             key("New frame", "n") { model.addKeyframe() }
             key("Duplicate frame", "d", .command) { model.duplicateFrame(at: model.currentIndex) }
+            key("Copy frame", "c", [.command, .shift]) { model.copyFrameToClipboard(at: model.currentIndex) }
+            key("Paste over frame", "v", [.command, .shift]) { model.pasteClipboard(at: model.currentIndex, asNewFrame: false) }
+            key("Paste as new frame", "v", [.command, .option]) { model.pasteClipboard(at: model.currentIndex, asNewFrame: true) }
             key("Play / pause", .space) { model.isPlaying.toggle() }
 
             // View

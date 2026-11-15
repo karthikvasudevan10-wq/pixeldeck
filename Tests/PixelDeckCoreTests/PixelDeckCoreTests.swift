@@ -738,3 +738,78 @@ final class MoreShapeTests: XCTestCase {
         XCTAssertEqual(m.pixel(P(0, 0)), .clear, "hexagon corners are cut")
     }
 }
+
+final class FrameClipboardTests: XCTestCase {
+    func testPasteReplacesCurrentFrameInPlace() {
+        let m = makeModel()
+        tap(m, 2.5, 3.5)
+        let clip = try! XCTUnwrap(m.copyFrame(at: 0))
+        m.addKeyframe()
+        tap(m, 9.5, 9.5)
+        XCTAssertTrue(m.pasteFrame(clip, asNewFrame: false))
+        XCTAssertEqual(m.frameCount, 2)
+        XCTAssertEqual(m.currentIndex, 1)
+        XCTAssertEqual(m.pixel(P(2, 3)), .black, "pasted where it was copied from")
+        XCTAssertEqual(m.pixel(P(9, 9)), .clear, "paste replaces the frame")
+        m.undo()
+        XCTAssertEqual(m.pixel(P(9, 9)), .black, "undo brings the old frame back")
+        XCTAssertEqual(m.pixel(P(2, 3)), .clear)
+    }
+
+    func testPasteAsNewFrameInsertsAfterCurrent() {
+        let m = makeModel()
+        tap(m, 1.5, 1.5)
+        let clip = try! XCTUnwrap(m.copyFrame(at: 0))
+        tap(m, 5.5, 5.5)                                 // the copy doesn't change later
+        XCTAssertTrue(m.pasteFrame(clip, asNewFrame: true))
+        XCTAssertEqual(m.frameCount, 2)
+        XCTAssertEqual(m.currentIndex, 1)
+        XCTAssertEqual(m.pixel(P(1, 1)), .black)
+        XCTAssertEqual(m.pixel(P(5, 5)), .clear)
+        XCTAssertEqual(m.pixel(P(5, 5), frame: 0), .black)
+    }
+
+    func testPasteKeepsLayersAndWorksAcrossSprites() {
+        let a = makeModel("A")
+        tap(a, 0.5, 0.5)                                 // layer 1
+        a.addLayer()
+        a.pickColor(.white)
+        tap(a, 1.5, 0.5)                                 // layer 2
+        let clip = try! XCTUnwrap(a.copyFrame(at: 0))
+
+        // Same layer count: each layer goes back to its own layer.
+        let b = makeModel("B")
+        b.addLayer()
+        XCTAssertTrue(b.pasteFrame(clip, asNewFrame: false))
+        XCTAssertEqual(b.pixel(P(0, 0)), .black)
+        XCTAssertEqual(b.pixel(P(1, 0)), .white)
+        let o = b.bounds.origin
+        XCTAssertEqual(b.project.frames[0].layers[0][1 - o.x, 0 - o.y], .clear, "white stays on the top layer")
+
+        // Different layer count: the art lands flattened on the active layer.
+        let c = makeModel("C")
+        XCTAssertTrue(c.pasteFrame(clip, asNewFrame: false))
+        XCTAssertEqual(c.pixel(P(0, 0)), .black)
+        XCTAssertEqual(c.pixel(P(1, 0)), .white)
+        XCTAssertEqual(c.layers.count, 1)
+    }
+
+    func testPastingABlankFrameClearsIt() {
+        let m = makeModel()
+        let clip = try! XCTUnwrap(m.copyFrame(at: 0))
+        XCTAssertTrue(clip.isBlank)
+        tap(m, 3.5, 3.5)
+        m.pasteFrame(clip, asNewFrame: false)
+        XCTAssertEqual(m.pixel(P(3, 3)), .clear)
+    }
+
+    func testPasteRespectsTheFrameLimit() {
+        let m = makeModel()
+        tap(m, 0.5, 0.5)
+        let clip = try! XCTUnwrap(m.copyFrame(at: 0))
+        while m.frameCount < m.frameLimit { m.addKeyframe() }
+        XCTAssertFalse(m.pasteFrame(clip, asNewFrame: true))
+        XCTAssertEqual(m.frameCount, m.frameLimit)
+        XCTAssertTrue(m.pasteFrame(clip, asNewFrame: false), "replacing still works at the limit")
+    }
+}

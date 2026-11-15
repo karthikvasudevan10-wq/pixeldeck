@@ -90,6 +90,15 @@ struct FrameRow: View {
         .buttonStyle(.plain)
         .contextMenu {
             Button { model.duplicateFrame(at: index) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+            Button { model.copyFrameToClipboard(at: index) } label: { Label("Copy", systemImage: "doc.on.doc") }
+            Button { model.pasteClipboard(at: index, asNewFrame: false) } label: {
+                Label("Paste over this frame", systemImage: "doc.on.clipboard")
+            }
+            .disabled(FrameClipboard.shared.clip == nil)
+            Button { model.pasteClipboard(at: index, asNewFrame: true) } label: {
+                Label("Paste as new frame after", systemImage: "plus.rectangle.on.rectangle")
+            }
+            .disabled(FrameClipboard.shared.clip == nil)
             Button { model.moveFrame(from: index, by: -1) } label: { Label("Move earlier", systemImage: "arrow.left") }
                 .disabled(index == 0)
             Button { model.moveFrame(from: index, by: 1) } label: { Label("Move later", systemImage: "arrow.right") }

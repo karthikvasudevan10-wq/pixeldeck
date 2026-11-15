@@ -611,6 +611,49 @@ final class EditorModel {
         finishEdit()
     }
 
+    /// A copy of a frame's pixels, for `pasteFrame`.
+    func copyFrame(at index: Int) -> FrameClip? {
+        guard project.frames.indices.contains(index) else { return nil }
+        commitSelection()
+        return FrameClip(frame: project.frames[index], frameBounds: bounds, visible: project.layerVisibility)
+    }
+
+    /// Pastes a copied frame, in the same place it was copied from. `asNewFrame` inserts it after
+    /// the current frame; otherwise it replaces the current frame's pixels. With the same number of
+    /// layers each layer goes back to its own layer; otherwise the art lands, flattened, on the
+    /// active layer and the other layers are left as they are (or blank, in a new frame).
+    /// Returns false if it doesn't fit (frame limit or art size; Pro is offered if it would help).
+    @discardableResult
+    func pasteFrame(_ clip: FrameClip, asNewFrame: Bool) -> Bool {
+        isPlaying = false
+        commitSelection()
+        if asNewFrame, !hasRoom(forFrames: 1) { return false }
+        if let r = clip.bounds {
+            promptedThisGesture = false
+            guard ensureCovers(r) else { return false }
+        }
+        pushUndo()
+        let blank = blankGrid
+        let base = asNewFrame ? Array(repeating: blank, count: project.layers.count) : project.frames[currentIndex].layers
+        var cels: [PixelGrid]
+        func placed(_ g: PixelGrid) -> PixelGrid { clip.bounds.map { g.reframed(from: $0, to: bounds) } ?? blank }
+        if clip.layerCount == project.layers.count {
+            cels = clip.isBlank ? base.map { _ in blank } : clip.layers.map(placed)
+        } else {
+            cels = base
+            cels[activeLayer] = clip.flattened.map(placed) ?? blank
+        }
+        if asNewFrame {
+            project.frames.insert(Frame(layers: cels, visible: project.layerVisibility), at: currentIndex + 1)
+            currentIndex += 1
+        } else {
+            project.frames[currentIndex].setLayers(cels, visible: project.layerVisibility)
+        }
+        contentKnown = false
+        finishEdit()
+        return true
+    }
+
     func deleteFrame(at index: Int) {
         guard project.frames.indices.contains(index) else { return }
         commitSelection()

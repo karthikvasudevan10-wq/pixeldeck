@@ -18,7 +18,8 @@ The look follows the design handoff and **follows the system appearance**. Dark 
   - Row 4: gallery, undo, redo, onion skin, frame rate and export.
 - **Shapes**: line, rectangle/square, circle/ellipse, triangle, diamond, pentagon, hexagon, octagon, parallelogram and star, in a strip that scrolls on narrow screens. Drag to draw, with a live preview. Outline or filled, and **1:1** locks proportions (squares, circles, regular polygons, 45° lines). Symmetric shapes stay pixel-for-pixel symmetric at any size. Shapes work with mirror and grow the canvas like the pencil. The first shape on a one-layer sprite goes on a new **Shapes** layer above your art, so it never draws over your pixels.
 - **Layers**: up to 8 per sprite, shared by every frame. The layers button at the top right of the canvas shows the layer you're drawing on. The panel lets you add, select, show/hide, rename, reorder, merge down and delete layers. Hidden layers are left out of the canvas, thumbnails, onion skin and exports. Tweening moves the active layer and keeps the other layers (e.g. a background) in every new frame. Undo covers all of these.
-- **Sprite menu**: tap the name chip at the top left to rename, fit the art, turn the pixel grid on or off, use swipe-anywhere, set the onion skin strength, or duplicate, clear or delete the frame.
+- **Copy and paste frames**: copy a frame from the sprite menu or by long-pressing its thumbnail, then paste it over another frame or as a new frame after it. The copy keeps its layers and lands where it was copied from. It works between sprites too: if the other sprite has a different number of layers, the art goes, flattened, onto the layer you're drawing on. Undo covers pasting.
+- **Sprite menu**: tap the name chip at the top left to rename, fit the art, turn the pixel grid on or off, use swipe-anywhere, set the onion skin strength, or duplicate, copy, paste, clear or delete the frame.
 - **Motion tweening**: select pixels and drag them along any path. The app removes the jitter from your drag (Ramer–Douglas–Peucker), smooths it into a curve (Catmull–Rom) and draws it as a dotted line. Tap **Tween** to fill in the frames between, with a choice of path, timing and frame count and a live preview.
 - **Gallery**: a grid of every sprite, each looping its animation live, with a Moving / Stills filter. It starts with six example sprites (slime, campfire, coin, ghost, sprout and moon). You can also swipe right anywhere in the gallery for a new canvas.
 - **Welcome screens**: an animated pixel night scene, then a two-step tutorial on the swipes. Both can be opened again from Settings.
@@ -60,6 +61,8 @@ The look follows the design handoff and **follows the system appearance**. Dark 
     | ⌘Z / ⇧⌘Z | Undo / redo |
     | ⌘= / ⌘− / ⌘0 | Zoom in / zoom out / fit |
     | ⌘D | Duplicate frame |
+    | ⇧⌘C | Copy frame |
+    | ⇧⌘V / ⌥⌘V | Paste over frame / paste as new frame |
     | ⌘N | New canvas |
     | ⌘L | Layers |
     | ⌘E | Export |
