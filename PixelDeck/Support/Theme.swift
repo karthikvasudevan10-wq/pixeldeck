@@ -418,11 +418,12 @@ private enum SVGPath {
 
 /// The handoff's animated characters, loaded once from the bundle.
 enum StarterArt {
-    /// sprites.json (the small starters and the welcome-screen characters) and showcase.json (the
-    /// large animated scenes, made by Tools/showcase_art.py).
+    /// sprites.json (the small starters and the welcome-screen characters), showcase.json (the
+    /// large animated scenes, Tools/showcase_art.py) and stills.json (single-frame pictures,
+    /// Tools/stills_art.py).
     static let library: [String: CharacterSprite] = {
         var all: [String: CharacterSprite] = [:]
-        for file in ["sprites", "showcase"] {
+        for file in ["sprites", "showcase", "stills"] {
             guard let url = Bundle.main.url(forResource: file, withExtension: "json"),
                   let data = try? Data(contentsOf: url) else { continue }
             all.merge(CharacterSpriteLibrary.parse(data)) { old, _ in old }

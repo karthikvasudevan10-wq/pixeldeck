@@ -37,6 +37,8 @@ enum CharacterSpriteLibrary {
     static let order = ["slime", "flame", "coin", "ghost", "sprout", "moon"]
     /// The large animated scenes (bigger than the free art size, so editing them needs Pro).
     static let showcaseOrder = ["highstreet", "valley"]
+    /// Single-frame pictures for the Stills tab (all within the free art size).
+    static let stillsOrder = ["strawberry", "potion", "mushroom", "cactus", "icecream", "planet", "cottage", "sunset"]
 
     /// Parses the JSON. Malformed sprites are skipped rather than failing the whole file.
     static func parse(_ data: Data) -> [String: CharacterSprite] {

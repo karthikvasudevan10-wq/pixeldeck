@@ -1104,3 +1104,19 @@ enum StarterArtFixture {
         return SpriteProject(name: "F", bounds: PixelRect(x: 0, y: 0, width: 4, height: 4), frames: [g], fps: 8)
     }
 }
+
+final class StillSpriteTests: XCTestCase {
+    func testStillsParseAreSingleFrameAndFree() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("PixelDeck/Resources/Starter/stills.json")
+        let lib = CharacterSpriteLibrary.parse(try Data(contentsOf: url))
+        XCTAssertEqual(CharacterSpriteLibrary.stillsOrder.count, 8)
+        for key in CharacterSpriteLibrary.stillsOrder {
+            let s = try XCTUnwrap(lib[key], key)
+            XCTAssertEqual(s.frames.count, 1, "\(key) is a still")
+            XCTAssertTrue(FeatureAccess.free.allowsArt(PixelRect(x: 0, y: 0, width: s.width, height: s.height)), "\(key) is editable for free")
+            XCTAssertNotNil(s.frames[0].opaqueBounds, "\(key) isn't blank")
+        }
+    }
+}

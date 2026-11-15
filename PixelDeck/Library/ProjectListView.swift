@@ -11,6 +11,8 @@ struct ProjectListView: View {
     /// The showcase scenes arrived in a later version, so they're added once to every gallery,
     /// new or existing.
     @AppStorage("showcaseSpritesAdded") private var showcaseSpritesAdded = false
+    /// The starter stills arrived later too; added once to every gallery.
+    @AppStorage("stillSpritesAdded") private var stillSpritesAdded = false
     @Environment(PurchaseManager.self) private var purchases
     @State private var path: [UUID] = []
     @State private var filter: GalleryFilter = .moving
@@ -84,12 +86,6 @@ struct ProjectListView: View {
             }
         }
         .onAppear(perform: firstLaunch)
-        .onChange(of: path) { _, newPath in
-            // Back from the Studio: show the tab holding the sprite you just worked on.
-            if newPath.isEmpty, let recent = store.projects.first {
-                filter = recent.frames.count > 1 ? .moving : .stills
-            }
-        }
         .fullScreenCover(isPresented: $showingWelcome) {
             WelcomeFlow {
                 showingWelcome = false
@@ -125,9 +121,27 @@ struct ProjectListView: View {
     // MARK: Pieces
 
     private var header: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Gallery").font(AppFont.pixel(30)).foregroundStyle(Theme.cream)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text("Gallery")
+                    .font(AppFont.pixel(30))
+                    .foregroundStyle(Theme.cream)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .layoutPriority(1)
+                Spacer(minLength: 8)
+                Button { showingCommunity = true } label: {
+                    PixelIcon.community.view(size: 20).frame(width: 42, height: 42)
+                }
+                .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
+                .accessibilityLabel("Community")
+                Button { showingSettings = true } label: {
+                    PixelIcon.settings.view(size: 20).frame(width: 42, height: 42)
+                }
+                .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.muted))
+                .accessibilityLabel("Settings")
+            }
+            HStack(spacing: 8) {
                 Group {
                     if filter == .moving {
                         Text("\(filtered.count) animations", comment: "Gallery count (plural)")
@@ -137,29 +151,21 @@ struct ProjectListView: View {
                 }
                 .font(AppFont.body(14, relativeTo: .subheadline))
                 .foregroundStyle(Theme.muted)
+                .lineLimit(1)
+                Spacer(minLength: 8)
+                HStack(spacing: 0) {
+                    tab("Moving", .moving)
+                    tab("Stills", .stills)
+                }
+                .padding(3)
+                .background(Theme.surface)
             }
-            Spacer()
-            Button { showingCommunity = true } label: {
-                PixelIcon.community.view(size: 20).frame(width: 42, height: 42)
-            }
-            .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
-            .accessibilityLabel("Community")
-            Button { showingSettings = true } label: {
-                PixelIcon.settings.view(size: 20).frame(width: 42, height: 42)
-            }
-            .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.muted))
-            .accessibilityLabel("Settings")
-            HStack(spacing: 0) {
-                tab("Moving", .moving)
-                tab("Stills", .stills)
-            }
-            .padding(3)
-            .background(Theme.surface)
         }
         .padding(.horizontal, 16)
         .padding(.top, 22)
         .padding(.bottom, 14)
     }
+
 
     private func tab(_ title: LocalizedStringKey, _ f: GalleryFilter) -> some View {
         let on = filter == f
@@ -280,6 +286,24 @@ struct ProjectListView: View {
             }
             // Fixed release date, newest first; edits made on any device win over a fresh copy.
             store.add(Array(scenes.reversed()), before: Date(timeIntervalSince1970: 1_794_700_800))
+        }
+        if !stillSpritesAdded {
+            stillSpritesAdded = true
+            let names: [String: String] = [
+                "strawberry": String(localized: "Strawberry", comment: "Starter still picture name"),
+                "potion": String(localized: "Potion", comment: "Starter still picture name"),
+                "mushroom": String(localized: "Mushroom", comment: "Starter still picture name"),
+                "cactus": String(localized: "Cactus", comment: "Starter still picture name"),
+                "icecream": String(localized: "Ice cream", comment: "Starter still picture name"),
+                "planet": String(localized: "Ringed planet", comment: "Starter still picture name"),
+                "cottage": String(localized: "Cottage", comment: "Starter still picture name"),
+                "sunset": String(localized: "Sunset sail", comment: "Starter still picture name"),
+            ]
+            let stills = CharacterSpriteLibrary.stillsOrder.compactMap { key in
+                StarterArt.sprite(key)?.makeProject(name: names[key] ?? key)
+            }
+            // Fixed date and ids, so devices sharing iCloud don't get duplicates.
+            store.add(Array(stills.reversed()), before: Date(timeIntervalSince1970: 1_794_700_000))
         }
         if !hasSeenOnboarding {
             hasSeenOnboarding = true
