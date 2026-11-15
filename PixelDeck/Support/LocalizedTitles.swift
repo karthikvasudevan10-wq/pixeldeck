@@ -12,7 +12,7 @@ extension Tool {
         case .fill: "Fill"
         case .eyedropper: LocalizedStringResource("Colour picker", comment: "Eyedropper tool")
         case .select: LocalizedStringResource("Select & move", comment: "Selection tool")
-        case .shape: LocalizedStringResource("Shapes", comment: "Shape tools: line, rectangle, circle, triangle")
+        case .shape: LocalizedStringResource("Shapes", comment: "Shape tools: line, rectangle, circle, triangle, hexagon and more")
         }
     }
 }
@@ -24,6 +24,12 @@ extension ShapeKind {
         case .rectangle: LocalizedStringResource("Rectangle", comment: "Shape tool; square with proportions locked")
         case .ellipse: LocalizedStringResource("Circle", comment: "Shape tool; ellipse when proportions aren't locked")
         case .triangle: "Triangle"
+        case .diamond: LocalizedStringResource("Diamond", comment: "Shape tool: a square turned 45°")
+        case .pentagon: "Pentagon"
+        case .hexagon: "Hexagon"
+        case .octagon: "Octagon"
+        case .parallelogram: "Parallelogram"
+        case .star: LocalizedStringResource("Star", comment: "Shape tool: a five-pointed star")
         }
     }
 }

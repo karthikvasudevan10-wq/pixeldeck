@@ -240,7 +240,7 @@ enum PixelIcon {
     case gallery, undo, redo, onion, export, share, download
     case plus, play, pause, back, arrowLeft, arrowRight, create
     case settings, more, trash, tween, check
-    case line, rectangle, circle, triangle, layers, eye, eyeOff, arrowUp, arrowDown, merge
+    case line, rectangle, circle, triangle, diamond, pentagon, hexagon, octagon, parallelogram, star, layers, eye, eyeOff, arrowUp, arrowDown, merge
 
     fileprivate var svg: [String] {
         switch self {
@@ -272,6 +272,12 @@ enum PixelIcon {
         case .rectangle: ["M4 6h16v12H4z"]
         case .circle: []                                   // drawn in path()
         case .triangle: ["M12 4l9 16H3z"]
+        case .diamond: ["M12 3l9 9-9 9-9-9z"]
+        case .pentagon: ["M12 3L21 10L17.5 20H6.5L3 10z"]
+        case .hexagon: ["M7 4h10l5 8-5 8H7l-5-8z"]
+        case .octagon: ["M8 3h8l5 5v8l-5 5H8l-5-5V8z"]
+        case .parallelogram: ["M8 5h13l-5 14H3z"]
+        case .star: ["M12 3L14.6 9L21 9.4L16.2 13.7L17.6 20L12 16.8L6.4 20L7.8 13.7L3 9.4L9.4 9z"]
         case .layers: ["M12 3l9 5-9 5-9-5z", "M3 12l9 5 9-5", "M3 16l9 5 9-5"]
         case .eye, .eyeOff: ["M10 10h4v4h-4z"]               // pupil; the lids are curves in path()
         case .arrowUp: ["M12 20V5M6 11l6-6 6 6"]

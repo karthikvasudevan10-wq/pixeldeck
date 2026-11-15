@@ -287,14 +287,26 @@ struct EditorView: View {
     /// Shape options, shown while the shape tool is in use.
     var shapeStrip: some View {
         HStack(spacing: 6) {
-            ForEach(ShapeKind.allCases) { kind in
-                let on = model.shapeKind == kind
-                Button { model.shapeKind = kind } label: {
-                    kind.icon.view(size: 18).frame(width: 40, height: 36).contentShape(Rectangle())
+            // Ten shapes don't fit across a phone, so they scroll; on wider screens the strip
+            // is only as wide as the shapes.
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        ForEach(ShapeKind.allCases) { kind in
+                            let on = model.shapeKind == kind
+                            Button { model.shapeKind = kind } label: {
+                                kind.icon.view(size: 18).frame(width: 40, height: 36).contentShape(Rectangle())
+                            }
+                            .buttonStyle(TileButtonStyle(active: on))
+                            .accessibilityLabel(Text(kind.title))
+                            .accessibilityAddTraits(on ? .isSelected : [])
+                            .id(kind)
+                        }
+                    }
+                    .padding(.vertical, 3)                 // room for the tiles' drop shadow
                 }
-                .buttonStyle(TileButtonStyle(active: on))
-                .accessibilityLabel(Text(kind.title))
-                .accessibilityAddTraits(on ? .isSelected : [])
+                .frame(maxWidth: CGFloat(ShapeKind.allCases.count) * 46 - 6)
+                .onAppear { proxy.scrollTo(model.shapeKind, anchor: .center) }
             }
             Theme.line.frame(width: 2, height: 28)
             Button { model.shapeFilled.toggle() } label: {
@@ -319,6 +331,7 @@ struct EditorView: View {
         .padding(6)
         .background(Theme.chip)
         .padding(.bottom, 3)
+        .padding(.horizontal, 12)
     }
 
     /// One 4×4 dot per frame; the current one is a 12×4 accent bar.

@@ -333,6 +333,12 @@ extension ShapeKind {
         case .rectangle: .rectangle
         case .ellipse: .circle
         case .triangle: .triangle
+        case .diamond: .diamond
+        case .pentagon: .pentagon
+        case .hexagon: .hexagon
+        case .octagon: .octagon
+        case .parallelogram: .parallelogram
+        case .star: .star
         }
     }
 }

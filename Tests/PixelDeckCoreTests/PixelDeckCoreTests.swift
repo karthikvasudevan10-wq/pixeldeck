@@ -687,3 +687,54 @@ final class PlaybackTimingTests: XCTestCase {
         XCTAssertEqual(sheet.metadata(fps: 10, imageName: "s.png").frames.map(\.durationMs), [100, 100])
     }
 }
+
+final class MoreShapeTests: XCTestCase {
+    func testPolygonsStayInTheirBoxAndTouchItsSides() {
+        for kind in [ShapeKind.diamond, .pentagon, .hexagon, .octagon, .parallelogram, .star] {
+            for filled in [false, true] {
+                let pts = Set(ShapeRaster.points(kind, from: P(0, 0), to: P(20, 16), filled: filled))
+                let box = PixelRect(x: 0, y: 0, width: 21, height: 17)
+                XCTAssertTrue(pts.allSatisfy { box.contains($0) }, "\(kind) stays in its box")
+                XCTAssertTrue(pts.contains { $0.x == 0 } && pts.contains { $0.x == 20 }, "\(kind) spans the width")
+                XCTAssertTrue(pts.contains { $0.y == 0 } && pts.contains { $0.y == 16 }, "\(kind) spans the height")
+            }
+        }
+    }
+
+    func testSymmetricShapesAreSymmetric() {
+        for kind in [ShapeKind.diamond, .hexagon, .octagon] {
+            for w in [9, 10, 15] {
+                let pts = Set(ShapeRaster.points(kind, from: P(0, 0), to: P(w - 1, w - 1), filled: false))
+                for p in pts {
+                    XCTAssertTrue(pts.contains(P(w - 1 - p.x, p.y)), "\(kind) \(w) mirrors left-right")
+                }
+            }
+        }
+    }
+
+    func testFilledShapesHaveNoHoles() {
+        // Every row of a filled convex shape is one solid run.
+        for kind in [ShapeKind.diamond, .pentagon, .hexagon, .octagon, .parallelogram] {
+            let pts = Set(ShapeRaster.points(kind, from: P(0, 0), to: P(17, 13), filled: true))
+            for y in 0...13 {
+                let row = pts.filter { $0.y == y }.map(\.x)
+                guard let lo = row.min(), let hi = row.max() else { continue }
+                XCTAssertEqual(row.count, hi - lo + 1, "\(kind) row \(y) is solid")
+            }
+        }
+        // The star's centre is filled, and the gap between two points at the top stays empty.
+        let star = Set(ShapeRaster.points(.star, from: P(0, 0), to: P(30, 30), filled: true))
+        XCTAssertTrue(star.contains(P(15, 16)))
+        XCTAssertFalse(star.contains(P(4, 3)))
+    }
+
+    func testNewShapesDrawThroughTheModel() {
+        let m = makeModel()
+        m.tool = .shape
+        m.shapeKind = .hexagon
+        m.shapeFilled = true
+        stroke(m, [(0.5, 0.5), (12.5, 10.5)])
+        XCTAssertEqual(m.pixel(P(6, 5)), .black, "centre filled")
+        XCTAssertEqual(m.pixel(P(0, 0)), .clear, "hexagon corners are cut")
+    }
+}
