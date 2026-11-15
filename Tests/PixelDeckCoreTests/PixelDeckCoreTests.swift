@@ -1041,3 +1041,66 @@ final class CloudPlaceholderTests: XCTestCase {
         XCTAssertEqual(store.projects.count, 1)
     }
 }
+
+final class CommunityTests: XCTestCase {
+    func testPostArtRoundTripsTrimmedAndFlattened() throws {
+        let m = makeModel()
+        tap(m, 3.5, 4.5)
+        m.addLayer(); m.pickColor(.white); tap(m, 5.5, 4.5)
+        m.addKeyframe(); tap(m, 4.5, 6.5)
+        m.setPlaybackEasing(.easeIn)                    // ignored on free; fine either way
+        let art = try XCTUnwrap(PostArt(project: m.project))
+        XCTAssertEqual(art.width, 3); XCTAssertEqual(art.height, 3)
+        XCTAssertEqual(art.frames.count, 2)
+        XCTAssertEqual(art.frames[0][0, 0], .black); XCTAssertEqual(art.frames[0][2, 0], .white)
+        let back = try XCTUnwrap(PostArt.decode(art.encoded()))
+        XCTAssertEqual(back, art)
+        let remix = back.makeProject(name: "Remix")
+        XCTAssertEqual(remix.frames.count, 2)
+        XCTAssertEqual(remix.visibleContentBounds?.width, 3)
+    }
+
+    func testBlankSpritesCantBePostedAndBadPostsAreRejected() throws {
+        XCTAssertNil(PostArt(project: SpriteProject(name: "Blank")))
+        var art = try XCTUnwrap(PostArt(project: StarterArtFixture.project()))
+        art.width = 9999
+        XCTAssertNil(PostArt.decode(try art.encoded()), "out-of-range sizes are refused")
+        XCTAssertNil(PostArt.decode(Data("not json".utf8)))
+    }
+
+    func testFilterBlocksProfanityLinksAndContactsButNotInnocentWords() {
+        for bad in ["fuck", "F*U*C*K this", "fuuuuck", "sh1t", "f u c k", "visit www.example.com", "mysite.com",
+                    "mail me a@b.co", "call 5551234567", "http://x", "kys"] {
+            XCTAssertFalse(ContentFilter.isAcceptable(bad), bad)
+        }
+        for ok in ["Classic slime", "Scunthorpe sunset", "Grass bass", "Moon & stars", "Peaceful valley 2", "Dickens' cat", "Cocktail hour"] {
+            XCTAssertTrue(ContentFilter.isAcceptable(ok), ok)
+        }
+    }
+
+    func testTidy() {
+        XCTAssertEqual(ContentFilter.tidy("  Hello \n\t world  ", maxLength: 40), "Hello world")
+        XCTAssertEqual(ContentFilter.tidy(String(repeating: "a", count: 99), maxLength: 40).count, 40)
+    }
+
+    func testModerationRules() {
+        func visible(_ reporters: Set<String> = [], blocked: Set<String> = [], mine: Set<String> = [], title: String = "Hi") -> Bool {
+            CommunityModeration.isVisible(postID: "p", authorID: "u", title: title, author: "Nick",
+                                          reporters: reporters, blockedAuthors: blocked, reportedByMe: mine)
+        }
+        XCTAssertTrue(visible())
+        XCTAssertTrue(visible(["a", "b"]))
+        XCTAssertFalse(visible(["a", "b", "c"]), "hidden after three reports")
+        XCTAssertFalse(visible(blocked: ["u"]))
+        XCTAssertFalse(visible(mine: ["p"]))
+        XCTAssertFalse(visible(title: "shit"))
+    }
+}
+
+enum StarterArtFixture {
+    static func project() -> SpriteProject {
+        var g = PixelGrid(width: 4, height: 4)
+        g[1, 1] = .black
+        return SpriteProject(name: "F", bounds: PixelRect(x: 0, y: 0, width: 4, height: 4), frames: [g], fps: 8)
+    }
+}

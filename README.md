@@ -89,6 +89,19 @@ The look follows the design handoff and **follows the system appearance**. Dark 
   - **Signed out**: when signed out, or with iCloud Drive off, the app keeps working on the device and copies your work there.
   - **Code**: `Support/CloudSync.swift` (an NSMetadataQuery watches the container, and writes go through NSFileCoordinator). `ProjectStore.relocate` and `mergeFromDisk` are unit-tested.
   - **Setup**: in Xcode, select the target → *Signing & Capabilities* → **+ Capability** → **iCloud**. Tick **iCloud Documents**, then add and tick the container `iCloud.<your bundle ID>`. This needs a paid developer account. Without it, sync shows as unavailable and everything stays on the device.
+- **Community**: a public gallery of everyone's sprites, built on CloudKit's **public database**. Apple hosts it, so there's no server to run.
+  - **Browsing**: tap the globe button in the gallery. Anyone can browse, without signing in, and posts play as live tiles, newest first.
+  - **Sharing**: long-press a sprite in the gallery, or use the sprite menu, and choose *Share to Community…*. Posting needs an iCloud account.
+  - **Remix** copies a post into your gallery.
+  - **Mine** lists your own posts, so you can delete them.
+  - **Moderation** works without approving posts first, which covers what App Store guideline 1.2 requires:
+    - titles and nicknames are filtered (profanity and slurs, including letter swaps, plus links, emails and phone numbers);
+    - anyone can report a post, and 3 reports from different people hide it for everyone;
+    - anyone can block a poster;
+    - people agree to the community rules before their first post;
+    - a moderator mode lets your own account remove any post.
+  - **Code**: `Core/Community.swift` holds the payload, filter and visibility rules, and it's unit-tested. `Community/` holds the CloudKit service and screens.
+  - **Setup**: set `AppConfig.cloudKitContainerID`, then add the CloudKit indexes and roles from the submission checklist. Until the container ID is set, Community stays off.
 - **Localisation-ready**: the text uses a String Catalog with English plurals, and the layout mirrors for right-to-left languages.
 - **Accessibility**: Reduce Motion pauses the decorative animations (stars, swipe hints and gallery previews). Controls have VoiceOver labels, and body text scales with Dynamic Type.
 
@@ -124,6 +137,7 @@ PixelDeck/
   Core/                   Platform-independent model and logic (unit-tested)
   Editor/                 Studio: infinite UIKit canvas, swipe container, dock, tween
   Library/                Gallery
+  Community/              Community: CloudKit public sharing (feed, post, share, report/block)
   Export/                 PNG/GIF/MP4/JSON export, Photos saving and the share sheet
   Store/                  In-app purchase (StoreKit 2) and paywall
   Resources/              Bundled fonts (with their OFL licence) and the starter sprites (sprites.json)

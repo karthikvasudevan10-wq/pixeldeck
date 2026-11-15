@@ -16,6 +16,8 @@ struct ProjectListView: View {
     @State private var filter: GalleryFilter = .moving
     @State private var showingWelcome = false
     @State private var showingSettings = false
+    @State private var showingCommunity = false
+    @State private var sharing: SpriteProject?
     @State private var exporting: SpriteProject?
     @State private var renamingID: UUID?
     @State private var renameText = ""
@@ -95,6 +97,8 @@ struct ProjectListView: View {
             }
         }
         .sheet(isPresented: $showingSettings) { SettingsView() }
+        .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
+        .sheet(item: $sharing) { ShareToCommunityView(project: $0) }
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
         .alert("Rename sprite", isPresented: Binding(get: { renamingID != nil }, set: { if !$0 { renamingID = nil } })) {
             TextField("Name", text: $renameText)
@@ -135,6 +139,11 @@ struct ProjectListView: View {
                 .foregroundStyle(Theme.muted)
             }
             Spacer()
+            Button { showingCommunity = true } label: {
+                PixelIcon.community.view(size: 20).frame(width: 42, height: 42)
+            }
+            .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
+            .accessibilityLabel("Community")
             Button { showingSettings = true } label: {
                 PixelIcon.settings.view(size: 20).frame(width: 42, height: 42)
             }
@@ -230,6 +239,7 @@ struct ProjectListView: View {
             }
         } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
         Button { exporting = project } label: { Label("Export", systemImage: "square.and.arrow.up") }
+        Button { sharing = project } label: { Label("Share to Community…", systemImage: "globe") }
         Button(role: .destructive) { deletingID = project.id } label: { Label("Delete", systemImage: "trash") }
     }
 

@@ -153,11 +153,14 @@ struct TweenPreview: View {
 /// Title bar for the app's own sheets: Silkscreen title and a square close button.
 struct SheetHeader: View {
     let title: LocalizedStringKey
+    /// Text shown as is (e.g. a user's title), instead of `title`.
+    var verbatim: String? = nil
     var onClose: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
-            Text(title).font(AppFont.pixel(22)).foregroundStyle(Theme.cream)
+            (verbatim.map { Text(verbatim: $0) } ?? Text(title))
+                .font(AppFont.pixel(22)).foregroundStyle(Theme.cream).lineLimit(1)
             Spacer()
             Button(action: onClose) {
                 Text(verbatim: "×").font(AppFont.pixel(20)).foregroundStyle(Theme.text).frame(width: 44, height: 44)

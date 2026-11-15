@@ -16,6 +16,15 @@ enum AppConfig {
     /// Shown in Settings as "Contact support" if set.
     static let supportEmail: String? = nil
 
+    /// The CloudKit container for Community (public sharing), e.g. "iCloud.com.yourname.pixeldeck".
+    /// Must be ticked under the iCloud capability's CloudKit service. Nil turns Community off
+    /// (CloudKit crashes an app that uses a container it isn't entitled to).
+    static let cloudKitContainerID: String? = nil
+
+    /// CloudKit user ids allowed to remove anyone's post in the app (give that account the
+    /// Moderator security role in CloudKit Console). Find yours in Settings › Community.
+    static let communityModeratorIDs: Set<String> = []
+
     /// Apple's standard licence agreement, used unless you provide your own EULA.
     static let termsOfUseURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
 

@@ -74,9 +74,27 @@ You still need to do this, and no review can replace it:
 - [ ] If you change what the app does with data, update both the in-app copy (`PrivacyPolicyView.swift`) and the HTML.
 
 ### App Store Connect answers
-- [ ] **App Privacy**: "Data Not Collected" is accurate for this code. iCloud sync stores sprites in the user's own private iCloud container, which the developer can't access, so it isn't collection.
+- [ ] **App Privacy**: with Community, declare **User Content → Other User Content** and **Identifiers → User ID**. Both are linked to the user, not used for tracking, and used for App Functionality. (Community posts and their CloudKit user ids are visible to you in CloudKit Console. `PrivacyInfo.xcprivacy` declares the same.) iCloud sync on its own isn't collection, because it uses the user's private container.
 - [ ] **iCloud capability** (needs a paid Apple Developer Program membership): target → Signing & Capabilities → **+ Capability** → **iCloud**. Tick **iCloud Documents**, add a container named `iCloud.<your bundle ID>`, and tick it. Without this the app builds and works, but sprites stay on each device. Before release, test with two devices on the same Apple Account, and check the container in CloudKit Console → your container is created.
-- [ ] **Age rating questionnaire**: answer None or No throughout. That includes the newer questions on social media, in-app controls, Shared Location and Dating, which every app must answer by 12 Jan 2027. The result should be the lowest rating.
+- [ ] **Age rating questionnaire**: answer **Yes** to user-generated content (Community lets people share art that others can see). Answer None or No to everything else, including the newer questions on social media, in-app controls, Shared Location and Dating, which every app must answer by 12 Jan 2027.
+- [ ] **Community (CloudKit public database)**. See also guideline 1.2 below.
+  1. Under the iCloud capability, also tick **CloudKit**, using the same `iCloud.<your bundle ID>` container. Set `AppConfig.cloudKitContainerID` to that ID. While it's nil, Community shows "not set up", because CloudKit crashes apps that use a container they aren't entitled to.
+  2. Run the app in development, post one sprite and report it from a second Apple Account. That creates the `Post` and `Report` record types.
+  3. In **CloudKit Console** → your container → Schema → Indexes, add:
+     - `Post`: **recordName** Queryable, **createdTimestamp** Sortable, **createdUserRecordName** Queryable (for "Mine").
+     - `Report`: **post** Queryable.
+  4. Security Roles: keep the defaults (World: Read; Authenticated: Create; Creator: Write).
+  5. For in-app moderation, create a **Moderator** role with Read/Write on `Post` and assign it to your own user record. Then add your id (Settings › Community › Show my Community ID) to `AppConfig.communityModeratorIDs`. You can also delete posts directly in CloudKit Console → Records (Public Database).
+  6. **Deploy Schema Changes to Production** before you submit. Review uses production.
+- [ ] **Guideline 1.2 (user-generated content)**. The app has:
+  - a title and nickname filter,
+  - Report (3 reports from different people hide a post for everyone),
+  - Block,
+  - delete-your-own-post,
+  - rules the user agrees to before their first post (zero tolerance), and
+  - contact details in Settings.
+
+  You must act on reports within 24 hours. Check CloudKit Console → Public Database → `Report` records daily, delete offending posts, and keep a note of abusive users. Set `AppConfig.supportEmail` so people can reach you.
 - [ ] **Category**: Graphics & Design (primary). Entertainment or Productivity are possible secondaries.
 - [ ] **Pricing**: Free, with the in-app purchase. See the business model notes below.
 - [ ] Paste the text from `metadata.md` and the review notes.
@@ -143,6 +161,7 @@ Why this model:
 - Every limit is in `Core/FeatureAccess.swift`, so it's easy to tune after launch.
 
 Ideas for later versions:
+- Community likes and a "popular" feed
 - Import a photo and turn it into pixel art
 - Custom palettes, including .hex and .gpl palette files
 - A seasonal discount using a promotional offer
@@ -162,4 +181,6 @@ Ideas for later versions:
 >
 > **Save** on the export screen asks for add-only Photos access; **Share** uses the share sheet.
 >
-> The app collects no data.
+> Community (the globe button at the top of the gallery) shares sprites through CloudKit's public database. To post: long-press a sprite in the gallery → Share to Community, agree to the rules, enter a title and nickname. Each post has Report, Block and (for your own posts) Delete. Three reports from different people hide a post for everyone, titles and nicknames are filtered, and reports are reviewed within 24 hours.
+>
+> Community posts (art, title, nickname) are the only data that leaves the device besides the user's private iCloud sync.

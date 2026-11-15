@@ -34,6 +34,7 @@ MAKE IT MOVE
 Select some pixels and drag them anywhere: across the canvas, in an arc, around a loop. Pixel Deck smooths out the path your finger took and draws every frame in between, with easing.
 
 SHARE IT
+• Post your animations to Community, browse what others made, and remix them
 • Sprite sheets with JSON frame data for game engines
 • PNG frames
 • Looping GIFs and 1080×1080 MP4 videos for Reels, Shorts and TikTok (Pro)

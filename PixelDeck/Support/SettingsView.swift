@@ -3,6 +3,9 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(PurchaseManager.self) private var purchases
     @Environment(CloudSync.self) private var cloud
+    @Environment(CommunityService.self) private var community
+    @State private var showingRules = false
+    @State private var communityID: String?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var showingUpgrade = false
@@ -71,6 +74,25 @@ struct SettingsView: View {
                             .background(Theme.surface)
                         }
 
+                        if community.isConfigured {
+                            group("Community") {
+                                row(icon: .community, title: "Community rules") { showingRules = true }
+                                row(icon: .eyeOff, title: community.blockedAuthors.isEmpty
+                                    ? LocalizedStringKey("No one blocked")
+                                    : LocalizedStringKey("Unblock everyone (\(community.blockedAuthors.count))")) {
+                                    community.unblockAll()
+                                }
+                                .disabled(community.blockedAuthors.isEmpty)
+                                // For the developer setting up moderation (AppConfig.communityModeratorIDs).
+                                row(icon: .more, title: communityID.map { LocalizedStringKey("ID: \($0)") } ?? LocalizedStringKey("Show my Community ID")) {
+                                    Task {
+                                        communityID = await community.myCommunityID()
+                                        if let id = communityID { UIPasteboard.general.string = id }
+                                    }
+                                }
+                            }
+                        }
+
                         group("Help") {
                             row(icon: .arrowLeft, title: "How the swipes work") { showingSwipes = true }
                             if let url = AppConfig.supportURL {
@@ -104,6 +126,7 @@ struct SettingsView: View {
             .toolbar(.hidden, for: .navigationBar)
         }
         .sheet(isPresented: $showingUpgrade) { ProUpgradeView() }
+        .sheet(isPresented: $showingRules) { CommunityRulesView() }
         .fullScreenCover(isPresented: $showingSwipes) { WelcomeFlow(startOnGestures: true) { showingSwipes = false } }
         .alert("Pixel Deck Pro", isPresented: Binding(get: { purchases.errorMessage != nil && !showingUpgrade },
                                                       set: { if !$0 { purchases.errorMessage = nil } })) {
