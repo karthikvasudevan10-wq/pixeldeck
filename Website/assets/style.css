@@ -165,6 +165,12 @@ footer a{color:var(--muted)}footer a:hover{color:var(--cream)}
 .about-art .mono canvas{filter:grayscale(1) contrast(1.35)}
 @media (max-width:880px){.about-art .tile:first-child{min-height:180px}}
 
+/* favourite: a strip of frames */
+.frames-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:28px;max-width:760px}
+.frames-row .tile{display:grid;place-items:center;background:#2B1F47;border:2px solid var(--line);aspect-ratio:1}
+.frames-row canvas.spr{--px:6}
+@media (max-width:600px){.frames-row canvas.spr{--px:3}}
+
 /* legal page */
 .legal{max-width:720px;padding:70px 0 100px}
 .legal h1{font-family:var(--pixel);font-weight:400;color:var(--cream);font-size:36px;margin:0 0 8px}
