@@ -1,6 +1,6 @@
 # App Store listing text
 
-Apple's character limits are in brackets. Don't use other apps' names in keywords (2.3.7). The listing speaks to two audiences: people who **make** pixel art, and people who just **love** it (browse, heart, remix, widget).
+Apple's character limits are in brackets. Don't use other apps' names in keywords (2.3.7). The listing speaks to two audiences: people who **make** pixel art, and people who just **love** it (browse, heart, remix, widget). It uses the same tagline as the website and the app's welcome screen ("Draw it. Move it. Love it.") and the maker's story from the website's About section. The App Store text doesn't name Mario: other companies' characters and trademarks aren't allowed in App Store text (guidelines 2.3.7 and 5.2), though the website's About section may talk about them.
 
 **Name** (30): `Pixel Deck: Sprite Animator` (27 characters)
 
@@ -13,7 +13,9 @@ Alternative: `Retro art & flipbook animation` (30), if you'd rather lead on anim
 **Promotional text** (170, can be changed any time without a review):
 New: hearts, a Popular feed and a Home Screen widget of community favourites. Love pixel art but don't draw? Browse, heart and remix to your heart's content.
 
-**Description** (4000, 2838 used):
+**Description** (4000, 3144 used):
+
+Draw it. Move it. Love it.
 
 Pixel Deck is a cosy home for pixel art, whether you love making it or just love looking at it.
 
@@ -66,7 +68,8 @@ One purchase, no subscription:
 • Eased playback, so animations speed up and slow down naturally
 Family Sharing supported.
 
-Whether you draw every day or just like to look, Pixel Deck has a little pixel joy waiting for you.
+FROM THE MAKER
+Hi, I'm Karthik, and I love pixel art: how a handful of squares can feel so alive. I have a soft spot for single-colour pixel art, games built from pixels, and that retro feeling of chunky sprites and tiny palettes. I made Pixel Deck to encourage more pixel art, and more pixel artists. Whether you draw every day or just like to look, I hope it makes you smile.
 
 **What's New** (version 1.1):
 
@@ -96,7 +99,7 @@ Whether you draw every day or just like to look, Pixel Deck has a little pixel j
 **Screenshots** (suggested order, Dark appearance):
 1. Community with live tiles and hearts. Caption: "Love pixel art? Browse, heart and remix."
 2. The Home Screen widget. Caption: "Community favourites on your Home Screen."
-3. Drawing with the onion skin. Caption: "Draw it. Swipe left. Make it move."
+3. Drawing with the onion skin. Caption: "Draw it. Move it. Love it."
 4. Tween path. Caption: "Drag pixels along a path; frames draw themselves."
 5. The guided tour card. Caption: "Learn in two minutes, no experience needed."
 6. Timelapse. Caption: "Replay how you drew it."
