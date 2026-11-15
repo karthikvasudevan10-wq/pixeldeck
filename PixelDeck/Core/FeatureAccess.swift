@@ -21,6 +21,8 @@ struct FeatureAccess: Equatable, Sendable {
     /// Largest art (width and height of the drawn pixels across all frames) on the infinite canvas.
     static let freeMaxArtSide = 64
     static let proMaxArtSide = 512
+    /// How many times the area Pro art can cover compared with free (64 for 512 vs 64).
+    static var proAreaMultiple: Int { (proMaxArtSide * proMaxArtSide) / (freeMaxArtSide * freeMaxArtSide) }
     static let freeFrameLimit = 12
     static let freeMaxExportScale = 4
     /// Hard ceiling for everyone.

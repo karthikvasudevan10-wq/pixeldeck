@@ -113,7 +113,7 @@ extension ExportFormat {
 extension ProFeature {
     var title: LocalizedStringResource {
         switch self {
-        case .largeCanvas: "Art up to \(FeatureAccess.proMaxArtSide) × \(FeatureAccess.proMaxArtSide)"
+        case .largeCanvas: "Grow your art to \(FeatureAccess.proMaxArtSide) × \(FeatureAccess.proMaxArtSide)"
         case .unlimitedFrames: "Up to \(FeatureAccess.absoluteFrameLimit) frames per sprite"
         case .gifExport: "Animated GIF & video export"
         case .largeExport: "Export up to 16× size"
@@ -123,7 +123,7 @@ extension ProFeature {
 
     var detail: LocalizedStringResource {
         switch self {
-        case .largeCanvas: "Free art on the infinite canvas can be up to \(FeatureAccess.freeMaxArtSide) × \(FeatureAccess.freeMaxArtSide) pixels. Pro gives you room for detailed scenes and tilesets."
+        case .largeCanvas: "The canvas is infinite for everyone. Free art can grow to \(FeatureAccess.freeMaxArtSide) × \(FeatureAccess.freeMaxArtSide) pixels; Pro gives it \(FeatureAccess.proAreaMultiple) times the room, for detailed scenes and tilesets."
         case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. Very large sprites have a lower limit to protect your device's memory."
         case .gifExport: "Share looping GIFs and MP4 videos for Reels, Shorts and TikTok."
         case .largeExport: "Crisp, large images for stores, social posts and print."
