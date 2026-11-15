@@ -860,3 +860,27 @@ final class TraceImageTests: XCTestCase {
         XCTAssertNotNil(m.trace, "undo doesn't remove the tracing picture")
     }
 }
+
+final class PalettePresetTests: XCTestCase {
+    func testPresetsHaveTenDistinctOpaqueColours() {
+        for p in PalettePreset.allCases {
+            XCTAssertEqual(p.colors.count, 10, p.rawValue)
+            XCTAssertEqual(Set(p.colors).count, 10, "\(p.rawValue) has no repeats")
+            XCTAssertTrue(p.colors.allSatisfy { $0.a == 255 })
+        }
+        XCTAssertEqual(PalettePreset.pixelDeck.colors, SpriteProject.defaultPalette)
+    }
+
+    func testApplyingAPaletteKeepsTheSelectedSlotAndTheArt() {
+        let m = makeModel()
+        m.pickColor(m.palette[3])
+        tap(m, 0.5, 0.5)
+        let drawn = m.pixel(P(0, 0))
+        m.applyPalette(PalettePreset.ocean.colors)
+        XCTAssertEqual(m.palette, PalettePreset.ocean.colors)
+        XCTAssertEqual(m.color, PalettePreset.ocean.colors[3])
+        XCTAssertEqual(m.pixel(P(0, 0)), drawn, "the art keeps its colours")
+        m.applyPalette([.black])                       // wrong size: ignored
+        XCTAssertEqual(m.palette, PalettePreset.ocean.colors)
+    }
+}

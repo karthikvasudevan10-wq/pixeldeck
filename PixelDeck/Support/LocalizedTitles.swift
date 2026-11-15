@@ -131,3 +131,20 @@ extension ProFeature {
         }
     }
 }
+
+extension PalettePreset {
+    var title: LocalizedStringResource {
+        switch self {
+        case .pixelDeck: LocalizedStringResource("Pixel Deck", comment: "Palette name: the app's starter colours")
+        case .sunset: LocalizedStringResource("Sunset", comment: "Palette name")
+        case .forest: LocalizedStringResource("Forest", comment: "Palette name")
+        case .ocean: LocalizedStringResource("Ocean", comment: "Palette name")
+        case .candy: LocalizedStringResource("Candy", comment: "Palette name: pastels")
+        case .neon: LocalizedStringResource("Neon", comment: "Palette name")
+        case .fire: LocalizedStringResource("Fire", comment: "Palette name")
+        case .people: LocalizedStringResource("Skin & hair", comment: "Palette name: skin tones and hair colours for characters")
+        case .pocketGreens: LocalizedStringResource("Pocket greens", comment: "Palette name: shades of green, like an old handheld screen")
+        case .grayscale: LocalizedStringResource("Greys", comment: "Palette name: black to white")
+        }
+    }
+}

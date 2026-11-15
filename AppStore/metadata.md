@@ -23,7 +23,7 @@ DRAW IT
 • Ten shapes, from lines, rectangles and circles to hexagons, parallelograms and stars, outlined or filled
 • Trace over any photo or sketch: it sits under every layer at the opacity you choose
 • Layers: keep backgrounds, shapes and characters apart, then hide, reorder or merge them
-• A 10-colour palette per sprite; long-press any colour to change it
+• A 10-colour palette per sprite, 10 ready-made palettes to start from, and a full colour picker
 
 FLIP IT
 • Swipe left for the next frame; the last one stays underneath as a pink onion skin

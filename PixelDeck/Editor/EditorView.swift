@@ -33,6 +33,7 @@ struct EditorView: View {
     /// The tracing picture under every layer, saved per sprite.
     @State var traceImage: UIImage?
     @State var showingTrace = false
+    @State var showingPalettes = false
     /// The frame image folding over during a page turn.
     @State var turningPage: CGImage?
     @State var turnProgress: CGFloat = 0
@@ -119,6 +120,7 @@ struct EditorView: View {
         .sheet(isPresented: $showingTween) { TweenSheet(model: model) }
         .sheet(isPresented: $showingLayers) { LayersSheet(model: model, traceImage: $traceImage) }
         .sheet(isPresented: $showingTrace) { TraceSheet(model: model, image: $traceImage) }
+        .sheet(isPresented: $showingPalettes) { PaletteSheet(model: model) }
         .background { KeyboardShortcuts(model: model, canvas: canvas, onExport: openExport,
                                         onNewCanvas: newCanvas, onLayers: { showingLayers = true }) }
         .overlay(alignment: .top) {
@@ -158,7 +160,8 @@ struct EditorView: View {
                    onGallery: { dismiss() },
                    onExport: openExport,
                    onEditSwatch: { editingSwatch = SwatchEdit(index: $0) },
-                   onTrace: { showingTrace = true })
+                   onTrace: { showingTrace = true },
+                   onPalettes: { showingPalettes = true })
     }
 
     // MARK: Canvas
@@ -240,6 +243,7 @@ struct EditorView: View {
             }
             .pickerStyle(.menu)
             Button { showingTrace = true } label: { Label("Tracing image…", systemImage: "photo") }
+            Button { showingPalettes = true } label: { Label("Colours & palettes…", systemImage: "paintpalette") }
             Divider()
             Button { model.duplicateFrame(at: model.currentIndex) } label: { Label("Duplicate frame", systemImage: "plus.square.on.square") }
             Button { model.copyFrameToClipboard(at: model.currentIndex) } label: { Label("Copy frame", systemImage: "doc.on.doc") }

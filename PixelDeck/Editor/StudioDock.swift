@@ -12,11 +12,12 @@ struct StudioDock: View {
     var onExport: () -> Void
     var onEditSwatch: (Int) -> Void
     var onTrace: () -> Void = {}
+    var onPalettes: () -> Void = {}
 
     var body: some View {
         VStack(spacing: 10) {
             FrameRow(model: model)
-            PaletteRow(model: model, onEdit: onEditSwatch)
+            PaletteRow(model: model, onEdit: onEditSwatch, onPalettes: onPalettes)
             ToolRow(model: model)
             ActionRow(model: model, onGallery: onGallery, onExport: onExport, onTrace: onTrace)
         }
@@ -117,6 +118,8 @@ struct FrameRow: View {
 struct PaletteRow: View {
     let model: EditorModel
     var onEdit: (Int) -> Void
+    /// Opens the Colours panel (colour picker and ready-made palettes).
+    var onPalettes: (() -> Void)? = nil
     /// nil: one row filling the width. Otherwise a grid this many columns wide.
     var columns: Int? = nil
     var swatch = CGSize(width: 52, height: 40)
@@ -126,15 +129,35 @@ struct PaletteRow: View {
             if let columns {
                 LazyVGrid(columns: Array(repeating: GridItem(.fixed(swatch.width), spacing: 6), count: columns), spacing: 6) {
                     swatches(fixed: true)
+                    palettesButton(fixed: true)
                 }
                 .padding(4)
             } else {
-                HStack(spacing: 6) { swatches(fixed: false) }
+                HStack(spacing: 6) {
+                    swatches(fixed: false)
+                    palettesButton(fixed: false)
+                }
                     .padding(.horizontal, 4)
             }
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Palette")
+    }
+
+    @ViewBuilder
+    private func palettesButton(fixed: Bool) -> some View {
+        if let onPalettes {
+            Button(action: onPalettes) {
+                PixelIcon.swatches.view(size: 16)
+                    .foregroundStyle(Theme.text)
+                    .frame(width: fixed ? swatch.width : 30, height: fixed ? swatch.height : 34)
+                    .background(Theme.tool)
+                    .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 1))
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Colours and palettes")
+        }
     }
 
     @ViewBuilder

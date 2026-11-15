@@ -239,7 +239,7 @@ enum PixelIcon {
     case pencil, eraser, fill, picker, mirror, select
     case gallery, undo, redo, onion, export, share, download
     case plus, play, pause, back, arrowLeft, arrowRight, create
-    case settings, more, trash, tween, check
+    case settings, more, trash, tween, check, swatches
     case line, rectangle, circle, triangle, diamond, pentagon, hexagon, octagon, parallelogram, star, layers, eye, eyeOff, arrowUp, arrowDown, merge
 
     fileprivate var svg: [String] {
@@ -268,6 +268,7 @@ enum PixelIcon {
         case .trash: ["M5 7h14", "M9 7V4h6v3", "M7 7l1 13h8l1-13"]
         case .tween: ["M4 19c4-14 12 0 16-14", "M3 18h3v3H3z", "M18 3h3v3h-3z"]
         case .check: ["M5 12l5 5 9-10"]
+        case .swatches: ["M4 4h7v7H4z", "M13 4h7v7h-7z", "M4 13h7v7H4z", "M13 13h7v7h-7z"]
         case .line: ["M5 19L19 5"]
         case .rectangle: ["M4 6h16v12H4z"]
         case .circle: []                                   // drawn in path()

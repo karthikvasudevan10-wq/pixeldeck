@@ -92,7 +92,7 @@ extension EditorView {
                 HStack(spacing: 10) {
                     rightPage(caption: Text("Drawing frame \(String(format: "%02d", model.currentIndex + 1))"))
                     ScrollView(.vertical, showsIndicators: false) {
-                        PaletteRow(model: model, onEdit: { editingSwatch = SwatchEdit(index: $0) }, columns: 1)
+                        PaletteRow(model: model, onEdit: { editingSwatch = SwatchEdit(index: $0) }, onPalettes: { showingPalettes = true }, columns: 1)
                     }
                     .frame(width: 60)
                     .scrollBounceBehavior(.basedOnSize)
@@ -302,7 +302,7 @@ extension EditorView {
                         .overlay(alignment: .topLeading) { chip.padding(10) }
                         .overlay(alignment: .topTrailing) { layersButton.padding(10) }
                     VStack(spacing: 10) {
-                        PaletteRow(model: model, onEdit: { editingSwatch = SwatchEdit(index: $0) }, columns: 2)
+                        PaletteRow(model: model, onEdit: { editingSwatch = SwatchEdit(index: $0) }, onPalettes: { showingPalettes = true }, columns: 2)
                         HStack(spacing: 6) {
                             fpsStep("−", label: "Slower", by: -1)
                             fpsStep("+", label: "Faster", by: 1)
