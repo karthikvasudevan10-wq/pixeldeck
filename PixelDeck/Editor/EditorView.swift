@@ -35,6 +35,11 @@ struct EditorView: View {
     @State var showingTrace = false
     @State var showingPalettes = false
     @State var sharingToCommunity = false
+    /// This sprite's timelapse, recorded as you draw (saved every few edits and on leaving).
+    @State var timelapse = Timelapse()
+    @State var timelapseProjectID: UUID?
+    @State var timelapseUnsaved = 0
+    @State var showingTimelapse = false
     /// The frame image folding over during a page turn.
     @State var turningPage: CGImage?
     @State var turnProgress: CGFloat = 0
@@ -132,7 +137,11 @@ struct EditorView: View {
         }
         .onAppear {
             prepareTourStep()
-            model.onChange = { [store] project in store.save(project) }
+            loadTimelapse()
+            model.onChange = { [store] project in
+                store.save(project)
+                recordTimelapse(project)
+            }
             model.access = purchases.access
             model.onProRequired = { feature in upgrade = feature }
             model.newLayerName = { String(localized: "Layer \($0)", comment: "Default name for a new layer") }
@@ -143,6 +152,10 @@ struct EditorView: View {
             model.isPlaying = false
             model.commitSelection()
             store.save(model.project)
+            saveTimelapse()
+        }
+        .sheet(isPresented: $showingTimelapse) {
+            TimelapseView(name: model.project.name, timelapse: timelapse)
         }
         .proUpgradeSheet($upgrade)
         .sheet(isPresented: $showingTween) { TweenSheet(model: model) }
@@ -208,6 +221,7 @@ struct EditorView: View {
             VStack(spacing: 10) {
                 if model.tool == .select && !model.isPlaying { selectionStrip }
                 if model.tool == .shape && !model.isPlaying { shapeStrip }
+                if (model.tool == .pencil || model.tool == .eraser) && !model.isPlaying { brushStrip }
                 frameDots
             }
             .padding(.bottom, 12)
@@ -273,6 +287,11 @@ struct EditorView: View {
             }
             .pickerStyle(.menu)
             Button { showingTrace = true } label: { Label("Tracing image…", systemImage: "photo") }
+            TransformMenu(model: model, frame: nil)
+            Button {
+                saveTimelapse()
+                showingTimelapse = true
+            } label: { Label("Timelapse", systemImage: "play.rectangle") }
             Button { showingPalettes = true } label: { Label("Colours & palettes…", systemImage: "paintpalette") }
             Button {
                 model.commitSelection()
@@ -389,6 +408,50 @@ struct EditorView: View {
         .background(Theme.chip)
         .padding(.bottom, 3)
         .padding(.horizontal, 12)
+    }
+
+    /// Brush options while drawing or erasing: size, round tip, dither and top-bottom symmetry.
+    var brushStrip: some View {
+        HStack(spacing: 6) {
+            ForEach(1...EditorModel.maxBrushSize, id: \.self) { n in
+                let on = model.brushSize == n
+                Button { model.brushSize = n } label: {
+                    Rectangle()
+                        .frame(width: CGFloat(3 + n * 3), height: CGFloat(3 + n * 3))
+                        .clipShape(RoundedRectangle(cornerRadius: model.brushRound && n >= 3 ? CGFloat(n) : 0))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(TileButtonStyle(active: on))
+                .accessibilityLabel(Text("Brush size \(n)"))
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+            Theme.line.frame(width: 2, height: 28)
+            stripToggle("Round", on: model.brushRound) { model.brushRound.toggle() }
+                .accessibilityLabel("Round brush")
+            stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes) { model.dither.toggle() }
+                .accessibilityLabel("Dither brush")
+            stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes) { model.mirrorVertical.toggle() }
+                .accessibilityLabel("Top-bottom symmetry")
+                .accessibilityHint("With Mirror on too, it's four-way")
+        }
+        .padding(6)
+        .background(Theme.chip)
+        .padding(.bottom, 3)
+        .padding(.horizontal, 12)
+    }
+
+    private func stripToggle(_ label: String, on: Bool, pro: Bool = false, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(verbatim: label)
+                .font(AppFont.pixel(11))
+                .padding(.horizontal, 8)
+                .frame(minWidth: 40, minHeight: 36)
+                .contentShape(Rectangle())
+                .overlay(alignment: .topTrailing) { if pro { ProBadge().scaleEffect(0.75).offset(x: 6, y: -6) } }
+        }
+        .buttonStyle(TileButtonStyle(active: on))
+        .accessibilityAddTraits(on ? .isSelected : [])
     }
 
     /// One 4×4 dot per frame; the current one is a 12×4 accent bar.
@@ -508,6 +571,8 @@ struct EditorView: View {
             return
         }
         store.save(model.project)
+        saveTimelapse()
+        defer { loadTimelapse() }
         model.load(store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it")))
         canvas(.fit)
     }
@@ -585,5 +650,29 @@ extension EditorView {
             try? await Task.sleep(for: .seconds(3.5))
             tourCelebrating = false
         }
+    }
+}
+
+// MARK: Timelapse
+
+extension EditorView {
+    func loadTimelapse() {
+        timelapseProjectID = model.project.id
+        timelapse = TimelapseStore.load(for: model.project.id)
+        timelapseUnsaved = 0
+    }
+
+    /// After each edit: remember the frame being worked on.
+    func recordTimelapse(_ project: SpriteProject) {
+        guard project.id == timelapseProjectID, project.frames.indices.contains(model.currentIndex) else { return }
+        timelapse.record(project.frames[model.currentIndex].grid, bounds: project.bounds)
+        timelapseUnsaved += 1
+        if timelapseUnsaved >= 15 { saveTimelapse() }
+    }
+
+    func saveTimelapse() {
+        guard let id = timelapseProjectID else { return }
+        TimelapseStore.save(timelapse, for: id)
+        timelapseUnsaved = 0
     }
 }

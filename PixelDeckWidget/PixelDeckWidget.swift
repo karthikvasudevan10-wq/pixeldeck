@@ -63,8 +63,10 @@ struct TopPostsProvider: TimelineProvider {
         Int(date.timeIntervalSince1970 / 3600)
     }
 
-    /// The most-hearted posts, best first, skipping ones hidden by reports.
+    /// The most-hearted posts, best first, skipping ones hidden by reports. Nothing until the app
+    /// has confirmed (with the age-range check) that Community is allowed on this device.
     static func fetchTop() async -> [TopPost] {
+        guard UserDefaults(suiteName: "group.karthikvasudevan.pixeldeck")?.bool(forKey: "communityAllowed") == true else { return [] }
         let db = CKContainer(identifier: containerID).publicCloudDatabase
         let query = CKQuery(recordType: "HeartTally", predicate: NSPredicate(format: "count > 0"))
         query.sortDescriptors = [NSSortDescriptor(key: "count", ascending: false)]
@@ -203,7 +205,7 @@ struct TopPostsWidgetView: View {
     private var empty: some View {
         VStack(spacing: 6) {
             Image(systemName: "heart").font(.system(size: 26, weight: .bold)).foregroundStyle(WidgetColors.pink)
-            Text("Community favourites will show here").font(.system(size: 12, weight: .semibold))
+            Text("Open Community in Pixel Deck to see favourites here").font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(WidgetColors.cream).multilineTextAlignment(.center)
         }
         .widgetURL(URL(string: "pixeldeck://community"))

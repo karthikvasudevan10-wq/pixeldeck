@@ -181,6 +181,7 @@ extension EditorView {
             VStack(spacing: 8) {
                 if model.tool == .select && !model.isPlaying { selectionStrip }
                 if model.tool == .shape && !model.isPlaying { shapeStrip }
+                if (model.tool == .pencil || model.tool == .eraser) && !model.isPlaying { brushStrip }
             }
             .padding(.bottom, 52)
         }
@@ -585,10 +586,12 @@ struct ImageStore {
     /// Removes every picture kept for a sprite that was deleted.
     static func deleteAll(for id: UUID) {
         for s in all { s.delete(for: id) }
+        TimelapseStore.delete(for: id)
     }
 
     static func copyAll(from id: UUID, to newID: UUID) {
         for s in all { s.copy(from: id, to: newID) }
+        TimelapseStore.copy(from: id, to: newID)
     }
 
     /// Switches between the device and iCloud (`newRoot`), copying pictures that aren't there yet.

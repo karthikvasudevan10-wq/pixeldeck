@@ -4,6 +4,7 @@ import SwiftUI
 struct ShareToCommunityView: View {
     let project: SpriteProject
     @Environment(CommunityService.self) private var community
+    @Environment(AgeGate.self) private var ageGate
     @Environment(\.dismiss) private var dismiss
     @AppStorage("communityNickname") private var nickname = ""
     @AppStorage("communityRulesAccepted") private var rulesAccepted = false
@@ -19,6 +20,13 @@ struct ShareToCommunityView: View {
     var body: some View {
         VStack(spacing: 0) {
             SheetHeader(title: "Share to Community", onClose: { dismiss() })
+            if !ageGate.isAllowed {
+                if ageGate.status == .checking || ageGate.status == .unknown {
+                    ProgressView().tint(Theme.accent).frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    AgeLockedView(status: ageGate.status) { Task { await ageGate.check(force: true) } }
+                }
+            } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let art {
@@ -64,8 +72,10 @@ struct ShareToCommunityView: View {
                 .padding(16)
             }
             .scrollDismissesKeyboard(.interactively)
+            }
         }
         .screenBackground()
+        .task { await ageGate.check() }
         .presentationDetents([.large])
         .onAppear { if title.isEmpty { title = project.name } }
         .sheet(isPresented: $showingRules) { CommunityRulesView() }

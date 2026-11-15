@@ -147,6 +147,8 @@ extension ProFeature {
         case .gifExport: .play
         case .largeExport: .export
         case .noWatermark: .check
+        case .artistBrushes: .pencil
+        case .paletteImport: .swatches
         case .timing: .tween
         }
     }

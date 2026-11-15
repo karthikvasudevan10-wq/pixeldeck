@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Colours: the sprite's palette, the full colour picker (Apple's, with grid, spectrum and
 /// sliders) for the selected swatch, and ready-made palettes to swap in.
@@ -11,6 +12,9 @@ struct PaletteSheet: View {
     @State private var naming: CustomPalette?
     @State private var nameText = ""
     @State private var deleting: CustomPalette?
+    @State private var importing = false
+    @State private var importMessage: String?
+    @State private var upgrade: ProFeature?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -107,6 +111,27 @@ struct PaletteSheet: View {
             }
             .buttonStyle(.plain)
             .disabled(library.isFull)
+            Button {
+                if model.access.allowsPaletteImport { importing = true } else { upgrade = .paletteImport }
+            } label: {
+                HStack(spacing: 10) {
+                    PixelIcon.download.view(size: 16)
+                    Text("Import a palette file").font(AppFont.body(14, .bold, relativeTo: .body))
+                    Spacer(minLength: 0)
+                    if !model.access.allowsPaletteImport { ProBadge() }
+                }
+                .foregroundStyle(Theme.text)
+                .padding(12)
+                .background(Theme.surface)
+                .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(library.isFull)
+            .accessibilityHint("From Lospec or other apps: .hex, .gpl, .txt or a palette image")
+            if let importMessage {
+                Text(verbatim: importMessage).font(AppFont.body(12, relativeTo: .caption)).foregroundStyle(Theme.accent2)
+            }
             ForEach(library.palettes) { saved in
                 paletteRow(Text(verbatim: saved.name), colors: saved.colors)
                     .contextMenu {
@@ -136,6 +161,11 @@ struct PaletteSheet: View {
             }
             Button("Cancel", role: .cancel) {}
         }
+        .fileImporter(isPresented: $importing, allowedContentTypes: PaletteFiles.types, allowsMultipleSelection: false) { result in
+            guard case .success(let urls) = result, let url = urls.first else { return }
+            importMessage = PaletteFiles.importFile(url, into: library)
+        }
+        .proUpgradeSheet($upgrade)
         .confirmationDialog("Delete this palette?", isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
                             titleVisibility: .visible) {
             Button("Delete", role: .destructive) { if let d = deleting { library.delete(d.id) } }
@@ -201,5 +231,66 @@ extension PaletteLibrary {
             .appendingPathComponent("palettes.json"))
         library.writeFile = CloudFiles.write
         return library
+    }
+}
+
+/// Opening palette files picked in the Files app.
+enum PaletteFiles {
+    static var types: [UTType] {
+        var t: [UTType] = [.plainText, .png, .image]
+        for ext in ["hex", "gpl", "pal"] { if let u = UTType(filenameExtension: ext) { t.append(u) } }
+        return t
+    }
+
+    /// Imports `url` into the library. Returns a message saying what happened.
+    @MainActor static func importFile(_ url: URL, into library: PaletteLibrary) -> String {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else {
+            return String(localized: "Couldn't open that file.")
+        }
+        let baseName = url.deletingPathExtension().lastPathComponent
+        var name = baseName
+        var colors: [RGBA] = []
+        if let image = UIImage(data: data)?.cgImage {
+            colors = imageColors(image)
+        } else if let parsed = PaletteImport.parse(data, fileName: url.lastPathComponent) {
+            name = parsed.name ?? baseName
+            colors = parsed.colors
+        }
+        let sets = PaletteImport.sets(name: name, colors: colors)
+        guard !sets.isEmpty else {
+            return String(localized: "No colours found. Try a .hex, .gpl or .txt palette, or a palette image.")
+        }
+        var added = 0
+        for set in sets.reversed() where !library.isFull {        // reversed: the first set ends up on top
+            if library.add(name: set.name, colors: set.colors) != nil { added += 1 }
+        }
+        return String(localized: "Added \(added) palettes from \(name).", comment: "Palette import result; plural; the second placeholder is the file's name")
+    }
+
+    /// The distinct opaque colours of a palette image, in reading order (left to right, top down).
+    static func imageColors(_ image: CGImage) -> [RGBA] {
+        let w = image.width, h = image.height
+        guard w * h <= 4_000_000 else { return [] }               // a palette, not a photo
+        var bytes = [UInt8](repeating: 0, count: w * h * 4)
+        let ok = bytes.withUnsafeMutableBytes { raw -> Bool in
+            guard let ctx = CGContext(data: raw.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard ok else { return [] }
+        var out: [RGBA] = []
+        var seen = Set<RGBA>()
+        for i in stride(from: 0, to: bytes.count, by: 4) where bytes[i + 3] > 200 {
+            let c = RGBA(r: bytes[i], g: bytes[i + 1], b: bytes[i + 2])
+            if seen.insert(c).inserted {
+                out.append(c)
+                if out.count >= PaletteImport.maxColors { break }
+            }
+        }
+        return out
     }
 }

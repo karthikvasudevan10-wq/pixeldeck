@@ -1284,3 +1284,132 @@ final class GuidedTourTests: XCTestCase {
         XCTAssertEqual(GuidedTour.heart.count, 27)
     }
 }
+
+final class BrushAndTransformTests: XCTestCase {
+    private func painted(_ m: EditorModel) -> Set<PixelPoint> {
+        var out = Set<PixelPoint>()
+        let b = m.bounds
+        for y in b.y..<b.maxY { for x in b.x..<b.maxX where !m.pixel(PixelPoint(x: x, y: y)).isClear { out.insert(PixelPoint(x: x, y: y)) } }
+        return out
+    }
+
+    func testBrushSizesAndRoundTips() {
+        let m = makeModel()
+        m.brushSize = 3
+        tap(m, 5.5, 5.5)
+        XCTAssertEqual(painted(m).count, 9)
+        let r = makeModel()
+        r.brushSize = 3; r.brushRound = true
+        tap(r, 5.5, 5.5)
+        XCTAssertEqual(painted(r).count, 5, "round 3 is a plus")
+        m.brushSize = 9
+        XCTAssertEqual(m.brushSize, EditorModel.maxBrushSize)
+    }
+
+    func testDitherAndFourWaySymmetryArePro() {
+        var asked: [ProFeature] = []
+        let free = makeModel()
+        free.onProRequired = { asked.append($0) }
+        free.dither = true; free.mirrorVertical = true
+        XCTAssertFalse(free.dither); XCTAssertFalse(free.mirrorVertical)
+        XCTAssertEqual(asked, [.artistBrushes, .artistBrushes])
+
+        let pro = makeModel(access: .pro)
+        pro.dither = true; pro.brushSize = 4
+        tap(pro, 0.5, 0.5)
+        let pts = painted(pro)
+        XCTAssertEqual(pts.count, 8, "half of a 4x4 square")
+        XCTAssertTrue(pts.allSatisfy { ($0.x + $0.y) & 1 == 0 }, "a fixed checkerboard")
+
+        let quad = makeModel(access: .pro)
+        quad.mirror = true; quad.mirrorVertical = true
+        tap(quad, 2.5, 3.5)
+        XCTAssertEqual(painted(quad), [P(2, 3), P(-3, 3), P(2, -4), P(-3, -4)])
+    }
+
+    func testFlipAndRotate() {
+        let m = makeModel()
+        // An L: (0,0) (0,1) (0,2) (1,2)
+        for (x, y) in [(0, 0), (0, 1), (0, 2), (1, 2)] { tap(m, Double(x) + 0.5, Double(y) + 0.5) }
+        let original = painted(m)
+        XCTAssertTrue(m.transform(.flipHorizontal, allFrames: false))
+        XCTAssertEqual(painted(m), [P(1, 0), P(1, 1), P(1, 2), P(0, 2)])
+        m.transform(.flipHorizontal, allFrames: false)
+        XCTAssertEqual(painted(m), original, "two flips undo each other")
+        for _ in 0..<4 { m.transform(.rotateClockwise, allFrames: false) }
+        XCTAssertEqual(painted(m), original, "four quarter turns")
+        m.transform(.rotateClockwise, allFrames: false)
+        XCTAssertEqual(painted(m).count, 4)
+        m.transform(.rotateCounterClockwise, allFrames: false)
+        XCTAssertEqual(painted(m), original)
+        m.undo()
+        XCTAssertNotEqual(painted(m), original, "undo steps back one transform")
+    }
+
+    func testAllFramesTurnAroundTheSameCentre() {
+        let m = makeModel()
+        tap(m, 0.5, 0.5)
+        m.addKeyframe()
+        tap(m, 3.5, 0.5)
+        m.transform(.flipHorizontal, allFrames: true)
+        XCTAssertEqual(m.pixel(P(3, 0), frame: 0), .black, "frame 1's pixel moved across the shared art")
+        XCTAssertEqual(m.pixel(P(0, 0), frame: 1), .black)
+        XCTAssertFalse(makeModel().transform(.rotateClockwise, allFrames: true), "nothing to turn")
+    }
+}
+
+final class PaletteImportTests: XCTestCase {
+    func testHexGimpAndPaintNet() throws {
+        let hex = try XCTUnwrap(PaletteImport.parse(Data("ff0000\n#00FF00\n\n0000ff\nff0000\nnot a colour".utf8), fileName: "Primary.hex"))
+        XCTAssertEqual(hex.name, "Primary")
+        XCTAssertEqual(hex.colors, [RGBA(hex: 0xFF0000), RGBA(hex: 0x00FF00), RGBA(hex: 0x0000FF)], "duplicates and junk dropped")
+
+        let gpl = try XCTUnwrap(PaletteImport.parse(Data("GIMP Palette\nName: Sunset\nColumns: 4\n#\n255 128   0\tOrange\n 10 20 30 Night\n".utf8), fileName: "x.gpl"))
+        XCTAssertEqual(gpl.name, "Sunset")
+        XCTAssertEqual(gpl.colors, [RGBA(r: 255, g: 128, b: 0), RGBA(r: 10, g: 20, b: 30)])
+
+        let pdn = try XCTUnwrap(PaletteImport.parse(Data("; paint.net palette\nFF112233\nFFAABBCC\n".utf8), fileName: "p.txt"))
+        XCTAssertEqual(pdn.colors, [RGBA(hex: 0x112233), RGBA(hex: 0xAABBCC)])
+
+        XCTAssertNil(PaletteImport.parse(Data("hello".utf8), fileName: "nothing.txt"))
+    }
+
+    func testBigPalettesSplitIntoTens() {
+        let colors = (0..<23).map { RGBA(r: UInt8($0 * 10), g: 0, b: 0) }
+        let sets = PaletteImport.sets(name: "Big", colors: colors)
+        XCTAssertEqual(sets.map(\.name), ["Big 1/3", "Big 2/3", "Big 3/3"])
+        XCTAssertTrue(sets.allSatisfy { $0.colors.count == 10 })
+        XCTAssertEqual(Array(sets[2].colors.prefix(3)), Array(colors.suffix(3)), "the last set starts with the leftovers")
+        XCTAssertEqual(PaletteImport.sets(name: "Few", colors: [.black]).first?.colors.count, 10)
+    }
+}
+
+final class TimelapseTests: XCTestCase {
+    func testRecordsChangesOnlyAndPlaysOnOneCanvas() {
+        let m = makeModel()
+        var t = Timelapse()
+        t.record(m.currentGrid, bounds: m.bounds)
+        XCTAssertTrue(t.isEmpty, "blank frames aren't recorded")
+        tap(m, 0.5, 0.5)
+        t.record(m.currentGrid, bounds: m.bounds)
+        t.record(m.currentGrid, bounds: m.bounds)
+        XCTAssertEqual(t.shots.count, 1, "no duplicates")
+        tap(m, 20.5, 5.5)                                  // the art grows
+        t.record(m.currentGrid, bounds: m.bounds)
+        let frames = t.playbackFrames()
+        XCTAssertEqual(frames.count, 2)
+        XCTAssertEqual(frames[0].width, frames[1].width, "one canvas for all shots")
+        XCTAssertEqual(frames[0].width, 21)
+    }
+
+    func testThinsWhenFullButKeepsTheEnd() {
+        var t = Timelapse()
+        var g = PixelGrid(width: 1, height: 1)
+        for i in 0..<(Timelapse.maxShots + 1) {
+            g[0, 0] = RGBA(r: UInt8(i % 256), g: UInt8(i / 256), b: 1)
+            t.record(g, bounds: PixelRect(x: 0, y: 0, width: 1, height: 1))
+        }
+        XCTAssertLessThanOrEqual(t.shots.count, Timelapse.maxShots)
+        XCTAssertEqual(t.shots.last?.grid[0, 0], g[0, 0], "the finished art is kept")
+    }
+}

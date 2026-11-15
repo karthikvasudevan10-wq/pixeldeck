@@ -12,6 +12,10 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case largeExport
     /// Free PNG exports carry a small "Made with Pixel Deck" footer.
     case noWatermark
+    /// Dither brush, and top-bottom and four-way symmetry.
+    case artistBrushes
+    /// Importing palette files (.hex, .gpl, .txt, .png).
+    case paletteImport
 
     var id: String { rawValue }
 
@@ -65,4 +69,6 @@ struct FeatureAccess: Equatable, Sendable {
     var allowsFourK: Bool { isPro }
     /// Free PNG exports get the "Made with Pixel Deck" footer.
     var addsWatermark: Bool { !isPro }
+    var allowsArtistBrushes: Bool { isPro }
+    var allowsPaletteImport: Bool { isPro }
 }

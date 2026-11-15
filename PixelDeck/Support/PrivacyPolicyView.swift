@@ -23,7 +23,7 @@ struct PrivacyPolicyView: View {
                 section("Purchases",
                         "The optional Pixel Deck Pro upgrade is processed by Apple through the App Store. Pixel Deck receives only a confirmation that the purchase is valid; it never sees your payment details or Apple Account information.")
                 section("Children",
-                        "Pixel Deck doesn't collect personal information from anyone, including children. Community posts are public, so children should use a nickname that isn't their real name, and parents can turn off iCloud for the app in Screen Time to prevent posting.")
+                        "Pixel Deck doesn't collect personal information from anyone, including children. Community is switched off for anyone under 13: before it opens, Pixel Deck asks iOS for the person's age range (on iOS 26 and later). Only an age range is shared, never a birth date, and it stays on the device. On older iOS, parents can use Screen Time's age limits.")
                 section("Changes",
                         "If this policy ever changes, the updated version will be published here and on the App Store listing, with a new date above.")
                 if let url = AppConfig.privacyPolicyURL {

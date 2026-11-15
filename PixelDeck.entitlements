@@ -16,5 +16,13 @@
 	<array>
 		<string>iCloud.karthikvasudevan.pixeldeck</string>
 	</array>
+	<!-- Shares the age check's result with the widget. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.karthikvasudevan.pixeldeck</string>
+	</array>
+	<!-- Community is off for under-13s: ask iOS for the age range (iOS 26+). -->
+	<key>com.apple.developer.declared-age-range</key>
+	<true/>
 </dict>
 </plist>

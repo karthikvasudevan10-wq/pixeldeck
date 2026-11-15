@@ -148,7 +148,8 @@ You still need to do this, and no review can replace it:
 ### App Store Connect answers
 - [ ] **App Privacy**: with Community, declare **User Content → Other User Content** and **Identifiers → User ID**. Both are linked to the user, not used for tracking, and used for App Functionality. (Community posts and their CloudKit user ids are visible to you in CloudKit Console. `PrivacyInfo.xcprivacy` declares the same.) iCloud sync on its own isn't collection, because it uses the user's private container.
 - [ ] **iCloud capability** (needs a paid Apple Developer Program membership): target → Signing & Capabilities → **+ Capability** → **iCloud**. Tick **iCloud Documents**, add the container `iCloud.karthikvasudevan.pixeldeck`, and tick it. Without this the app builds and works, but sprites stay on each device. Before release, test with two devices on the same Apple Account, and check the container in CloudKit Console → your container is created.
-- [ ] **Age rating questionnaire**: answer **Yes** to user-generated content (Community lets people share art that others can see). Answer None or No to everything else, including the newer questions on social media, in-app controls, Shared Location and Dating, which every app must answer by 12 Jan 2027.
+- [ ] **Age rating questionnaire**: answer as in *Age rating answers* below. Re-answer it in App Store Connect › App Information › Age Rating › **Edit** whenever the app's features change.
+- [ ] **Declared Age Range and App Group capabilities**: they're already in `PixelDeck.entitlements` and `PixelDeckWidget.entitlements`. Automatic signing registers them the first time you build with your Team selected. If Xcode reports an entitlement error, open Signing & Capabilities and accept its fix.
 - [ ] **Community (CloudKit public database)**. See also guideline 1.2 below.
   1. Under the iCloud capability, also tick **CloudKit**, using the same `iCloud.karthikvasudevan.pixeldeck` container (already set in `AppConfig.cloudKitContainerID`). Add the capability before opening Community, because CloudKit crashes apps that use a container they aren't entitled to. Setting `cloudKitContainerID` to nil turns Community off.
   2. Run the app in development, post one sprite and report it from a second Apple Account. That creates the `Post` and `Report` record types.
@@ -271,3 +272,22 @@ Save on the export screen asks for add-only Photos access. Share uses the system
 COMMUNITY (USER-GENERATED CONTENT)
 The globe button at the top of the gallery opens Community, which shares sprites through CloudKit's public database. Browsing needs no sign-in; posting needs an iCloud account. To post: long-press a sprite in the gallery > Share to Community, agree to the community rules, then enter a title and nickname. Each post has Report and Block, and your own posts have Delete. Titles and nicknames are filtered for objectionable text, links and contact details. Three reports from different people hide a post for everyone, and reports are reviewed within 24 hours. Blocked users can be unblocked in Settings > Community. Support: karthik.vasudevan.10@gmail.com
 ```
+
+## Age rating answers (App Store Connect › App Information › Age Rating › Edit)
+
+With Community off for under-13s:
+
+| Question | Answer |
+|---|---|
+| Parental controls / in-app controls | No |
+| Age assurance | **Yes**: the app asks iOS for the age range before Community. |
+| Unrestricted web access | No |
+| User-generated content | **Yes** |
+| Messaging and chat | No |
+| Advertising | No |
+| **Social media** | **Yes** |
+| **Social media disabled for users under 13** | **Yes**: the Declared Age Range API is called before Community, sharing and hearts are enabled, and under-13s get no Community content (including the widget). |
+| Content questions (violence, profanity, mature themes, sexual content, horror, drugs and alcohol, medical, gambling, contests, loot boxes) | None or No |
+| Made for Kids | No |
+
+Save it. App Store Connect recalculates the rating, which should come down from the earlier teen rating. The new rating applies to the next version you submit.

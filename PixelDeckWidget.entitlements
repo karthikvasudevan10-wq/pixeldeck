@@ -11,5 +11,10 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<!-- Shares the age check's result with the widget. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.karthikvasudevan.pixeldeck</string>
+	</array>
 </dict>
 </plist>

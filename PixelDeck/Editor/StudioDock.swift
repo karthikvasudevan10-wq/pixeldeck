@@ -94,6 +94,7 @@ struct FrameRow: View {
         .tourHighlight(.frame(index))
         .contextMenu {
             Button { model.duplicateFrame(at: index) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+            TransformMenu(model: model, frame: index)
             Button { model.copyFrameToClipboard(at: index) } label: { Label("Copy", systemImage: "doc.on.doc") }
             Button { model.pasteClipboard(at: index, asNewFrame: false) } label: {
                 Label("Paste over this frame", systemImage: "doc.on.clipboard")
@@ -416,5 +417,38 @@ struct OnionMenu: View {
         }
         .pickerStyle(.menu)
         Button(action: onTrace) { Label("Tracing image…", systemImage: "photo") }
+    }
+}
+
+/// Flip and rotate. For a frame's long-press menu (`frame` set) it turns that frame; in the
+/// sprite menu it offers the current frame or every frame.
+struct TransformMenu: View {
+    let model: EditorModel
+    let frame: Int?
+
+    var body: some View {
+        Menu {
+            if let frame {
+                ForEach(FrameTransform.allCases) { t in
+                    Button {
+                        model.selectFrame(frame)
+                        model.transform(t, allFrames: false)
+                    } label: { Label { Text(t.title) } icon: { Image(systemName: t.systemImage) } }
+                }
+            } else {
+                Section("This frame") {
+                    ForEach(FrameTransform.allCases) { t in
+                        Button { model.transform(t, allFrames: false) } label: { Label { Text(t.title) } icon: { Image(systemName: t.systemImage) } }
+                    }
+                }
+                Section("All frames") {
+                    ForEach(FrameTransform.allCases) { t in
+                        Button { model.transform(t, allFrames: true) } label: { Label { Text(t.title) } icon: { Image(systemName: t.systemImage) } }
+                    }
+                }
+            }
+        } label: {
+            Label("Flip & rotate", systemImage: "rotate.right")
+        }
     }
 }

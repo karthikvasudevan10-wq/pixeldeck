@@ -44,6 +44,8 @@ struct PixelPoint: Hashable, Codable, Sendable {
     /// Mirror image across the vertical line between world x = -1 and x = 0 (the centre of a
     /// new canvas), used by the mirror tool.
     var mirrored: PixelPoint { PixelPoint(x: -1 - x, y: y) }
+    /// Reflected across the horizontal axis (world y = 0), for top-bottom symmetry.
+    var flippedVertically: PixelPoint { PixelPoint(x: x, y: -1 - y) }
 }
 
 /// Continuous 2D vector, measured in canvas pixels.

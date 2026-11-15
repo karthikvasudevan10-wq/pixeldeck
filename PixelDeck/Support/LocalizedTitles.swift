@@ -118,6 +118,8 @@ extension ProFeature {
         case .gifExport: "Animated GIF & video export"
         case .largeExport: "Export up to 16× and 4K"
         case .noWatermark: "No watermark"
+        case .artistBrushes: "Dither brush & 4-way symmetry"
+        case .paletteImport: "Import palettes"
         case .timing: "Eased playback timing"
         }
     }
@@ -129,6 +131,8 @@ extension ProFeature {
         case .gifExport: "Share looping GIFs and MP4 videos for Reels, Shorts and TikTok."
         case .largeExport: "Crisp, large images and 4K videos for stores, social posts and print."
         case .noWatermark: "Free PNG exports carry a small \"Made with Pixel Deck\" footer. Pro exports are just your art."
+        case .artistBrushes: "Shade with a checkerboard dither brush, and draw with top-bottom or four-way symmetry."
+        case .paletteImport: "Bring in palettes from Lospec and other apps: .hex, .gpl, .txt and palette images."
         case .timing: "Let animations speed up and slow down — ease in, ease out or both — in playback, GIFs, videos and sprite sheets."
         }
     }
@@ -147,6 +151,26 @@ extension PalettePreset {
         case .people: LocalizedStringResource("Skin & hair", comment: "Palette name: skin tones and hair colours for characters")
         case .pocketGreens: LocalizedStringResource("Pocket greens", comment: "Palette name: shades of green, like an old handheld screen")
         case .grayscale: LocalizedStringResource("Greys", comment: "Palette name: black to white")
+        }
+    }
+}
+
+extension FrameTransform {
+    var title: LocalizedStringResource {
+        switch self {
+        case .flipHorizontal: "Flip left to right"
+        case .flipVertical: "Flip upside down"
+        case .rotateClockwise: "Rotate right"
+        case .rotateCounterClockwise: "Rotate left"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .flipHorizontal: "arrow.left.and.right.righttriangle.left.righttriangle.right"
+        case .flipVertical: "arrow.up.and.down.righttriangle.up.righttriangle.down"
+        case .rotateClockwise: "rotate.right"
+        case .rotateCounterClockwise: "rotate.left"
         }
     }
 }

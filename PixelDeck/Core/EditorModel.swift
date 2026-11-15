@@ -27,6 +27,8 @@ struct CanvasState: Equatable {
     var motionPath: [Vec2]?
     /// Show the mirror axis (world x = 0).
     var mirror: Bool
+    /// Show the top-bottom symmetry axis (world y = 0).
+    var mirrorVertical: Bool = false
     /// The tracing picture's placement and opacity, if one is shown (never during playback).
     var trace: TraceSettings? = nil
     /// Squares to fill in (the guided tour's dotted guide), in world pixels.
@@ -36,7 +38,8 @@ struct CanvasState: Equatable {
     static func == (l: CanvasState, r: CanvasState) -> Bool {
         l.gridVersion == r.gridVersion && l.onionVersion == r.onionVersion && l.bounds == r.bounds
             && l.onionOpacity == r.onionOpacity && l.showGrid == r.showGrid && l.selection == r.selection
-            && l.motionPath == r.motionPath && l.mirror == r.mirror && l.trace == r.trace && l.guide == r.guide
+            && l.motionPath == r.motionPath && l.mirror == r.mirror && l.mirrorVertical == r.mirrorVertical
+            && l.trace == r.trace && l.guide == r.guide
     }
 }
 
@@ -73,6 +76,29 @@ final class EditorModel {
     private(set) var previousTool: Tool = .pencil
     /// Mirror drawing across world x = 0 (pencil, eraser, fill and shapes).
     var mirror = false
+    /// Top-bottom symmetry (Pro). With `mirror` too, it's four-way.
+    var mirrorVertical = false {
+        didSet {
+            if mirrorVertical && !access.allowsArtistBrushes { mirrorVertical = false; onProRequired?(.artistBrushes) }
+        }
+    }
+    /// Pencil and eraser size in pixels, 1–4.
+    var brushSize = 1 {
+        didSet {
+            // Only reassign when out of range: in an @Observable class this observer runs again.
+            let clamped = min(max(brushSize, 1), EditorModel.maxBrushSize)
+            if clamped != brushSize { brushSize = clamped }
+        }
+    }
+    static let maxBrushSize = 4
+    /// Round brush tips (sizes 3 and 4); square otherwise.
+    var brushRound = false
+    /// Dither brush (Pro): paints only every other pixel, in a checkerboard fixed to the canvas.
+    var dither = false {
+        didSet {
+            if dither && !access.allowsArtistBrushes { dither = false; onProRequired?(.artistBrushes) }
+        }
+    }
     var shapeKind: ShapeKind = .rectangle
     var shapeFilled = false
     /// Squares, circles, equal-sided triangles, and lines snapped to 0°/45°/90°.
@@ -233,6 +259,7 @@ final class EditorModel {
         return CanvasState(bounds: bounds, grid: current.grid, gridVersion: current.version,
                            onion: previous?.grid, onionVersion: previous?.version,
                            onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect, motionPath: path, mirror: mirror,
+                           mirrorVertical: mirrorVertical,
                            trace: project.trace?.isVisible == true ? project.trace : nil)
     }
 
@@ -406,7 +433,43 @@ final class EditorModel {
     // MARK: Painting on the infinite canvas
 
     /// Draws a line in world coordinates, growing the canvas as needed (and mirrored if on).
+    /// A point and its reflections for the symmetry that's on (left-right, top-bottom or both).
+    func symmetric(_ p: PixelPoint) -> [PixelPoint] {
+        var out = [p]
+        if mirror { out.append(p.mirrored) }
+        if mirrorVertical { out += out.map(\.flippedVertically) }
+        var seen = Set<PixelPoint>()
+        return out.filter { seen.insert($0).inserted }
+    }
+
+    /// The pixels the brush covers when centred on `p` (before dither and symmetry).
+    func brushFootprint(at p: PixelPoint) -> [PixelPoint] {
+        let n = brushSize
+        guard n > 1 else { return [p] }
+        let lo = -(n - 1) / 2, hi = n / 2
+        var out: [PixelPoint] = []
+        for dy in lo...hi {
+            for dx in lo...hi {
+                // Round tips drop the corners.
+                if brushRound && n >= 3 && (dx == lo || dx == hi) && (dy == lo || dy == hi) { continue }
+                out.append(PixelPoint(x: p.x + dx, y: p.y + dy))
+            }
+        }
+        return out
+    }
+
     private func paintSegment(from a: PixelPoint, to b: PixelPoint, color c: RGBA) {
+        // A 1-pixel solid brush with at most left-right symmetry draws whole lines (fast path).
+        if brushSize > 1 || dither || mirrorVertical {
+            var pixels = Set<PixelPoint>()
+            for p in PixelGrid.linePoints(from: a, to: b) {
+                for q in brushFootprint(at: p) {
+                    for s in symmetric(q) where !dither || ((s.x + s.y) & 1) == 0 { pixels.insert(s) }
+                }
+            }
+            paintPixels(Array(pixels), color: c)
+            return
+        }
         var segments = [(a, b)]
         if mirror { segments.append((a.mirrored, b.mirrored)) }
         for (s, e) in segments {
@@ -434,9 +497,36 @@ final class EditorModel {
         }
     }
 
+    /// Paints individual pixels (brushes, dither, symmetry), growing the canvas as needed and
+    /// skipping any that would take the art past the size cap.
+    private func paintPixels(_ pixels: [PixelPoint], color c: RGBA) {
+        guard let first = pixels.first else { return }
+        let rect = pixels.dropFirst().reduce(PixelRect(x: first.x, y: first.y, width: 1, height: 1)) {
+            $0.union(PixelRect(x: $1.x, y: $1.y, width: 1, height: 1))
+        }
+        if c.isClear {
+            let o = bounds.origin
+            let inside = pixels.filter { bounds.contains($0) }
+            guard !inside.isEmpty else { return }
+            mutateCurrent(dirty: rect.intersection(bounds)) { g in for p in inside { g[p - o] = c } }
+            contentKnown = false
+        } else if ensureCovers(rect) {
+            let o = bounds.origin
+            mutateCurrent(dirty: rect) { g in for p in pixels { g[p - o] = c } }
+            if contentKnown { cachedContent = cachedContent.map { $0.union(rect) } ?? rect }
+        } else {
+            for p in pixels {
+                let one = PixelRect(x: p.x, y: p.y, width: 1, height: 1)
+                guard access.allowsArt(contentBounds.map { $0.union(one) } ?? one), ensureCovers(one) else { continue }
+                let o = bounds.origin
+                mutateCurrent(dirty: one) { $0[p - o] = c }
+                cachedContent = cachedContent.map { $0.union(one) } ?? one
+            }
+        }
+    }
+
     private func fill(at p: PixelPoint) {
-        var targets = [p]
-        if mirror, p.mirrored != p { targets.append(p.mirrored) }
+        let targets = symmetric(p)
         var changed = false
         var undoPushed = false
         for t in targets {
@@ -666,6 +756,52 @@ final class EditorModel {
         return true
     }
 
+    /// Flips or rotates the art (every layer) of the current frame, or of every frame, around the
+    /// centre of that art, so an animation stays lined up. Undoable. Returns false if there's
+    /// nothing to transform or a rotation would take the art past the size cap.
+    @discardableResult
+    func transform(_ t: FrameTransform, allFrames: Bool) -> Bool {
+        isPlaying = false
+        commitSelection()
+        let indices = allFrames ? Array(project.frames.indices) : [currentIndex]
+        // The art being transformed, in world pixels.
+        var art: PixelRect?
+        for i in indices {
+            for cel in project.frames[i].layers {
+                guard let r = cel.opaqueBounds?.offsetBy(bounds.origin) else { continue }
+                art = art.map { $0.union(r) } ?? r
+            }
+        }
+        guard let r = art else { return false }
+        let target = t.destination(of: r)
+        promptedThisGesture = false
+        guard ensureCovers(target) else { return false }
+        pushUndo()
+        let o = bounds.origin
+        let visible = project.layerVisibility
+        for i in indices {
+            let cels = project.frames[i].layers.map { cel -> PixelGrid in
+                var out = cel
+                var moved: [(PixelPoint, RGBA)] = []
+                for y in r.y..<r.maxY {
+                    for x in r.x..<r.maxX {
+                        let p = PixelPoint(x: x, y: y)
+                        let c = cel[p - o]
+                        guard !c.isClear else { continue }
+                        moved.append((t.map(p, in: r), c))
+                        out[p - o] = .clear
+                    }
+                }
+                for (p, c) in moved { out[p - o] = c }
+                return out
+            }
+            project.frames[i].setLayers(cels, visible: visible)
+        }
+        contentKnown = false
+        finishEdit()
+        return true
+    }
+
     func deleteFrame(at index: Int) {
         guard project.frames.indices.contains(index) else { return }
         commitSelection()
@@ -733,7 +869,7 @@ final class EditorModel {
         guard case let .shape(_, base, baseBounds, _) = gesture else { return }
         let b = lockProportions ? ShapeRaster.constrained(shapeKind, from: a, to: raw) : raw
         var pts = ShapeRaster.points(shapeKind, from: a, to: b, filled: shapeFilled)
-        if mirror { pts += pts.map(\.mirrored) }
+        pts = pts.flatMap(symmetric)
         guard let first = pts.first else { return }
         let box = pts.dropFirst().reduce(PixelRect(x: first.x, y: first.y, width: 1, height: 1)) { $0.union($1) }
         // Grow the canvas for the shape if allowed; otherwise draw what fits within the cap.

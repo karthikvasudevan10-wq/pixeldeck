@@ -6,6 +6,7 @@ struct PixelDeckApp: App {
     @State private var cloud: CloudSync
     @State private var purchases = PurchaseManager()
     @State private var community = CommunityService()
+    @State private var ageGate = AgeGate()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -24,6 +25,7 @@ struct PixelDeckApp: App {
                 .environment(purchases)
                 .environment(cloud)
                 .environment(community)
+                .environment(ageGate)
                 .task { cloud.start() }
                 // Night (dark) and Paper (light) follow the system appearance.
                 .tint(Theme.accent)

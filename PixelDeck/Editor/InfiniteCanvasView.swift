@@ -441,10 +441,11 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     }
 
     private func layoutOverlays(_ st: CanvasState) {
-        if st.mirror {
-            let x = viewPoint(0, 0).x
+        if st.mirror || st.mirrorVertical {
+            let o = viewPoint(0, 0)
             let p = CGMutablePath()
-            p.move(to: CGPoint(x: x, y: 0)); p.addLine(to: CGPoint(x: x, y: bounds.height))
+            if st.mirror { p.move(to: CGPoint(x: o.x, y: 0)); p.addLine(to: CGPoint(x: o.x, y: bounds.height)) }
+            if st.mirrorVertical { p.move(to: CGPoint(x: 0, y: o.y)); p.addLine(to: CGPoint(x: bounds.width, y: o.y)) }
             mirrorLayer.path = p
         } else {
             mirrorLayer.path = nil

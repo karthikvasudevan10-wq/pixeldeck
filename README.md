@@ -73,6 +73,7 @@ The look follows the design handoff and **follows the system appearance**. Dark 
     | U | Shapes |
     | M | Select |
     | Y | Mirror |
+    | [ / ] | Smaller / bigger brush |
     | O | Onion skin |
     | 1–0 | Palette colours |
     | ← / → | Previous / next frame |
@@ -128,6 +129,11 @@ The look follows the design handoff and **follows the system appearance**. Dark 
     - It skips posts hidden by reports, and tapping it opens the post in the app.
   - **Code:** the widget is the `PixelDeckWidgetExtension` target, with its code in `PixelDeckWidget/`.
   - **Entitlements:** both targets' iCloud settings are in `PixelDeck.entitlements` and `PixelDeckWidget.entitlements`, so they no longer have to be set up by hand in Xcode.
+- **Brushes**: while the pencil or eraser is selected, a strip above the dock sets the **brush size** (1–4 px) and **Round** tips. **Pro** adds **Dither**, which paints a checkerboard fixed to the canvas for classic pixel-art shading, and **⇕ top-bottom symmetry**; with Mirror on as well, that's **four-way**. Symmetry also applies to fill and shapes.
+- **Flip & rotate**: in the sprite menu (this frame or all frames) and in each frame's long-press menu. You can flip left to right or upside down, and rotate 90° either way. Everything turns around the centre of the art, so animations stay lined up, and it's undoable.
+- **Palette import** (Pro): Colours › *Import a palette file* reads `.hex` (Lospec), `.gpl` (GIMP and Aseprite), `.txt` (Paint.NET) and palette images. Big palettes become several 10-colour palettes under My palettes ("Endesga 32 1/4", …).
+- **Timelapse**: every sprite quietly records how it was drawn (up to 400 moments, thinned evenly, stored on this device only). **Timelapse** in the sprite menu replays it with a scrubber, and **Pro** saves or shares it as an MP4.
+- **Community is off for under-13s**: before Community or sharing opens, the app asks iOS for the person's **age range** (Declared Age Range, iOS 26+). Only a range is shared, never a birthday. Under 13, or declining to share, shows a friendly locked screen; everything else in the app works as usual. On older iOS the App Store age rating and Screen Time limits apply. The result is cached (an "allowed" answer is asked again after 90 days) and shared with the widget through the App Group `group.karthikvasudevan.pixeldeck`, so the widget shows nothing until 13+ is confirmed.
 - **Localisation-ready**: the text uses a String Catalog with English plurals, and the layout mirrors for right-to-left languages.
 - **Accessibility**: Reduce Motion pauses the decorative animations (stars, swipe hints and gallery previews). Controls have VoiceOver labels, and body text scales with Dynamic Type.
 

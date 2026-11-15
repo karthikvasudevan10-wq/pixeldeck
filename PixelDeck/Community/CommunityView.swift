@@ -6,6 +6,7 @@ struct CommunityView: View {
     /// A post to open straight away (tapped in the Home Screen widget).
     var openPostID: String? = nil
     @Environment(CommunityService.self) private var community
+    @Environment(AgeGate.self) private var ageGate
     @Environment(\.dismiss) private var dismiss
     @State private var selected: CommunityPost?
     @State private var showingRules = false
@@ -23,10 +24,20 @@ struct CommunityView: View {
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 10)
-            content
+            .opacity(ageGate.isAllowed ? 1 : 0)
+            if ageGate.isAllowed {
+                content
+            } else if ageGate.status == .checking || ageGate.status == .unknown {
+                ProgressView().tint(Theme.accent).frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                AgeLockedView(status: ageGate.status) { Task { await ageGate.check(force: true) } }
+            }
         }
         .screenBackground()
         .task {
+            // Under-13s don't get Community: check the age range first.
+            await ageGate.check()
+            guard ageGate.isAllowed else { return }
             if let id = openPostID, let post = await community.fetchPost(id: id) { selected = post }
             if community.posts.isEmpty { await community.refresh() }
         }

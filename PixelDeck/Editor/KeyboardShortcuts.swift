@@ -25,6 +25,8 @@ struct KeyboardShortcuts: View {
             key("Shapes", "u") { model.tool = .shape }
             key("Select", "m") { model.tool = .select }
             key("Mirror", "y") { model.mirror.toggle() }
+            key("Smaller brush", "[") { model.brushSize -= 1 }
+            key("Bigger brush", "]") { model.brushSize += 1 }
             key("Onion skin", "o") { model.onionSkinEnabled.toggle() }
             key("Pixel grid", "'", .command) { model.showGrid.toggle() }
 
