@@ -1,57 +1,85 @@
 # App Store listing text
 
-Apple's character limits are in brackets. Don't use other apps' names in keywords (2.3.7).
+Apple's character limits are in brackets. Don't use other apps' names in keywords (2.3.7). The listing speaks to two audiences: people who **make** pixel art, and people who just **love** it (browse, heart, remix, widget).
 
 **Name** (30): `Pixel Deck: Sprite Animator` (27 characters)
 
-**Subtitle** (30): `Draw & animate pixel art` (24 characters)
+**Subtitle** (30): `Make, share & love pixel art` (28 characters). It invites admirers as well as artists.
+Alternative: `Retro art & flipbook animation` (30), if you'd rather lead on animation.
 
-**Keywords** (100, comma-separated, no spaces needed):
-`pixel,sprite,animation,8bit,16bit,retro,gamedev,drawing,gif,tween,onion skin,editor,sheet,indie` (95 characters)
+**Keywords** (100, comma-separated, no spaces): words in the name and subtitle (pixel, art, sprite, animator, make, share, love) are already searchable, so they aren't repeated here.
+`animation,8bit,16bit,retro,gif,doodle,flipbook,drawing,widget,kids,gamedev,timelapse,community,cute` (99 characters)
 
-**Promotional text** (170, can be changed without a new review):
-Draw it. Flip it. Make it move. Swipe left for a new frame and watch your pixels come alive.
+**Promotional text** (170, can be changed any time without a review):
+New: hearts, a Popular feed and a Home Screen widget of community favourites. Love pixel art but don't draw? Browse, heart and remix to your heart's content.
 
-**Description** (4000):
+**Description** (4000, 2838 used):
 
-Pixel Deck is a pocket-sized pixel art studio made for animation.
+Pixel Deck is a cosy home for pixel art, whether you love making it or just love looking at it.
 
-DRAW IT
+LOVE PIXEL ART? YOU DON'T NEED TO DRAW
+• Browse Community: tiny animations made by the Pixel Deck community, playing live
+• Give hearts to the ones you love, and see the most-hearted in Popular
+• Put Community favourites on your Home Screen with a widget that changes every hour
+• Tap Remix to copy any piece into your gallery, then change a colour or two and make it yours
+
+LEARN IN TWO MINUTES
+A friendly guided tour has you draw a heart and make it bounce in three frames, showing every gesture along the way. Great for kids, grown-ups and anyone who has never drawn a pixel.
+
+MAKE IT
 • An infinite canvas: no size to pick, just draw and it grows
 • Pinch to make pixels bigger or smaller, always razor sharp
-• Pencil, eraser, fill, colour picker, mirror and select, with undo/redo
-• Ten shapes, from lines, rectangles and circles to hexagons, parallelograms and stars, outlined or filled
-• Trace over any photo or sketch: it sits under every layer at the opacity you choose
-• Layers: keep backgrounds, shapes and characters apart, then hide, reorder or merge them
-• A 10-colour palette per sprite, 10 ready-made palettes to start from, and a full colour picker
+• Pencil and eraser in four sizes, fill, colour picker, mirror and select
+• Ten shapes, from lines and circles to hexagons and stars
+• Layers, flip and rotate, copy and paste frames, undo and redo
+• Trace over any photo or sketch at the opacity you choose
+• Every piece records a timelapse, so you can replay how you drew it
+• Ten ready-made palettes, your own saved palettes, and a full colour picker
 
-FLIP IT
-• Swipe left for the next frame; the last one stays underneath as a pink onion skin
+MOVE IT
+• Swipe left for the next frame; the last one shows through as an onion skin
+• Select some pixels, drag them along any path, and Pixel Deck draws every frame in between
+• Play your animation in place, from 1 to 30 frames a second
 • Swipe right to start a fresh canvas whenever an idea hits
-• Play the animation in place, from 1 to 30 fps
-
-MAKE IT MOVE
-Select some pixels and drag them anywhere: across the canvas, in an arc, around a loop. Pixel Deck smooths out the path your finger took and draws every frame in between, with easing.
 
 SHARE IT
-• Post your animations to Community, browse what others made, and remix them
-• Sprite sheets with JSON frame data for game engines
-• PNG frames
-• Looping GIFs and 1080×1080 MP4 videos for Reels, Shorts and TikTok (Pro)
-• Scale up to 16× (Pro) with no blurring
+• Post to Community with a title and a nickname
+• PNG frames, and sprite sheets with JSON for game makers
+• Looping GIFs and videos for Reels, Shorts and TikTok (Pro)
 
-STARTER CAST
-A slime, a campfire, a coin, a ghost, a sprout and a moon are waiting in your gallery to study, remix or animate further. With Pro, open the two big showcase scenes too: a spring high street in Japan, and a mountain valley where a boy listens to his cassette player.
+A STARTER COLLECTION
+A bouncing slime, a campfire, a ghost, a strawberry, a cottage, a sunset sail and more are waiting in your gallery to admire, remix or animate further. With Pro, open two big animated scenes too: a spring high street in Japan, and a mountain valley where a boy listens to his cassette player.
+
+SAFE FOR FAMILIES
+Community is switched off for anyone under 13, using Apple's age-range check, so younger artists can draw and animate freely. Posts can be reported, people can be blocked, and titles and nicknames are filtered.
 
 PRIVATE BY DESIGN
-No sign-up, no ads, no tracking. Your art syncs through your own private iCloud, so it's on your iPhone, iPad and any device signed in to your Apple Account, and nowhere else.
+No sign-up, no ads, no tracking. Your art syncs through your own private iCloud to your iPhone and iPad, and only what you choose to share is public.
 
 PIXEL DECK PRO
-One purchase, no subscription: art up to 512×512, up to 999 frames per sprite, GIF and video export, exports up to 16× and 4K with no watermark, and eased playback timing so your animations speed up and slow down naturally. Family Sharing supported.
+One purchase, no subscription:
+• Art up to 512×512 and up to 999 frames
+• GIF and MP4 export, 4K and up to 16×, with no watermark
+• Timelapse videos
+• Dither brush and four-way symmetry
+• Import palettes from Lospec and other apps
+• Eased playback, so animations speed up and slow down naturally
+Family Sharing supported.
 
-**What's New** (first version): First release. Happy pixelling!
+Whether you draw every day or just like to look, Pixel Deck has a little pixel joy waiting for you.
 
-**Category**: Graphics & Design
+**What's New** (version 1.1):
+
+• Hearts and a Popular feed in Community
+• A Home Screen widget of community favourites, new every hour
+• Timelapse: replay how any piece was drawn (save the video with Pro)
+• Brush sizes, plus a dither brush and four-way symmetry with Pro
+• Flip and rotate frames, and import palette files (Pro)
+• A guided tour for first-time pixel artists
+• Community is now off for anyone under 13
+• A clearer onion skin, saved palettes, multi-select delete and 4K export (Pro)
+
+**Category**: Graphics & Design (primary), Entertainment (secondary)
 
 **Copyright**: `2026 Karthik Vasudevan`
 
@@ -63,4 +91,14 @@ One purchase, no subscription: art up to 512×512, up to 999 frames per sprite, 
 
 **Pixel Deck Pro**: Non-Consumable, product ID `karthikvasudevan.pixeldeck.pro`, price **US$4.99** (App Store Connect fills in the other countries), Family Sharing on.
 - Display name (30): `Pixel Deck Pro`
-- Description (45): `Bigger art, unlimited frames, GIF & video`
+- Description (45): `Bigger art, GIF & video, brushes, timelapse` (43 characters)
+
+**Screenshots** (suggested order, Dark appearance):
+1. Community with live tiles and hearts. Caption: "Love pixel art? Browse, heart and remix."
+2. The Home Screen widget. Caption: "Community favourites on your Home Screen."
+3. Drawing with the onion skin. Caption: "Draw it. Swipe left. Make it move."
+4. Tween path. Caption: "Drag pixels along a path; frames draw themselves."
+5. The guided tour card. Caption: "Learn in two minutes, no experience needed."
+6. Timelapse. Caption: "Replay how you drew it."
+7. The showcase scenes in the gallery. Caption: "A starter collection to admire and remix."
+8. Brushes and symmetry. Caption: "Dither, symmetry and brushes for real pixel artists."
