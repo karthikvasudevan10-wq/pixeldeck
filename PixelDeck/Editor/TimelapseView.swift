@@ -49,7 +49,8 @@ struct TimelapseView: View {
     @State private var upgrade: ProFeature?
     @State private var shareItems: ShareItems?
 
-    private static let fps = 15.0
+    /// nonisolated: also read by the background video export.
+    private nonisolated static let fps = 15.0
 
     var body: some View {
         VStack(spacing: 14) {

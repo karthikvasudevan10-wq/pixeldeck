@@ -286,7 +286,7 @@ final class CommunityService {
             record["count"] = max(0, ((record["count"] as? Int) ?? 0) + delta)
             do {
                 let result = try await db.modifyRecords(saving: [record], deleting: [], savePolicy: .ifServerRecordUnchanged, atomically: false)
-                try result.saveResults[id]?.get()
+                _ = try result.saveResults[id]?.get()
                 return
             } catch let e as CKError where e.code == .serverRecordChanged || e.code == .partialFailure {
                 continue                                      // someone else hearted at the same time

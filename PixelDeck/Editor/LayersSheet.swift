@@ -70,7 +70,7 @@ struct LayersSheet: View {
                             .font(AppFont.body(15, .bold, relativeTo: .body))
                             .foregroundStyle(trace == nil || visible ? Theme.cream : Theme.muted)
                         if let trace {
-                            Text("\(Int((trace.opacity * 100).rounded()))% · not exported").font(AppFont.pixel(10)).foregroundStyle(Theme.muted)
+                            Text("\(trace.opacity.formatted(.percent.precision(.fractionLength(0)))) · not exported", comment: "Tracing image row: its opacity (formatted for the language), then a note that it's never exported").font(AppFont.pixel(10)).foregroundStyle(Theme.muted)
                         } else {
                             Text("Add a picture to trace over").font(AppFont.pixel(10)).foregroundStyle(Theme.muted)
                         }
