@@ -1,0 +1,164 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%lld new frames": {
+      "comment": "Tween frame count (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld new frame"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld new frames"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Moves the selection through the next %lld frames, keeping everything else in them.": {
+      "comment": "Tween into existing frames (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Moves the selection through the next frame, keeping everything else in it."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Moves the selection through the next %lld frames, keeping everything else in them."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld animations": {
+      "comment": "Gallery count (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld animation"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld animations"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld stills": {
+      "comment": "Gallery count of single-frame sprites (plural)",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld still"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld stills"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld frames · %@": {
+      "comment": "Gallery tile: frame count (plural) and art size",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@frames@ · %2$@"
+          },
+          "substitutions": {
+            "frames": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg frame"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg frames"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ · %lld×%lld px · %lld frames · %lld fps": {
+      "comment": "Export summary: name, art size, frame count (plural), frame rate",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ · %2$lld×%3$lld px · %#@frames@ · %5$lld fps"
+          },
+          "substitutions": {
+            "frames": {
+              "argNum": 4,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg frame"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg frames"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
