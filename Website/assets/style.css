@@ -158,6 +158,13 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:18px;align-items:center;justify-con
 footer nav{display:flex;gap:18px}
 footer a{color:var(--muted)}footer a:hover{color:var(--cream)}
 
+/* about: single-colour pixel art */
+.about-art{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.about-art .tile{display:grid;place-items:center;background:#1A1530;border:2px solid var(--line);min-height:150px}
+.about-art .tile:first-child{grid-column:1 / -1;min-height:230px}
+.about-art .mono canvas{filter:grayscale(1) contrast(1.35)}
+@media (max-width:880px){.about-art .tile:first-child{min-height:180px}}
+
 /* legal page */
 .legal{max-width:720px;padding:70px 0 100px}
 .legal h1{font-family:var(--pixel);font-weight:400;color:var(--cream);font-size:36px;margin:0 0 8px}
