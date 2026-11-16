@@ -236,6 +236,9 @@ struct CommunityPostView: View {
                         if !post.isMine {
                             action("Report", tint: Theme.accent) { confirmingReport = true }
                             action("Block", tint: Theme.muted) { confirmingBlock = true }
+                        } else if AppConfig.allowReportingOwnPosts {
+                            // TEMPORARY, for recording the report flow (see AppConfig).
+                            action("Report", tint: Theme.accent) { confirmingReport = true }
                         }
                     }
                     if let error {

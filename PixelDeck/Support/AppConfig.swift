@@ -23,6 +23,11 @@ enum AppConfig {
     /// (CloudKit crashes an app that uses a container it isn't entitled to).
     static let cloudKitContainerID: String? = "iCloud.karthikvasudevan.pixeldeck"
 
+    /// TEMPORARY: shows Report on your own Community posts, so the report flow can be screen
+    /// recorded for App Review without a second account. Set back to `false` (and rebuild)
+    /// before the build you submit.
+    static let allowReportingOwnPosts = true
+
     /// CloudKit user ids allowed to remove anyone's post in the app (give that account the
     /// Moderator security role in CloudKit Console). Find yours in Settings › Community.
     static let communityModeratorIDs: Set<String> = []
