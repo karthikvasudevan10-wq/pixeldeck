@@ -10,7 +10,7 @@ Identifiers already set in the code:
 | | |
 |---|---|
 | Bundle ID | `karthikvasudevan.pixeldeck` |
-| In-app purchase | `karthikvasudevan.pixeldeck.pro`, Non-Consumable, US$4.99 |
+| In-app purchase | `karthikvasudevan.pixeldeck.pro`, Non-Consumable, US$2.99 |
 | iCloud / CloudKit container | `iCloud.karthikvasudevan.pixeldeck` |
 | Support | karthik.vasudevan.10@gmail.com · https://karthikvasudevan10-wq.github.io/pixeldeck/support.html |
 | Privacy policy | https://karthikvasudevan10-wq.github.io/pixeldeck/privacy.html |
@@ -38,7 +38,7 @@ Identifiers already set in the code:
 
 **5. App Store Connect records**
 - [ ] Apps › **+** › New App: iOS, name `Pixel Deck: Sprite Animator`, bundle ID `karthikvasudevan.pixeldeck`, SKU `pixeldeck`, primary language English. If the name is taken, try `Pixel Deck – Pixel Animator`.
-- [ ] Monetization › In-App Purchases › **+** Non-Consumable `karthikvasudevan.pixeldeck.pro`, US$4.99, Family Sharing on, with the display name and description from `metadata.md`. Add the review screenshot (the paywall, from Settings › Unlock Pro).
+- [ ] Monetization › In-App Purchases › **+** Non-Consumable `karthikvasudevan.pixeldeck.pro`, US$2.99, Family Sharing on, with the display name and description from `metadata.md`. Add the review screenshot (the paywall, from Settings › Unlock Pro).
 - [ ] App Privacy: answer as in *App Store Connect answers* below. Add the privacy policy URL.
 - [ ] Age rating questionnaire (user-generated content: **Yes**).
 - [ ] Pricing: Free, all territories (or exclude any you don't want).
@@ -230,7 +230,7 @@ You still need to do this, and no review can replace it:
 
 ## Business model (what's implemented)
 
-The app is free to download, with **Pixel Deck Pro** as a one-time non-consumable purchase. The code suggests 4.99 USD. Each line below, free tier then Pro:
+The app is free to download, with **Pixel Deck Pro** as a one-time non-consumable purchase. The price is set to 2.99 USD. Each line below, free tier then Pro:
 
 - **Art size** on the infinite canvas: free allows up to 64 × 64 px; Pro allows up to 512 × 512.
 - **Frames per sprite**: free allows 12; Pro allows 999, or fewer for very large sprites to stay within memory on older iPhones.

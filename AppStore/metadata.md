@@ -92,7 +92,7 @@ Hi, I'm Karthik, and I love pixel art: how a handful of squares can feel so aliv
 
 **Marketing URL** (optional): https://karthikvasudevan10-wq.github.io/pixeldeck/
 
-**Pixel Deck Pro**: Non-Consumable, product ID `karthikvasudevan.pixeldeck.pro`, price **US$4.99** (App Store Connect fills in the other countries), Family Sharing on.
+**Pixel Deck Pro**: Non-Consumable, product ID `karthikvasudevan.pixeldeck.pro`, price **US$2.99** (App Store Connect fills in the other countries), Family Sharing on.
 - Display name (30): `Pixel Deck Pro`
 - Description (45): `Bigger art, GIF & video, brushes, timelapse` (43 characters)
 
