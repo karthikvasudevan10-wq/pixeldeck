@@ -57,12 +57,46 @@ little retro game.
 - **Mac app**: Pixel Deck on the Mac, using the trackpad and keyboard support already built.
 - **Translations**: Japanese first, then Spanish, German and Portuguese.
 
+## Growing through Instagram and TikTok sharing
+
+Goal: encourage people to share their work on Instagram and TikTok, carrying the app's logo and
+"Available on the App Store".
+
+**Don't build "share on social media to unlock Pro".**
+- Apple guideline 3.2.2 forbids requiring "rate, review, watch videos… or other similar actions" to
+  unlock functionality, so it would be rejected.
+- Instagram and TikTok also ban rewarding people for sharing.
+- The app can't tell whether anything was actually posted.
+
+Ways to get the same effect within the rules:
+
+- ★ **Free GIF and video export, with the watermark**: free exports carry "Made with Pixel Deck ·
+  Available on the App Store", and Pro removes it, as with PNG today. Every free share is an
+  advert. Biggest lever. *Small.*
+- ★ **Reels and TikTok format**: a vertical 9:16 (1080 × 1920) export of an animation or its
+  timelapse, ending with a short card (app name, slime, "Available on the App Store"). Timelapse
+  "watch me draw" videos suit both apps. *Small–medium.*
+- ★ **Free Pro trial**: a free, time-limited non-consumable purchase (for example "7-Day Pro Trial",
+  which Apple allows), so everyone tries every Pro tool, shares, and buys if they love it.
+  *Small–medium.*
+- **Creator gifts outside the app**: give Apple offer codes for free Pro to pixel artists and
+  creators, or to people who tag the app in great posts. You find them and send codes yourself;
+  nothing in the app asks anyone to post. Creators should mark posts as gifted or #ad.
+- **Effortless sharing**: a "Share to Instagram or TikTok" button after export, with a ready-made
+  caption ("Made with #PixelDeck ✨") and the App Store link in the caption. Direct posting through
+  Instagram's and TikTok's own developer kits adds third-party services and privacy declarations,
+  so leave it for later.
+- **Community challenges with prizes** (later): for example "Monochrome week", where the
+  most-hearted entry wins a Pro code. In-app contests must follow guideline 5.3 (official rules,
+  Apple isn't the sponsor), so run them small, ideally from the website or social accounts.
+
 ## Suggested v2 lineup
 
 - **Headline:** Pixel Playground with the tile painter.
 - **Delight:** Retro modes, Idea of the day, remix family tree.
 - **Families:** bead and cross-stitch patterns.
 - **Pro value:** Photo → pixel art, more Pixel Academy lessons, chiptune sound.
+- **Growth:** free watermarked GIF and video, the 9:16 Reels and TikTok format, and a free Pro trial.
 
 Before choosing, check App Store Connect › App Analytics after launch (day 1, 7 and 28 retention):
 - If people leave after the tour, lessons and prompts matter most.
