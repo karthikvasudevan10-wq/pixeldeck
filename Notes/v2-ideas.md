@@ -28,6 +28,10 @@ little retro game.
   Add a Community tag per mode, such as a Monochrome gallery. *Small–medium.*
 - **Shading helpers**: a hue-shifted shading ramp from one colour, an auto-outline tool, and replace
   a colour across all frames. *Small.*
+- **Shape outline thickness**: outlined shapes (rectangle, circle, hexagon, star…) are always 1 px
+  today. Use the brush size (1–4, square or round) for shape outlines too, showing the size chips in
+  the shape strip, so there's one thickness control everywhere. Thick outlines should grow inwards,
+  so a shape keeps the size you dragged; lines get the same thickness. *Small.*
 
 ## Inspiration, without guilt
 
