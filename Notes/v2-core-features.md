@@ -44,6 +44,19 @@ idea pool (growth, families, beyond the phone) is in `v2-ideas.md`.
 17. **Aseprite file import and export**: lets serious artists move work to and from the desktop.
     A rival app leads on this. *(research)*
 
+## On more devices
+
+18. **Mac app** (requested 16 Nov 2026): Pixel Deck on the Mac.
+    - Simplest route: Mac Catalyst (or "Designed for iPad" on Apple silicon Macs as a first step),
+      since the app is SwiftUI and already supports keyboard shortcuts, trackpad and mouse, hover,
+      and resizable layouts.
+    - Mac touches to add: a menu bar with the shortcuts, right-click menus, window resizing,
+      drag and drop of images and palette files, and opening and saving files in Finder.
+    - Sprites, palettes and Community come along through the same iCloud container, so work
+      started on iPhone or iPad opens on the Mac.
+    - One purchase should unlock Pro on every device (universal purchase).
+    - Check on the Mac: the StoreKit paywall, the widget, the age-range check, and the photo picker.
+
 **Suggested heart of v2:** 1, 2, 4 and 11.
 
 ## Sources
