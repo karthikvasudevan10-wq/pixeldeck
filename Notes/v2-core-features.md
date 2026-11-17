@@ -74,6 +74,34 @@ idea pool (growth, families, beyond the phone) is in `v2-ideas.md`.
     - One purchase should unlock Pro on every device (universal purchase).
     - Check on the Mac: the StoreKit paywall, the widget, the age-range check, and the photo picker.
 
+## AI
+
+20. **Draw with AI assistants on the Mac** (requested 17 Nov 2026): let Claude, ChatGPT and other
+    assistants draw pixel art in Pixel Deck, through MCP (Model Context Protocol, an open standard
+    for connecting assistants to apps).
+    - **Recommended design: Pixel Deck is the MCP server.** The Mac app exposes its drawing
+      actions as tools, and the user's own assistant app calls them. Example tools: new canvas,
+      set pixels, line / rectangle / fill, set palette, add or select a frame, add a layer,
+      flip / rotate, read the canvas back as an image, export.
+    - Why this design: the AI draws with the same actions a person uses, so the result is real,
+      editable layers and frames, with undo and a timelapse. The assistant can look at the canvas
+      and correct itself. It runs on the user's own AI subscription, so there's no AI cost or API
+      key for us, and no art passes through any server of ours.
+    - Mac only at first: an assistant app on the Mac can reach a local server; iPhone and iPad
+      apps can't be driven this way.
+    - Safeguards: off by default; the user turns it on and approves each connecting app; each AI
+      action is one undo step; a visible "AI is drawing" indicator with a Stop button.
+    - To verify when building: which assistants accept a **local** MCP server and which only
+      **remote** ones (Claude's desktop app and Claude Code accept local servers; ChatGPT's MCP
+      support should be checked at the time, as it may need a remote server); and how a sandboxed
+      Mac App Store app may host the server (a localhost server or a small helper command).
+    - **Alternative: AI inside Pixel Deck** ("describe it and the app draws it", calling the
+      Claude API directly). More seamless and works on iPhone and iPad, but someone pays per
+      request (us through a server, or the user's own API key), Apple requires clear disclosure
+      and consent before sending user data to a third-party AI (guideline 5.1.2), the privacy
+      answers change, and it needs thought for younger users. Consider after the MCP version.
+    - Fits the aim (complex art with ease) and the Mac app (18). *Medium for the MCP server.*
+
 **Suggested heart of v2:** 1, 2, 4 and 11.
 
 ## Sources
