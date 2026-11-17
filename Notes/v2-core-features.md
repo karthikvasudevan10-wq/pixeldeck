@@ -44,6 +44,23 @@ idea pool (growth, families, beyond the phone) is in `v2-ideas.md`.
 17. **Aseprite file import and export**: lets serious artists move work to and from the desktop.
     A rival app leads on this. *(research)*
 
+## Colour editing
+
+19. **Adjust colours of selected pixels** (requested 17 Nov 2026): select a group of pixels, of
+    any mix of colours, and raise or lower their **brightness, contrast, hue and saturation**
+    with sliders.
+    - Each pixel is adjusted from its own colour, so a multi-coloured selection keeps its colour
+      relationships: brightening doesn't shift hues, and a hue shift doesn't change how light or
+      dark each pixel is. Transparent pixels are left alone.
+    - Work in a hue/saturation/lightness space per pixel, with a live preview on the canvas and
+      one undo step for the whole adjustment.
+    - Scope choices: the selection, the current layer, this frame, or all frames (so a whole
+      animation can be recoloured consistently).
+    - Open question: adjusted colours won't match the 10 palette swatches any more. Offer "add
+      the new colours to the palette" or "snap to the nearest palette colour" as options.
+    - Fits with the shading assistant (2) and smart palettes (3). Simple version could be free,
+      with all-frames scope as Pro. *Small–medium.*
+
 ## On more devices
 
 18. **Mac app** (requested 16 Nov 2026): Pixel Deck on the Mac.
