@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixel Deck — Brand kit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#FFF6E0}
+</style>
+</helmet>
+<div style="width: 1200px; height: 760px; box-sizing: border-box; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif; padding: 56px; display: flex; flex-direction: column; gap: 40px">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 52px; line-height: 1; color: #FFF6E0">Pixel Deck</h1>
+      <span style="font-size: 18px; color: #A89CC8">Draw it. Move it. Love it.</span>
+    </div>
+    <span style="font-family: 'Silkscreen', monospace; font-size: 13px; color: #A89CC8">Brand kit · v1</span>
+  </div>
+
+  <div style="flex: 1; display: grid; grid-template-columns: 300px minmax(0, 1fr) 380px; gap: 48px">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #A89CC8">App icon</span>
+      <div style="width: 240px; height: 240px; border-radius: 54px; background: #FF5C8A; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -10px 0 #B8336A">
+        <dc-import name="Sprite" sprite="slime" px="{{ 12 }}" playing="{{ false }}" frame="{{ 0 }}" hint-size="144px,192px"></dc-import>
+      </div>
+      <div style="display: flex; align-items: flex-end; gap: 16px">
+        <div style="width: 96px; height: 96px; border-radius: 22px; background: #FF5C8A; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 -4px 0 #B8336A">
+          <dc-import name="Sprite" sprite="slime" px="{{ 5 }}" playing="{{ false }}" frame="{{ 0 }}" hint-size="60px,80px"></dc-import>
+        </div>
+        <div style="width: 60px; height: 60px; border-radius: 14px; background: #FF5C8A; display: flex; align-items: center; justify-content: center">
+          <dc-import name="Sprite" sprite="slime" px="{{ 3 }}" playing="{{ false }}" frame="{{ 0 }}" hint-size="36px,48px"></dc-import>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 28px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #A89CC8">Colour</span>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{colors}}" as="c" hint-placeholder-count="6">
+            <div style="display: flex; flex-direction: column; background: #1E1833">
+              <div style="height: 64px; background: {{c.hex}}; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06)"></div>
+              <div style="padding: 8px 10px; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-size: 14px; font-weight: 700; color: #FFF6E0">{{c.name}}</span>
+                <span style="font-family: 'Silkscreen', monospace; font-size: 11px; color: #A89CC8">{{c.hex}}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #A89CC8">Type</span>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 18px; background: #1E1833">
+          <span style="font-family: 'Silkscreen', monospace; font-size: 34px; line-height: 1.1; color: #FFF6E0">Make it <span style="color: #FF5C8A">move.</span></span>
+          <span style="font-size: 13px; color: #A89CC8">Silkscreen — headlines, labels, numbers</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 18px; background: #1E1833">
+          <span style="font-size: 20px; line-height: 1.4; color: #FFF6E0">Swipe left for a new frame. Swipe right for a new canvas.</span>
+          <span style="font-size: 13px; color: #A89CC8">Space Grotesk — body copy and UI text</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #A89CC8">The cast · sample animations</span>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{cast}}" as="s" hint-placeholder-count="6">
+          <div style="display: flex; flex-direction: column; background: #1E1833">
+            <div style="height: 130px; background: {{s.tile}}; display: flex; align-items: center; justify-content: center">
+              <dc-import name="Sprite" sprite="{{s.sprite}}" px="{{s.px}}" hint-size="64px,80px"></dc-import>
+            </div>
+            <span style="padding: 8px 10px; font-family: 'Silkscreen', monospace; font-size: 11px; color: #FFF6E0">{{s.name}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <span style="font-size: 13px; line-height: 1.5; color: #A89CC8">Every sprite is a real frame sequence, so the same art can ship as App Store previews, onboarding loops and starter templates.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      colors: [
+        { name: 'Ink', hex: '#120E1F' }, { name: 'Surface', hex: '#1E1833' }, { name: 'Muted', hex: '#A89CC8' },
+        { name: 'Flip pink', hex: '#FF5C8A' }, { name: 'Spark yellow', hex: '#FFD23F' }, { name: 'Cream', hex: '#FFF6E0' }
+      ],
+      cast: [
+        { sprite: 'slime', px: 5, tile: '#2B1F47', name: 'Slime' },
+        { sprite: 'flame', px: 6, tile: '#3A1F2E', name: 'Campfire' },
+        { sprite: 'coin', px: 8, tile: '#3A321C', name: 'Coin' },
+        { sprite: 'ghost', px: 6, tile: '#1F3340', name: 'Ghost' },
+        { sprite: 'sprout', px: 7, tile: '#1F3A2A', name: 'Sprout' },
+        { sprite: 'moon', px: 8, tile: '#171129', name: 'Moon' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

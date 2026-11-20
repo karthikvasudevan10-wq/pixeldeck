@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sprite</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: {{wpx}}px; height: {{hpx}}px; background: {{bg}}">
+<sc-if value="{{showOnion}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; display: grid; grid-template-columns: repeat({{w}}, {{px}}px); grid-auto-rows: {{px}}px; opacity: 0.38">
+<sc-for list="{{onionCells}}" as="o" hint-placeholder-count="0">
+<div style="background: {{o.c}}"></div>
+</sc-for>
+</div>
+</sc-if>
+<div role="img" aria-label="{{label}}" style="position: absolute; left: 0; top: 0; display: grid; grid-template-columns: repeat({{w}}, {{px}}px); grid-auto-rows: {{px}}px">
+<sc-for list="{{cells}}" as="cell" hint-placeholder-count="0">
+<div style="background: {{cell.c}}"></div>
+</sc-for>
+</div>
+<sc-if value="{{showGrid}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; inset: 0; pointer-events: none; background-image: linear-gradient({{gridColor}} 1px, transparent 1px), linear-gradient(90deg, {{gridColor}} 1px, transparent 1px); background-size: {{px}}px {{px}}px"></div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"sprite":{"editor":"enum","options":["slime","flame","coin","ghost","sprout","moon"],"default":"slime"},"px":{"editor":"int","min":1,"max":40,"default":20},"playing":{"editor":"boolean","default":true},"frame":{"editor":"int","min":0,"max":20,"default":0},"fps":{"editor":"int","min":1,"max":24,"default":0},"onion":{"editor":"boolean","default":false},"onionColor":{"editor":"color","default":"#FF5C8A"},"grid":{"editor":"boolean","default":false},"gridColor":{"editor":"color","default":"rgba(255,255,255,0.07)"},"bg":{"editor":"color","default":"transparent"},"$preview":{"width":240,"height":320}}'>
+class Component extends DCLogic {
+  sprites() {
+    if (this._spr) return this._spr;
+    const B = (w) => '.'.repeat(w);
+    const place = (shape, top, h) => {
+      const w = shape[0].length;
+      const out = [];
+      for (let i = 0; i < top; i++) out.push(B(w));
+      for (const r of shape) out.push(r);
+      while (out.length < h) out.push(B(w));
+      return out.slice(0, h);
+    };
+    const rest = ["............","............","....kkkk....","..kkggggkk..",".kgwwgggggk.",".kgwgggggdk.","kggggggggddk","kggkkggkkgdk","kggkwggkwgdk","kggggppggddk","kdgggggggddk",".kkkkkkkkkk."];
+    const blink = rest.slice(); blink[7] = "kgggggggggdk"; blink[8] = "kggkkggkkgdk";
+    const squash = ["............","............","............","............","...kkkkkk...",".kkggggggkk.","kgwwgggggggk","kgkkggggkkdk","kgkwggggkwdk","kggggppgggdk","kddggggggddk","kkkkkkkkkkkk"];
+    const stretch = ["....kkkk....","...kggggk...","...kgwggk...","..kgwggggk..","..kgggggdk..","..kgkggkdk..","..kgkggkdk..","..kggppgdk..","..kgggggdk..","..kggggddk..","...kgdddk...","....kkkk...."];
+    const logs = ["euuueeuuue",".ee....ee."];
+    const fA = ["....r.....","....oo....","...ooyo...","..ooyyo...","..oyyyoo..",".ooyywyo..",".oyywwyoo.",".oyywwyyo.",".ooywwyoo.","..ooyyoo.."].concat(logs);
+    const fB = ["......r...",".....oo...","..r..oyo..","..oo.oyo..","..oyooyoo.",".ooyyyyyo.",".oyyywyyo.",".oyywwyyo.",".ooywwyoo.","..ooyyoo.."].concat(logs);
+    const fC = ["...r......","...oo.....","..oyo..r..","..oyoo.oo.",".ooyyooyo.",".oyyyyyyo.",".oyywyyoo.",".oyywwyyo.",".ooywwyoo.","..ooyyoo.."].concat(logs);
+    const cFull = ["..oooo..",".oyyyyo.","oyywyyyo","oywyyyyo","oyyyyyyo","oyyyyyoo",".oyyyyo.","..oooo.."];
+    const cMid = ["...oo...","..oyyo..","..oywo..","..owyo..","..oyyo..","..oyyo..","..oyyo..","...oo..."];
+    const cEdge = ["...oo...","...yo...","...yo...","...yo...","...yo...","...yo...","...yo...","...oo..."];
+    const g1 = ["...kkkk...","..kwwwwk..",".kwwwwwwk.",".kwkwwkwk.",".kwkwwkwk.",".kpwwwwpk.",".kwwwwwlk.",".kwwwwwlk.",".kwwwwwlk.",".kwkwwklk.","..k.kk.k.."];
+    const g2 = g1.slice(); g2[9] = ".kwwkkwlk."; g2[10] = ".k.k..k.k.";
+    const pot = [".eeeeee.","..euue..","..eeee.."];
+    const e7 = ["........","........","........","........","........","........","........"];
+    const s1 = e7.slice(); s1[6] = "....g...";
+    const s2 = e7.slice(); s2[4] = "....g..."; s2[5] = "...gg..."; s2[6] = "....d...";
+    const s3 = e7.slice(); s3[2] = "..gg...."; s3[3] = "..ggd..."; s3[4] = "....dgg."; s3[5] = "....dg.."; s3[6] = "....d...";
+    const s4 = e7.slice(); s4[0] = "...pp..."; s4[1] = "..pyyp.."; s4[2] = "..gppg.."; s4[3] = ".ggdggg."; s4[4] = "..gdgg.."; s4[5] = "....dg.."; s4[6] = "....d...";
+    const moon = ["..llll..",".lwwwwl.","lwwwlwwl","lwwwwwwl","lwlwwwwl","lwwwwlwl",".lwwwwl.","..llll.."];
+    this._spr = {
+      pal: {k:'#1B1530',w:'#FFF6E0',p:'#FF5C8A',m:'#B8336A',y:'#FFD23F',o:'#FF8B3D',r:'#E63946',g:'#7BE07B',d:'#2E9E5B',l:'#C8B6FF',u:'#9C6B3C',e:'#5E3B22'},
+      slime: {w:12,h:16,fps:8,label:'Green slime bouncing',frames:[place(rest,4,16),place(squash,4,16),place(stretch,2,16),place(rest,0,16),place(rest,0,16),place(stretch,2,16),place(squash,4,16),place(rest,4,16),place(blink,4,16),place(rest,4,16)]},
+      flame: {w:10,h:12,fps:6,label:'Flickering campfire',frames:[fA,fB,fC,fB]},
+      coin: {w:8,h:8,fps:8,label:'Spinning coin',frames:[cFull,cMid,cEdge,cMid]},
+      ghost: {w:10,h:12,fps:4,label:'Floating ghost',frames:[place(g1,0,12),place(g2,0,12),place(g1,1,12),place(g2,1,12)]},
+      sprout: {w:8,h:10,fps:3,label:'Sprout growing into a flower',frames:[s1.concat(pot),s2.concat(pot),s3.concat(pot),s4.concat(pot),s4.concat(pot),s4.concat(pot)]},
+      moon: {w:8,h:8,fps:1,label:'Pixel moon',frames:[moon]}
+    };
+    return this._spr;
+  }
+  fpsNow() {
+    const S = this.sprites()[this.props.sprite ?? 'slime'] || this.sprites().slime;
+    const f = this.props.fps ?? 0;
+    return f > 0 ? f : S.fps;
+  }
+  startTimer() {
+    if (this._iv) clearInterval(this._iv);
+    this._fps = this.fpsNow();
+    this._iv = setInterval(() => this.setState({ t: ((this.state && this.state.t) || 0) + 1 }), Math.round(1000 / this._fps));
+  }
+  componentDidMount() { this.startTimer(); }
+  componentDidUpdate() { if (this.fpsNow() !== this._fps) this.startTimer(); }
+  componentWillUnmount() { if (this._iv) clearInterval(this._iv); }
+  renderVals() {
+    const all = this.sprites();
+    const S = all[this.props.sprite ?? 'slime'] || all.slime;
+    const px = Number(this.props.px ?? 20);
+    const playing = this.props.playing ?? true;
+    const t = (this.state && this.state.t) || 0;
+    const n = S.frames.length;
+    const fi = playing ? t % n : ((Number(this.props.frame ?? 0) % n) + n) % n;
+    const cur = S.frames[fi];
+    const prev = S.frames[(fi - 1 + n) % n];
+    const onion = !!(this.props.onion ?? false);
+    const tint = this.props.onionColor ?? '#FF5C8A';
+    const cells = [];
+    const oc = [];
+    for (let y = 0; y < S.h; y++) {
+      for (let x = 0; x < S.w; x++) {
+        const ch = cur[y][x];
+        cells.push({ c: ch === '.' ? 'transparent' : all.pal[ch] });
+        if (onion) { const pc = prev[y][x]; oc.push({ c: pc === '.' ? 'transparent' : tint }); }
+      }
+    }
+    return { w: S.w, h: S.h, px, wpx: S.w * px, hpx: S.h * px, cells, onionCells: oc, showOnion: onion, showGrid: !!(this.props.grid ?? false), bg: this.props.bg ?? 'transparent', label: S.label, gridColor: this.props.gridColor ?? 'rgba(255,255,255,0.07)' };
+  }
+}
+</script>
+</body>
+</html>

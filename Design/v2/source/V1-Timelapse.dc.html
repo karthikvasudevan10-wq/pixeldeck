@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Timelapse</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#F4EEFF}
+button{font:inherit;cursor:pointer}
+img{image-rendering:pixelated}
+@keyframes fbNudgeL{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(-3px);opacity:.6}}
+@keyframes fbNudgeR{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(3px);opacity:.6}}
+@keyframes fbBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fbMarch{to{background-position:12px 0,-12px 100%,0 -12px,100% 12px}}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif">
+<div style="position: absolute; inset: 0; box-sizing: border-box; padding: 54px 16px 24px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; align-items: center; gap: 12px; padding: 0"><button type="button" aria-label="Close" style="width: 44px; height: 44px; border: 0; background: #2A2347; color: #F4EEFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 22px; color: #FFF6E0">Timelapse</h1><span style="font-size: 13px; color: #A89CC8">Slime bounce · 212 moments</span></div></div>
+<div style="flex: 1; background: repeating-conic-gradient(#1A1430 0 25%, #221B3B 0 50%) 0 0 / 22px 22px; display: flex; align-items: center; justify-content: center; position: relative"><dc-import name="Sprite" sprite="slime" px="{{ 22 }}" playing="{{ false }}" frame="{{ 4 }}" hint-size="264px,352px"></dc-import><span style="position: absolute; left: 10px; top: 10px; font-family: 'Silkscreen', monospace; font-size: 10px; padding: 4px 8px; background: rgba(18,14,31,0.7); color: #F4EEFF">Moment 138</span></div>
+<div style="display: flex; align-items: flex-end; gap: 2px; height: 30px"><i style="flex: 1; height: 8px; background: #FF5C8A"></i><i style="flex: 1; height: 23px; background: #FF5C8A"></i><i style="flex: 1; height: 16px; background: #FF5C8A"></i><i style="flex: 1; height: 9px; background: #FF5C8A"></i><i style="flex: 1; height: 24px; background: #FF5C8A"></i><i style="flex: 1; height: 17px; background: #FF5C8A"></i><i style="flex: 1; height: 10px; background: #FF5C8A"></i><i style="flex: 1; height: 25px; background: #FF5C8A"></i><i style="flex: 1; height: 18px; background: #FF5C8A"></i><i style="flex: 1; height: 11px; background: #FF5C8A"></i><i style="flex: 1; height: 26px; background: #FF5C8A"></i><i style="flex: 1; height: 19px; background: #FF5C8A"></i><i style="flex: 1; height: 12px; background: #FF5C8A"></i><i style="flex: 1; height: 27px; background: #FF5C8A"></i><i style="flex: 1; height: 20px; background: #FF5C8A"></i><i style="flex: 1; height: 13px; background: #FF5C8A"></i><i style="flex: 1; height: 28px; background: #FF5C8A"></i><i style="flex: 1; height: 21px; background: #FF5C8A"></i><i style="flex: 1; height: 14px; background: #FF5C8A"></i><i style="flex: 1; height: 29px; background: #FF5C8A"></i><i style="flex: 1; height: 22px; background: #FF5C8A"></i><i style="flex: 1; height: 15px; background: #FF5C8A"></i><i style="flex: 1; height: 8px; background: #FF5C8A"></i><i style="flex: 1; height: 23px; background: #FF5C8A"></i><i style="flex: 1; height: 16px; background: #FF5C8A"></i><i style="flex: 1; height: 9px; background: #FF5C8A"></i><i style="flex: 1; height: 24px; background: #2E2650"></i><i style="flex: 1; height: 17px; background: #2E2650"></i><i style="flex: 1; height: 10px; background: #2E2650"></i><i style="flex: 1; height: 25px; background: #2E2650"></i><i style="flex: 1; height: 18px; background: #2E2650"></i><i style="flex: 1; height: 11px; background: #2E2650"></i><i style="flex: 1; height: 26px; background: #2E2650"></i><i style="flex: 1; height: 19px; background: #2E2650"></i><i style="flex: 1; height: 12px; background: #2E2650"></i><i style="flex: 1; height: 27px; background: #2E2650"></i><i style="flex: 1; height: 20px; background: #2E2650"></i><i style="flex: 1; height: 13px; background: #2E2650"></i><i style="flex: 1; height: 28px; background: #2E2650"></i><i style="flex: 1; height: 21px; background: #2E2650"></i></div>
+<div style="display: flex; gap: 10px; align-items: center"><button type="button" aria-label="Play" style="width: 52px; height: 52px; border: 0; background: #FF5C8A; color: #120E1F; box-shadow: 0 4px 0 #B8336A; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3l15 9-15 9z"/></svg></button><button type="button" style="position: relative; height: 36px; padding: 0 12px; border: 0; background: #FFF6E0; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">1×</button><button type="button" style="position: relative; height: 36px; padding: 0 12px; border: 0; background: #2A2347; color: #F4EEFF; font-family: 'Silkscreen', monospace; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">2×</button><button type="button" style="position: relative; height: 36px; padding: 0 12px; border: 0; background: #2A2347; color: #F4EEFF; font-family: 'Silkscreen', monospace; font-size: 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">4×</button></div>
+<div style="display: flex; gap: 8px; align-items: center"><button type="button" style="width: 100%; height: 52px; border: 0; background: #FF5C8A; color: #120E1F; box-shadow: 0 5px 0 #B8336A; font-family: 'Silkscreen', monospace; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Save MP4</button><span style="position: absolute; right: 26px; margin-top: -40px"><span style="padding: 2px 6px; background: #FFD23F; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 9px">Pro</span></span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixel Academy</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#F4EFE6}
+a{color:#2F6FEB}a:hover{color:#1F1A14}
+button{font:inherit;cursor:pointer}
+img{image-rendering:pixelated}
+@keyframes fbNudgeL{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(-3px);opacity:.6}}
+@keyframes fbNudgeR{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(3px);opacity:.6}}
+@keyframes fbBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fbMarch{to{background-position:12px 0,-12px 100%,0 -12px,100% 12px}}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #F4EFE6; color: #1F1A14; font-family: 'Space Grotesk', system-ui, sans-serif">
+<div style="position: absolute; inset: 0; box-sizing: border-box; padding: 54px 16px 24px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; align-items: center; gap: 12px; padding: 0"><button type="button" aria-label="Close" style="width: 44px; height: 44px; border: 0; background: #F1EBE0; color: #1F1A14; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 22px; color: #1F1A14">Pixel Academy</h1><span style="font-size: 13px; color: #6B6256">Short lessons that end with a real animation</span></div></div><button type="button" style="border: 0; padding: 10px; background: #FFFDF8; box-shadow: inset 0 0 0 2px #E2D9C8; display: flex; gap: 12px; align-items: center; text-align: left; color: #1F1A14">
+<span style="width: 60px; height: 60px; flex-shrink: 0; background: #F1EBE0; display: flex; align-items: center; justify-content: center"><dc-import name="Sprite" sprite="ghost" px="{{ 4 }}" hint-size="40px,48px"></dc-import></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Silkscreen', monospace; font-size: 10px; color: #6B6256">Lesson 1</span><span style="font-size: 15px; font-weight: 700">Blinking eye</span><span style="font-size: 12px; color: #6B6256">3 min · 4 frames</span><span style="font-size: 12px; color: #2E8B57">Done</span></span><span style="font-size: 11px; color: #2E8B57">Free</span></button><button type="button" style="border: 0; padding: 10px; background: #FFFDF8; box-shadow: inset 0 0 0 2px #E5406F; display: flex; gap: 12px; align-items: center; text-align: left; color: #1F1A14">
+<span style="width: 60px; height: 60px; flex-shrink: 0; background: #F1EBE0; display: flex; align-items: center; justify-content: center"><dc-import name="Sprite" sprite="slime" px="{{ 4 }}" hint-size="48px,64px"></dc-import></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Silkscreen', monospace; font-size: 10px; color: #6B6256">Lesson 2</span><span style="font-size: 15px; font-weight: 700">Walk cycle</span><span style="font-size: 12px; color: #6B6256">8 min · 8 frames</span><span style="font-size: 12px; color: #E5406F">Continue · step 3 of 8</span></span><span style="font-size: 11px; color: #2E8B57">Free</span></button><button type="button" style="border: 0; padding: 10px; background: #FFFDF8; box-shadow: inset 0 0 0 2px #E2D9C8; display: flex; gap: 12px; align-items: center; text-align: left; color: #1F1A14">
+<span style="width: 60px; height: 60px; flex-shrink: 0; background: #F1EBE0; display: flex; align-items: center; justify-content: center"><dc-import name="Sprite" sprite="slime" px="{{ 4 }}" hint-size="48px,64px"></dc-import></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Silkscreen', monospace; font-size: 10px; color: #6B6256">Lesson 3</span><span style="font-size: 15px; font-weight: 700">Squash and stretch</span><span style="font-size: 12px; color: #6B6256">6 min</span></span><span style="padding: 2px 6px; background: #2F6FEB; color: #FFFDF8; font-family: 'Silkscreen', monospace; font-size: 9px">Pro</span></button><button type="button" style="border: 0; padding: 10px; background: #FFFDF8; box-shadow: inset 0 0 0 2px #E2D9C8; display: flex; gap: 12px; align-items: center; text-align: left; color: #1F1A14">
+<span style="width: 60px; height: 60px; flex-shrink: 0; background: #F1EBE0; display: flex; align-items: center; justify-content: center"><dc-import name="Sprite" sprite="flame" px="{{ 4 }}" hint-size="40px,48px"></dc-import></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Silkscreen', monospace; font-size: 10px; color: #6B6256">Lesson 4</span><span style="font-size: 15px; font-weight: 700">A looping campfire</span><span style="font-size: 12px; color: #6B6256">7 min</span></span><span style="padding: 2px 6px; background: #2F6FEB; color: #FFFDF8; font-family: 'Silkscreen', monospace; font-size: 9px">Pro</span></button><button type="button" style="border: 0; padding: 10px; background: #FFFDF8; box-shadow: inset 0 0 0 2px #E2D9C8; display: flex; gap: 12px; align-items: center; text-align: left; color: #1F1A14">
+<span style="width: 60px; height: 60px; flex-shrink: 0; background: #F1EBE0; display: flex; align-items: center; justify-content: center"><dc-import name="Sprite" sprite="coin" px="{{ 4 }}" hint-size="32px,32px"></dc-import></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Silkscreen', monospace; font-size: 10px; color: #6B6256">Lesson 5</span><span style="font-size: 15px; font-weight: 700">Spinning coin</span><span style="font-size: 12px; color: #6B6256">4 min</span></span><span style="padding: 2px 6px; background: #2F6FEB; color: #FFFDF8; font-family: 'Silkscreen', monospace; font-size: 9px">Pro</span></button><button type="button" style="border: 0; padding: 10px; background: #FFFDF8; box-shadow: inset 0 0 0 2px #E2D9C8; display: flex; gap: 12px; align-items: center; text-align: left; color: #1F1A14">
+<span style="width: 60px; height: 60px; flex-shrink: 0; background: #F1EBE0; display: flex; align-items: center; justify-content: center"><dc-import name="Sprite" sprite="sprout" px="{{ 4 }}" hint-size="32px,40px"></dc-import></span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Silkscreen', monospace; font-size: 10px; color: #6B6256">Lesson 6</span><span style="font-size: 15px; font-weight: 700">An explosion</span><span style="font-size: 12px; color: #6B6256">9 min</span></span><span style="padding: 2px 6px; background: #2F6FEB; color: #FFFDF8; font-family: 'Silkscreen', monospace; font-size: 9px">Pro</span></button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

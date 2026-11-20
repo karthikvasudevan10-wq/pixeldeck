@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixel Deck Pro</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#F4EEFF}
+button{font:inherit;cursor:pointer}
+img{image-rendering:pixelated}
+@keyframes fbNudgeL{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(-3px);opacity:.6}}
+@keyframes fbNudgeR{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(3px);opacity:.6}}
+@keyframes fbBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fbMarch{to{background-position:12px 0,-12px 100%,0 -12px,100% 12px}}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif">
+<div style="position: absolute; inset: 0; box-sizing: border-box; padding: 54px 16px 24px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; justify-content: flex-end"><button type="button" aria-label="Close" style="width: 44px; height: 44px; border: 0; background: #2A2347; color: #F4EEFF; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+<div style="display: flex; align-items: flex-end; gap: 14px"><dc-import name="Sprite" sprite="slime" px="{{ 6 }}" hint-size="72px,96px"></dc-import><div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #FF5C8A">One purchase · every device</span><h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 30px; line-height: 1.05; color: #FFF6E0">Pixel Deck Pro</h1></div></div>
+<div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Art up to 512 × 512</span><span style="font-size: 12px; color: #A89CC8">Free: 64 × 64</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Up to 999 frames</span><span style="font-size: 12px; color: #A89CC8">Free: 12</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">GIF, MP4 and 4K export</span><span style="font-size: 12px; color: #A89CC8">No watermark</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Dither brush and four-way symmetry</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Eased timing and timelapse video</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Photo to pixel art</span><span style="font-size: 12px; color: #A89CC8">New in v2</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Every Pixel Academy lesson</span><span style="font-size: 12px; color: #A89CC8">New in v2</span></div></div><div style="display: flex; gap: 10px; align-items: flex-start; padding: 7px 0"><span style="color: #FF5C8A; margin-top: 1px"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Bigger Playground levels, enemies, sound</span><span style="font-size: 12px; color: #A89CC8">New in v2</span></div></div></div><div style="flex: 1"></div>
+<button type="button" style="width: 100%; height: 56px; border: 0; background: #FF5C8A; color: #120E1F; box-shadow: 0 5px 0 #B8336A; font-family: 'Silkscreen', monospace; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0">Try Pro free for 7 days</button>
+<button type="button" style="width: 100%; height: 50px; border: 0; background: transparent; color: #F4EEFF; box-shadow: inset 0 0 0 2px #2E2650; font-family: 'Silkscreen', monospace; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0">Unlock Pro · [PRICE]</button>
+<div style="display: flex; justify-content: space-between"><a href="#" style="font-size: 13px">Restore purchases</a><span style="font-size: 12px; color: #A89CC8">The trial ends by itself. Nothing is charged.</span></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

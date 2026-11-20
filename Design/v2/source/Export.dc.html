@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixel Deck — Export</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#FFF6E0}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif; display: flex; flex-direction: column; padding: 14px 16px 20px; gap: 14px; overflow: hidden">
+  <div style="display: flex; align-items: center; gap: 8px; height: 52px">
+    <a href="Studio.dc.html" aria-label="Back to studio" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #F4EEFF; background: #1E1833">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M15 5l-7 7 7 7"/></svg>
+    </a>
+    <h1 style="margin: 0; flex: 1; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 22px; color: #FFF6E0">Export</h1>
+  </div>
+
+  <div style="height: 260px; flex-shrink: 0; background: repeating-conic-gradient(#1A1430 0 25%, #221B3B 0 50%) 0 0 / 20px 20px; border: 2px solid #2E2650; display: flex; align-items: center; justify-content: center; position: relative">
+    <dc-import name="Sprite" sprite="slime" px="{{ 13 }}" hint-size="156px,208px"></dc-import>
+    <span style="position: absolute; left: 10px; top: 10px; padding: 4px 8px; background: #FF5C8A; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 11px">Loop preview</span>
+  </div>
+  <span style="font-size: 13px; color: #A89CC8; margin-top: -6px">Slime bounce · 12×16 px · 10 frames · 8 fps</span>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #A89CC8">Scale</span>
+      <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #FFD23F">{{outSize}}</span>
+    </div>
+    <div role="radiogroup" aria-label="Scale" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{scales}}" as="s" hint-placeholder-count="4">
+        <button type="button" role="radio" aria-checked="{{s.checked}}" onClick="{{s.pick}}" style="height: 48px; border: 2px solid {{s.border}}; background: {{s.bg}}; color: {{s.fg}}; font-family: 'Silkscreen', monospace; font-size: 15px">{{s.label}}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #A89CC8">Format</span>
+    <div role="radiogroup" aria-label="Format" style="display: flex; flex-direction: column; gap: 6px">
+      <sc-for list="{{formats}}" as="f" hint-placeholder-count="3">
+        <button type="button" role="radio" aria-checked="{{f.checked}}" onClick="{{f.pick}}" style="height: 60px; padding: 0 14px; border: 2px solid {{f.border}}; background: #1E1833; color: #F4EEFF; display: flex; align-items: center; gap: 12px; text-align: left">
+          <span style="width: 18px; height: 18px; flex-shrink: 0; border: 2px solid {{f.border}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center">
+            <span style="width: 8px; height: 8px; background: {{f.dot}}"></span>
+          </span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 15px; font-weight: 700; color: #FFF6E0">{{f.name}}</span>
+            <span style="font-size: 13px; color: #A89CC8">{{f.desc}}</span>
+          </span>
+          <span style="font-family: 'Silkscreen', monospace; font-size: 11px; color: #A89CC8">{{f.ext}}</span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="flex: 1"></div>
+  <div style="display: flex; gap: 8px">
+    <button type="button" style="flex: 1; height: 56px; border: 0; background: #FF5C8A; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 17px; box-shadow: 0 6px 0 #B8336A; display: flex; align-items: center; justify-content: center; gap: 10px">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+      {{cta}}
+    </button>
+    <button type="button" aria-label="Share" style="width: 56px; height: 56px; border: 2px solid #2E2650; background: #1E1833; color: #F4EEFF; display: flex; align-items: center; justify-content: center">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const scale = st.scale ?? 8;
+    const fmt = st.fmt || 'gif';
+    const scales = [1, 4, 8, 16].map((n) => {
+      const on = n === scale;
+      return { label: n + '×', checked: on ? 'true' : 'false', border: on ? '#FFD23F' : '#2E2650', bg: on ? '#FFD23F' : '#1E1833', fg: on ? '#120E1F' : '#F4EEFF', pick: () => this.setState({ scale: n }) };
+    });
+    const defs = [
+      { id: 'gif', name: 'Animated GIF', desc: 'Loops anywhere you post it', ext: '.gif', cta: 'Export GIF' },
+      { id: 'sheet', name: 'Sprite sheet', desc: 'All frames in a row, for game engines', ext: '.png', cta: 'Export sheet' },
+      { id: 'mp4', name: 'Video', desc: 'For Reels, Shorts and TikTok', ext: '.mp4', cta: 'Export video' }
+    ];
+    const formats = defs.map((d) => {
+      const on = d.id === fmt;
+      return Object.assign({}, d, { checked: on ? 'true' : 'false', border: on ? '#FF5C8A' : '#2E2650', dot: on ? '#FF5C8A' : 'transparent', pick: () => this.setState({ fmt: d.id }) });
+    });
+    const cur = defs.find((d) => d.id === fmt);
+    const w = fmt === 'sheet' ? 12 * 10 : 12;
+    return { scales, formats, cta: cur.cta, outSize: (w * scale) + ' × ' + (16 * scale) + ' px' };
+  }
+}
+</script>
+</body>
+</html>

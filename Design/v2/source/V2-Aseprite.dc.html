@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Aseprite import</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#F4EEFF}
+button{font:inherit;cursor:pointer}
+img{image-rendering:pixelated}
+@keyframes fbNudgeL{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(-3px);opacity:.6}}
+@keyframes fbNudgeR{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(3px);opacity:.6}}
+@keyframes fbBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fbMarch{to{background-position:12px 0,-12px 100%,0 -12px,100% 12px}}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif">
+<div style="position: absolute; inset: 0; box-sizing: border-box; padding: 54px 16px 24px; display: flex; flex-direction: column; gap: 14px"><h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 28px; color: #FFF6E0">Gallery</h1></div><div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(8,6,14,0.62)"></div><div style="position: absolute; left: 0; right: 0; bottom: 0; height: 480px; box-sizing: border-box; background: #1E1833; border-top: 2px solid #2E2650; padding: 10px 16px 26px; display: flex; flex-direction: column; gap: 14px">
+<div aria-hidden="true" style="align-self: center; width: 40px; height: 5px; background: #2E2650"></div><div style="display: flex; align-items: center; gap: 10px"><div style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'Silkscreen', monospace; font-size: 18px; color: #FFF6E0">Open an Aseprite file</span><span style="font-size: 13px; color: #A89CC8">From Files</span></div><span style="padding: 2px 6px; background: #FFD23F; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 9px">Pro</span><button type="button" aria-label="Close" style="width: 44px; height: 44px; border: 0; background: #2A2347; color: #F4EEFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div style="display: flex; gap: 12px; align-items: center"><span style="width: 56px; height: 56px; background: #2A2347; color: #FF5C8A; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/></svg></span><div style="flex: 1; display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 700">knight.aseprite</span><span style="font-size: 12px; color: #A89CC8">32 × 32 · 3 layers · 24 frames</span></div></div>
+<span style="font-family: 'Silkscreen', monospace; font-size: 11px; letter-spacing: 1px; color: #A89CC8">Tags become animations</span>
+<div style="display: flex; gap: 6px"><button type="button" style="position: relative; height: 34px; padding: 0 12px; border: 0; background: #FFF6E0; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">idle · 4</button><button type="button" style="position: relative; height: 34px; padding: 0 12px; border: 0; background: #FFF6E0; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">run · 8</button><button type="button" style="position: relative; height: 34px; padding: 0 12px; border: 0; background: #FFF6E0; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">jump · 12</button></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2E2650; "><div style="display: contents"></div><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Keep layers</span><span style="font-size: 13px; line-height: 1.35; color: #A89CC8">Body, Sword, Shadow</span></div><button type="button" role="switch" aria-checked="true" aria-label="Keep layers" style="width: 52px; height: 30px; border: 0; padding: 3px; background: #FF5C8A; display: flex; justify-content: flex-end; flex-shrink: 0; box-shadow: inset 0 0 0 2px #B8336A"><span style="width: 24px; height: 24px; background: #120E1F"></span></button></div><div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; "><div style="display: contents"></div><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Frame timing</span><span style="font-size: 13px; line-height: 1.35; color: #A89CC8">Per-frame durations are kept</span></div><span style="color: #7BE07B"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M5 12l5 5 9-10"/></svg></span></div>
+<button type="button" style="width: 100%; height: 52px; border: 0; background: #FF5C8A; color: #120E1F; box-shadow: 0 5px 0 #B8336A; font-family: 'Silkscreen', monospace; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0">Import 3 sprites</button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixel Deck — Gallery</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#FFF6E0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif; display: flex; flex-direction: column; overflow: hidden">
+  <div style="padding: 22px 16px 14px; display: flex; align-items: flex-end; justify-content: space-between">
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 30px; color: #FFF6E0">Gallery</h1>
+      <span style="font-size: 14px; color: #A89CC8">5 animations</span>
+    </div>
+    <div role="tablist" aria-label="Filter" style="display: flex; background: #1E1833; padding: 3px">
+      <button type="button" role="tab" aria-selected="true" style="height: 36px; padding: 0 12px; border: 0; background: #FFF6E0; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 11px">Moving</button>
+      <button type="button" role="tab" aria-selected="false" style="height: 36px; padding: 0 12px; border: 0; background: transparent; color: #A89CC8; font-family: 'Silkscreen', monospace; font-size: 11px">Stills</button>
+    </div>
+  </div>
+
+  <div style="flex: 1; min-height: 0; overflow: hidden; padding: 0 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 202px; gap: 12px">
+    <a href="Studio.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 2px dashed #FFD23F; color: #FFD23F; text-decoration: none">
+      <div style="width: 52px; height: 52px; background: #FFD23F; color: #120E1F; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 0 #B08A12">
+        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <span style="font-family: 'Silkscreen', monospace; font-size: 14px">New canvas</span>
+      <span style="font-size: 12px; color: #A89CC8">or swipe right anywhere</span>
+    </a>
+    <sc-for list="{{projects}}" as="p" hint-placeholder-count="5">
+      <a href="Studio.dc.html" style="display: flex; flex-direction: column; background: #1E1833; text-decoration: none; color: #F4EEFF">
+        <div style="height: 148px; background: {{p.tile}}; display: flex; align-items: center; justify-content: center; position: relative">
+          <dc-import name="Sprite" sprite="{{p.sprite}}" px="{{p.px}}" hint-size="96px,112px"></dc-import>
+          <span style="position: absolute; right: 8px; top: 8px; padding: 2px 6px; background: rgba(18,14,31,0.75); font-family: 'Silkscreen', monospace; font-size: 10px; color: #FFF6E0">{{p.fps}} fps</span>
+        </div>
+        <div style="padding: 8px 10px; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 14px; font-weight: 700; color: #FFF6E0">{{p.title}}</span>
+          <span style="font-size: 12px; color: #A89CC8">{{p.frames}} frames · {{p.size}}</span>
+        </div>
+      </a>
+    </sc-for>
+  </div>
+
+  <nav aria-label="Main" style="height: 76px; flex-shrink: 0; border-top: 2px solid #2E2650; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; background: #120E1F">
+    <a href="Gallery.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #FF5C8A; text-decoration: none; font-family: 'Silkscreen', monospace; font-size: 10px">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="4" y="14" width="6" height="6"/><rect x="14" y="14" width="6" height="6"/></svg>
+      Gallery
+    </a>
+    <a href="Studio.dc.html" aria-label="Create" style="justify-self: center; width: 56px; height: 56px; background: #FF5C8A; color: #120E1F; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 0 #B8336A">
+      <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M4 20l1-5L16 4l4 4L9 19z"/></svg>
+    </a>
+    <a href="Export.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #A89CC8; text-decoration: none; font-family: 'Silkscreen', monospace; font-size: 10px">
+      <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg>
+      Export
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const projects = [
+      { sprite: 'slime', px: 7, tile: '#2B1F47', title: 'Slime bounce', frames: 10, fps: 8, size: '12×16' },
+      { sprite: 'flame', px: 9, tile: '#3A1F2E', title: 'Campfire', frames: 4, fps: 6, size: '10×12' },
+      { sprite: 'coin', px: 11, tile: '#3A321C', title: 'Lucky coin', frames: 4, fps: 8, size: '8×8' },
+      { sprite: 'ghost', px: 9, tile: '#1F3340', title: 'Boo!', frames: 4, fps: 4, size: '10×12' },
+      { sprite: 'sprout', px: 11, tile: '#1F3A2A', title: 'Sprout', frames: 6, fps: 3, size: '8×10' }
+    ];
+    return { projects };
+  }
+}
+</script>
+</body>
+</html>

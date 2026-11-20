@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Share-ready video</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#F4EEFF}
+button{font:inherit;cursor:pointer}
+img{image-rendering:pixelated}
+@keyframes fbNudgeL{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(-3px);opacity:.6}}
+@keyframes fbNudgeR{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(3px);opacity:.6}}
+@keyframes fbBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fbMarch{to{background-position:12px 0,-12px 100%,0 -12px,100% 12px}}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif">
+<div style="position: absolute; inset: 0; box-sizing: border-box; padding: 54px 16px 24px; display: flex; flex-direction: column; gap: 10px"><div style="display: flex; align-items: center; gap: 12px; padding: 0"><button type="button" aria-label="Back" style="width: 44px; height: 44px; border: 0; background: #2A2347; color: #F4EEFF; display: flex; align-items: center; justify-content: center; flex-shrink: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M15 5l-7 7 7 7"/></svg></button><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 22px; color: #FFF6E0">Export</h1><span style="font-size: 13px; color: #A89CC8">Slime bounce · 10 frames</span></div></div>
+<div style="display: flex; gap: 12px; align-items: flex-end"><div style="width: 200px; height: 356px; flex-shrink: 0; position: relative; background: #1A1430; overflow: hidden; box-shadow: 0 0 0 2px #2E2650">
+<div style="position: absolute; left: 0; right: 0; top: 0; height: 120px; background: #120E1F"></div><div style="position: absolute; left: 0; right: 0; bottom: 0; height: 110px; background: #2E2452; border-top: 4px solid #4A3B7A"></div>
+<div style="position: absolute; left: 40px; bottom: 114px"><dc-import name="Sprite" sprite="slime" px="{{ 10 }}" hint-size="120px,160px"></dc-import></div>
+<div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px"><span style="font-family: 'Silkscreen', monospace; font-size: 10px; color: #FFF6E0">Made with Pixel Deck</span><span style="font-size: 9px; color: #A89CC8">Available on the App Store</span></div></div><div style="display: flex; flex-direction: column; gap: 6px; align-items: center"><div style="width: 126px; height: 224px; flex-shrink: 0; background: #FF5C8A; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px"><dc-import name="Sprite" sprite="slime" px="{{ 5 }}" playing="{{ false }}" frame="{{ 0 }}" hint-size="60px,80px"></dc-import><span style="font-family: 'Silkscreen', monospace; font-size: 11px; color: #120E1F; text-align: center">Pixel Deck</span><span style="font-size: 9px; color: #120E1F; text-align: center; padding: 0 8px">Available on the App Store</span></div><span style="font-size: 11px; color: #A89CC8">End card, 1.5 s</span></div></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px"><button type="button" style="position: relative; height: 40px; padding: 0 12px; border: 0; background: #2A2347; color: #F4EEFF; font-family: 'Silkscreen', monospace; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">Square</button><button type="button" style="position: relative; height: 40px; padding: 0 12px; border: 0; background: #FFF6E0; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">9:16 Reels</button><button type="button" style="position: relative; height: 40px; padding: 0 12px; border: 0; background: #2A2347; color: #F4EEFF; font-family: 'Silkscreen', monospace; font-size: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0">Timelapse</button></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2E2650; "><div style="display: contents"></div><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Watermark</span><span style="font-size: 13px; line-height: 1.35; color: #A89CC8">Free videos carry it. Pro removes it.</span></div><span style="padding: 2px 6px; background: #FFD23F; color: #120E1F; font-family: 'Silkscreen', monospace; font-size: 9px">Pro: off</span></div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 10px 0; "><div style="display: contents"></div><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 500; color: #F4EEFF">Caption</span><span style="font-size: 13px; line-height: 1.35; color: #A89CC8">Made with #PixelDeck · link to the App Store</span></div><span style="color: #A89CC8"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M9 5l7 7-7 7"/></svg></span></div>
+<div style="flex: 1"></div><button type="button" style="width: 100%; height: 54px; border: 0; background: #FF5C8A; color: #120E1F; box-shadow: 0 5px 0 #B8336A; font-family: 'Silkscreen', monospace; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6"/></svg>Share to Instagram or TikTok</button><button type="button" style="width: 100%; height: 46px; border: 0; background: transparent; color: #F4EEFF; box-shadow: inset 0 0 0 2px #2E2650; font-family: 'Silkscreen', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; flex-shrink: 0"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Save video</button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

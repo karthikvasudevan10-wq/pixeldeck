@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Duo · closed · Playground</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#F4EEFF}
+button{font:inherit;cursor:pointer}
+img{image-rendering:pixelated}
+@keyframes fbNudgeL{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(-3px);opacity:.6}}
+@keyframes fbNudgeR{0%,70%,100%{transform:translateX(0);opacity:.35}35%{transform:translateX(3px);opacity:.6}}
+@keyframes fbBlink{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fbMarch{to{background-position:12px 0,-12px 100%,0 -12px,100% 12px}}
+
+</style>
+</helmet>
+<div style="width: 466px; height: 678px; box-sizing: border-box; position: relative; overflow: hidden; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif">
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; background: #120E1F"><div style="height: 36px"></div>
+<div style="display: flex; align-items: center; gap: 8px; padding: 6px 14px"><button type="button" aria-label="Pause" style="width: 44px; height: 44px; border: 0; background: #2A2347; color: #FFF6E0; display: flex; align-items: center; justify-content: center"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="4" width="5" height="16"/><rect x="14" y="4" width="5" height="16"/></svg></button><span style="flex: 1; font-size: 12px; color: #A89CC8">Unfold for the big screen</span><dc-import name="Sprite" sprite="coin" px="{{ 3 }}" playing="{{ false }}" frame="{{ 0 }}" hint-size="24px,24px"></dc-import><span style="font-family: 'Silkscreen', monospace; font-size: 14px; color: #FFD23F">3/5</span></div>
+<div style="height: 360px; position: relative; overflow: hidden"><img src="/_blob/3d746dd58dc622e48d6c302e7eca2d0a" alt="Playing the level" style="display: block; width: 1152px; height: 576px; image-rendering: pixelated; position: absolute; left: -10px; top: -10px; width: 760px; height: 380px"></div>
+<div style="flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; background: #1E1833; border-top: 4px solid #2E2650"><div style="display: flex; gap: 10px"><button type="button" aria-label="Left" style="width: 66px; height: 66px; border: 0; background: #2A2347; color: #FFF6E0; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 0 #0B0814"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M15 5l-7 7 7 7"/></svg></button><button type="button" aria-label="Right" style="width: 66px; height: 66px; border: 0; background: #2A2347; color: #FFF6E0; display: flex; align-items: center; justify-content: center; box-shadow: 0 5px 0 #0B0814"><svg aria-hidden="true" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"><path d="M9 5l7 7-7 7"/></svg></button></div><button type="button" aria-label="Jump" style="width: 84px; height: 84px; border-radius: 50%; border: 0; background: #FF5C8A; color: #120E1F; box-shadow: 0 6px 0 #B8336A; font-family: 'Silkscreen', monospace; font-size: 14px">Jump</button></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":466,"height":678}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

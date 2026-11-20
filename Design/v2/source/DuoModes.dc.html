@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixel Deck — iPhone Duo fold modes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&amp;family=Space+Grotesk:wght@400;500;700&amp;display=swap">
+<style>
+body{margin:0;background:#120E1F}
+a{color:#FFD23F}a:hover{color:#FFF6E0}
+</style>
+</helmet>
+<div style="width: 1200px; height: 640px; box-sizing: border-box; background: #120E1F; color: #F4EEFF; font-family: 'Space Grotesk', system-ui, sans-serif; padding: 48px; display: flex; flex-direction: column; gap: 32px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h1 style="margin: 0; font-family: 'Silkscreen', monospace; font-weight: 400; font-size: 32px; color: #FFF6E0">One app, three shapes</h1>
+    <span style="font-size: 16px; color: #A89CC8">Pixel Deck changes its layout as the iPhone Duo opens and folds. Your frame, tool and colour come with you, so nothing reloads.</span>
+  </div>
+
+  <div style="flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+
+    <div style="background: #1E1833; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="height: 200px; display: flex; align-items: center; justify-content: center">
+        <div style="width: 100px; height: 196px; border-radius: 16px; background: #0B0814; border: 3px solid #3B2F63; box-sizing: border-box; padding: 6px; display: flex; flex-direction: column; gap: 4px">
+          <div style="flex: 1; background: #221B3B; display: flex; align-items: center; justify-content: center">
+            <dc-import name="Sprite" sprite="slime" px="{{ 4 }}" hint-size="48px,64px"></dc-import>
+          </div>
+          <div style="height: 28px; background: #2A2347"></div>
+        </div>
+      </div>
+      <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #FF5C8A">Closed · 5.4-inch</span>
+      <span style="font-size: 20px; font-weight: 700; color: #FFF6E0">Pocket studio</span>
+      <span style="font-size: 14px; line-height: 1.5; color: #A89CC8">The regular Studio, with controls in a bottom dock for one thumb. Good for quick sketches on the go.</span>
+    </div>
+
+    <div style="background: #1E1833; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="height: 200px; display: flex; align-items: center; justify-content: center">
+        <div style="width: 260px; height: 196px; border-radius: 16px; background: #0B0814; border: 3px solid #3B2F63; box-sizing: border-box; padding: 6px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 6px; position: relative">
+          <div style="background: #1C1633; display: flex; align-items: center; justify-content: center">
+            <dc-import name="Sprite" sprite="slime" px="{{ 5 }}" playing="{{ false }}" frame="{{ 2 }}" hint-size="60px,80px"></dc-import>
+          </div>
+          <div style="background: #221B3B; border: 2px solid #FF5C8A; display: flex; align-items: center; justify-content: center">
+            <dc-import name="Sprite" sprite="slime" px="{{ 5 }}" onion="{{ true }}" onion-color="#FF5C8A" playing="{{ false }}" frame="{{ 3 }}" hint-size="60px,80px"></dc-import>
+          </div>
+          <div aria-hidden="true" style="position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: #3B2F63"></div>
+        </div>
+      </div>
+      <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #FF5C8A">Open flat · 7.6-inch</span>
+      <span style="font-size: 20px; font-weight: 700; color: #FFF6E0">Flipbook spread</span>
+      <span style="font-size: 14px; line-height: 1.5; color: #A89CC8">A real flipbook. The left page shows your last frame, a live playback or a reference image, and you draw on the right page. Swipe left to turn the page. Tools sit by your left thumb, colours by your right.</span>
+    </div>
+
+    <div style="background: #1E1833; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center">
+        <div style="width: 190px; height: 104px; border-radius: 12px 12px 0 0; background: #0B0814; border: 3px solid #3B2F63; border-bottom: 0; box-sizing: border-box; padding: 6px 6px 0; display: flex">
+          <div style="flex: 1; background: #1A1430; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px">
+            <dc-import name="Sprite" sprite="slime" px="{{ 4 }}" hint-size="48px,64px"></dc-import>
+          </div>
+        </div>
+        <div style="width: 190px; height: 70px; transform: perspective(300px) rotateX(48deg); transform-origin: 50% 0; border-radius: 0 0 12px 12px; background: #0B0814; border: 3px solid #3B2F63; box-sizing: border-box; padding: 6px; display: grid; grid-template-columns: 24px minmax(0, 1fr) 24px; gap: 4px">
+          <div style="background: #2A2347"></div>
+          <div style="background: #221B3B"></div>
+          <div style="background: #2A2347"></div>
+        </div>
+      </div>
+      <span style="font-family: 'Silkscreen', monospace; font-size: 12px; color: #FF5C8A">Half open on a desk</span>
+      <span style="font-size: 20px; font-weight: 700; color: #FFF6E0">Easel</span>
+      <span style="font-size: 14px; line-height: 1.5; color: #A89CC8">The upright half becomes a stage that loops your animation live. The flat half is your drawing desk, so you see each stroke move as you make it.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
