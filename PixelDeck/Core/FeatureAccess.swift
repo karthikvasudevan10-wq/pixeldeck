@@ -16,6 +16,12 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case artistBrushes
     /// Importing palette files (.hex, .gpl, .txt, .png).
     case paletteImport
+    /// Turning a photo into pixel art.
+    case photoToPixel
+    /// The animation presets beyond Bounce and Blink.
+    case animationPresets
+    /// Colour adjustments across every frame at once.
+    case adjustAllFrames
 
     var id: String { rawValue }
 
@@ -58,8 +64,8 @@ struct FeatureAccess: Equatable, Sendable {
         return isPro ? cap : min(FeatureAccess.freeFrameLimit, cap)
     }
 
-    /// GIF and MP4 video.
-    var allowsAnimatedExport: Bool { isPro }
+    /// GIF and MP4 video: free for everyone since v2 (free exports carry the watermark).
+    var allowsAnimatedExport: Bool { true }
 
     /// Playback easing other than Linear.
     var allowsEasedPlayback: Bool { isPro }
@@ -71,4 +77,7 @@ struct FeatureAccess: Equatable, Sendable {
     var addsWatermark: Bool { !isPro }
     var allowsArtistBrushes: Bool { isPro }
     var allowsPaletteImport: Bool { isPro }
+    var allowsPhotoToPixel: Bool { isPro }
+    func allows(_ preset: AnimationPreset) -> Bool { isPro || preset.isFree }
+    var allowsAdjustAllFrames: Bool { isPro }
 }

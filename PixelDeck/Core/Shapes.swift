@@ -201,3 +201,50 @@ extension PixelRect {
         return out
     }
 }
+
+// MARK: Outline thickness
+
+extension ShapeRaster {
+    static let thicknessRange = 1...4
+
+    /// The shape with an outline `thickness` pixels wide. Thick outlines grow inwards, so the
+    /// shape still fits the box you dragged; lines get thicker around their centre.
+    static func points(_ kind: ShapeKind, from a: PixelPoint, to b: PixelPoint, filled: Bool, thickness: Int) -> [PixelPoint] {
+        let t = min(max(thickness, thicknessRange.lowerBound), thicknessRange.upperBound)
+        if kind == .line {
+            guard t > 1 else { return points(kind, from: a, to: b, filled: filled) }
+            let lo = -(t - 1) / 2, hi = t / 2
+            var seen = Set<PixelPoint>()
+            var out: [PixelPoint] = []
+            for p in PixelGrid.linePoints(from: a, to: b) {
+                for dy in lo...hi {
+                    for dx in lo...hi {
+                        let q = PixelPoint(x: p.x + dx, y: p.y + dy)
+                        if seen.insert(q).inserted { out.append(q) }
+                    }
+                }
+            }
+            return out
+        }
+        guard t > 1, !filled else { return points(kind, from: a, to: b, filled: filled) }
+        // The solid shape, minus the solid shape worn away `t` pixels from every edge.
+        let solid = points(kind, from: a, to: b, filled: true)
+        let r = PixelRect(corner: a, b)
+        let w = r.width, h = r.height
+        var inside = [Bool](repeating: false, count: w * h)
+        for p in solid where r.contains(p) { inside[(p.y - r.y) * w + (p.x - r.x)] = true }
+        var core = inside
+        for _ in 0..<t {
+            var next = core
+            for y in 0..<h {
+                for x in 0..<w where core[y * w + x] {
+                    let keep = x > 0 && x < w - 1 && y > 0 && y < h - 1
+                        && core[y * w + x - 1] && core[y * w + x + 1] && core[(y - 1) * w + x] && core[(y + 1) * w + x]
+                    if !keep { next[y * w + x] = false }
+                }
+            }
+            core = next
+        }
+        return solid.filter { !r.contains($0) || !core[($0.y - r.y) * w + ($0.x - r.x)] }
+    }
+}

@@ -9,7 +9,48 @@ enum OnionSkin {
     static let dark = RGBA(hex: 0x8E1F4F)
     static let light = RGBA(hex: 0xFFC9DA)
 
-    static func tint(_ grid: PixelGrid) -> PixelGrid {
+    /// The blues for frames that come next.
+    static let aheadDark = RGBA(hex: 0x1F3F8E)
+    static let aheadLight = RGBA(hex: 0xC9DAFF)
+
+    /// How strongly each onion frame shows, nearest first: older (and later) frames fade more.
+    static let beforeStrength = [1.0, 0.55, 0.3]
+    static let afterStrength = [0.8, 0.45]
+
+    /// Several onion frames in one picture: earlier frames in pink, later ones in blue, each
+    /// fainter the further it is from the current frame. `before` and `after` are nearest first
+    /// and all the same size. The result is premultiplied (ready to draw), or nil if both are empty.
+    static func composite(before: [PixelGrid], after: [PixelGrid]) -> PixelGrid? {
+        guard let size = before.first ?? after.first else { return nil }
+        let count = size.width * size.height
+        // Premultiplied r, g, b, a per pixel, 0…1.
+        var acc = [Double](repeating: 0, count: count * 4)
+        func add(_ tinted: PixelGrid, strength: Double) {
+            guard tinted.width == size.width, tinted.height == size.height else { return }
+            for (i, c) in tinted.pixels.enumerated() where c.a != 0 {
+                let keep = 1 - strength
+                acc[i * 4] = Double(c.r) / 255 * strength + acc[i * 4] * keep
+                acc[i * 4 + 1] = Double(c.g) / 255 * strength + acc[i * 4 + 1] * keep
+                acc[i * 4 + 2] = Double(c.b) / 255 * strength + acc[i * 4 + 2] * keep
+                acc[i * 4 + 3] = strength + acc[i * 4 + 3] * keep
+            }
+        }
+        // Furthest first, so nearer frames sit on top; the previous frame is topmost.
+        for (k, g) in after.enumerated().reversed() where k < afterStrength.count {
+            add(tint(g, dark: aheadDark, light: aheadLight), strength: afterStrength[k])
+        }
+        for (k, g) in before.enumerated().reversed() where k < beforeStrength.count {
+            add(tint(g), strength: beforeStrength[k])
+        }
+        func byte(_ v: Double) -> UInt8 { UInt8((min(max(v, 0), 1) * 255).rounded()) }
+        var bytes = [UInt8](repeating: 0, count: count * 4)
+        for i in 0..<(count * 4) { bytes[i] = byte(acc[i]) }
+        return PixelGrid(width: size.width, height: size.height, rgbaBytes: bytes)
+    }
+
+    static func tint(_ grid: PixelGrid) -> PixelGrid { tint(grid, dark: dark, light: light) }
+
+    static func tint(_ grid: PixelGrid, dark: RGBA, light: RGBA) -> PixelGrid {
         var out = PixelGrid(width: grid.width, height: grid.height)
         let w = grid.width, h = grid.height
         for y in 0..<h {

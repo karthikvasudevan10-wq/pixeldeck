@@ -56,10 +56,3 @@ enum PlaybackTiming {
         return (lo + hi) / 2
     }
 }
-
-extension SpriteProject {
-    /// Seconds each frame is shown, following the sprite's fps and playback easing.
-    var frameDurations: [Double] {
-        PlaybackTiming.durations(count: frames.count, fps: fps, easing: playbackEasing)
-    }
-}

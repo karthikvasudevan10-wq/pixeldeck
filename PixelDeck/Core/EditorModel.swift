@@ -17,12 +17,21 @@ struct CanvasState: Equatable {
     var grid: PixelGrid
     /// Changes whenever `grid` does, so the view can tell without comparing every pixel.
     var gridVersion: Int
+    /// The frame just before the current one (nil when onion skin shows nothing behind).
     var onion: PixelGrid?
+    /// Identifies the whole set of onion frames, before and after.
     var onionVersion: Int?
+    /// Earlier frames, nearest first (drawn pink), and later frames, nearest first (blue).
+    var onionBefore: [PixelGrid] = []
+    var onionAfter: [PixelGrid] = []
     var onionOpacity: Double
     var showGrid: Bool
     /// Marquee or floating-selection outline.
     var selection: PixelRect?
+    /// The exact pixels of a lasso or wand selection (nil for plain rectangles).
+    var selectionMask: SelectionMask? = nil
+    /// The lasso line being drawn.
+    var lasso: [PixelPoint]? = nil
     /// Path the selection's centre has travelled.
     var motionPath: [Vec2]?
     /// Show the mirror axis (world x = 0).
@@ -39,7 +48,7 @@ struct CanvasState: Equatable {
         l.gridVersion == r.gridVersion && l.onionVersion == r.onionVersion && l.bounds == r.bounds
             && l.onionOpacity == r.onionOpacity && l.showGrid == r.showGrid && l.selection == r.selection
             && l.motionPath == r.motionPath && l.mirror == r.mirror && l.mirrorVertical == r.mirrorVertical
-            && l.trace == r.trace && l.guide == r.guide
+            && l.trace == r.trace && l.guide == r.guide && l.selectionMask == r.selectionMask && l.lasso == r.lasso
     }
 }
 
@@ -63,7 +72,8 @@ struct Viewport: Equatable, Sendable {
 /// plan's art-size cap), and after each edit the bounds shrink back to the art plus a margin.
 @Observable
 final class EditorModel {
-    private(set) var project: SpriteProject
+    /// Change it through the editing methods (or `updateProject` for settings), not directly.
+    var project: SpriteProject
     private(set) var currentIndex = 0
 
     var tool: Tool = .pencil {
@@ -99,8 +109,46 @@ final class EditorModel {
             if dither && !access.allowsArtistBrushes { dither = false; onProRequired?(.artistBrushes) }
         }
     }
+    /// Pixel-perfect strokes: L-shaped corners are cleaned as you draw, so 1-pixel lines and
+    /// curves stay 1 pixel wide. On for everyone by default.
+    var pixelPerfect = true
+    /// The shading assistant: when set, the pencil shades or highlights instead of drawing.
+    var shadeMode: ShadeMode? = nil
+    var lightDirection: LightDirection = .topLeft
+    /// The ramp the shading assistant (and the Ramps panel) steps through.
+    var rampSteps = 5 {
+        didSet {
+            let c = min(max(rampSteps, ColorRamp.stepRange.lowerBound), ColorRamp.stepRange.upperBound)
+            if c != rampSteps { rampSteps = c }
+        }
+    }
+    var rampHueShift = 18.0
+    /// How the Select tool picks pixels.
+    var selectionMode: SelectionMode = .box
+    /// How many earlier (0–3) and later (0–2) frames the onion skin shows.
+    var onionBefore = 1 {
+        didSet {
+            let c = min(max(onionBefore, 0), EditorModel.maxOnionBefore)
+            if c != onionBefore { onionBefore = c }
+        }
+    }
+    var onionAfter = 0 {
+        didSet {
+            let c = min(max(onionAfter, 0), EditorModel.maxOnionAfter)
+            if c != onionAfter { onionAfter = c }
+        }
+    }
+    static let maxOnionBefore = 3
+    static let maxOnionAfter = 2
     var shapeKind: ShapeKind = .rectangle
     var shapeFilled = false
+    /// Outline thickness for shapes, 1–4 pixels.
+    var shapeThickness = 1 {
+        didSet {
+            let c = min(max(shapeThickness, ShapeRaster.thicknessRange.lowerBound), ShapeRaster.thicknessRange.upperBound)
+            if c != shapeThickness { shapeThickness = c }
+        }
+    }
     /// Squares, circles, equal-sided triangles, and lines snapped to 0°/45°/90°.
     var lockProportions = false
     /// The layer being drawn on (index into `project.layers`, bottom first).
@@ -126,11 +174,25 @@ final class EditorModel {
     private(set) var playCount = 0
 
     /// A selected area that hasn't been moved yet (world).
-    private(set) var marquee: PixelRect?
+    var marquee: PixelRect?
+    /// The exact pixels of a lasso or wand selection (`marquee` is then its bounding box).
+    var marqueeMask: SelectionMask?
+    /// The lasso line while it's being drawn.
+    private(set) var lassoTrail: [PixelPoint]?
     /// A selection that has been lifted and is being moved.
-    private(set) var floating: FloatingSelection?
+    var floating: FloatingSelection?
+    /// Whether the floating selection is an irregular shape (lasso, wand, or turned).
+    @ObservationIgnored var floatingIsMasked = false
 
-    private struct Snapshot {
+    /// The stroke so far, for pixel-perfect clean-up, and how many times it painted each pixel.
+    @ObservationIgnored private var strokePath: [PixelPoint] = []
+    @ObservationIgnored private var strokePainted: [PixelPoint: Int] = [:]
+
+    /// A colour adjustment in progress: the art as it was, and the selected pixels.
+    @ObservationIgnored var adjustBase: Snapshot?
+    @ObservationIgnored var adjustMask: SelectionMask?
+
+    struct Snapshot {
         var frames: [Frame]
         var bounds: PixelRect
         var currentIndex: Int
@@ -160,6 +222,10 @@ final class EditorModel {
         case stroke(last: PixelPoint, color: RGBA, before: Snapshot)
         case marquee(start: PixelPoint)
         case move(start: Vec2, startOffset: Vec2, pathCount: Int)
+        /// Drawing a lasso around pixels.
+        case lasso
+        /// The shading assistant: recolours the touched shape along `ramp`.
+        case shade(last: PixelPoint, ramp: [RGBA], baseIndex: Int, region: PixelRect, before: Snapshot)
         /// Dragging out a shape: the layer as it was, redrawn with the shape on every move.
         case shape(start: PixelPoint, base: PixelGrid, baseBounds: PixelRect, before: Snapshot)
         /// Fill or colour pick: applied when the finger lifts, so a touch that turns into a
@@ -168,14 +234,14 @@ final class EditorModel {
     }
     @ObservationIgnored private var gesture: Gesture = .none
     /// Only offer Pro once per gesture, not on every finger movement.
-    @ObservationIgnored private var promptedThisGesture = false
+    @ObservationIgnored var promptedThisGesture = false
     /// Offered when the finger lifts: presenting the paywall mid-stroke would cancel the touch
     /// and throw the stroke away.
     @ObservationIgnored private var pendingPro: ProFeature?
 
     /// World rectangle of all drawn pixels, cached because scanning every frame is costly.
     @ObservationIgnored private var cachedContent: PixelRect?
-    @ObservationIgnored private var contentKnown = false
+    @ObservationIgnored var contentKnown = false
 
     /// Extra room added when the canvas grows, so it doesn't reallocate on every pixel.
     private let growMargin = 8
@@ -193,7 +259,11 @@ final class EditorModel {
         currentIndex = 0
         viewport = nil
         marquee = nil
+        marqueeMask = nil
+        lassoTrail = nil
         floating = nil
+        adjustBase = nil
+        adjustMask = nil
         isPlaying = false
         activeLayer = max(0, project.layers.count - 1)
         undoStack = []
@@ -255,10 +325,26 @@ final class EditorModel {
             path = f.path.refined().points.map { $0 + c }
         }
         let current = project.frames[currentIndex]
-        let previous = onionSkinEnabled && currentIndex > 0 ? project.frames[currentIndex - 1] : nil
+        var before: [Frame] = [], after: [Frame] = []
+        if onionSkinEnabled {
+            before = (0..<onionBefore).map { currentIndex - 1 - $0 }.filter { $0 >= 0 }.map { project.frames[$0] }
+            after = (0..<onionAfter).map { currentIndex + 1 + $0 }.filter { $0 < project.frames.count }.map { project.frames[$0] }
+        }
+        var version: Int?
+        if !before.isEmpty || !after.isEmpty {
+            var h = Hasher()
+            for f in before { h.combine(f.version) }
+            h.combine(-1)
+            for f in after { h.combine(f.version) }
+            version = h.finalize()
+        }
+        var mask: SelectionMask?
+        if let f = floating { mask = floatingIsMasked ? f.currentMask : nil } else { mask = marqueeMask }
         return CanvasState(bounds: bounds, grid: current.grid, gridVersion: current.version,
-                           onion: previous?.grid, onionVersion: previous?.version,
-                           onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect, motionPath: path, mirror: mirror,
+                           onion: before.first?.grid, onionVersion: version,
+                           onionBefore: before.map(\.grid), onionAfter: after.map(\.grid),
+                           onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect,
+                           selectionMask: mask, lasso: lassoTrail, motionPath: path, mirror: mirror,
                            mirrorVertical: mirrorVertical,
                            trace: project.trace?.isVisible == true ? project.trace : nil)
     }
@@ -309,9 +395,14 @@ final class EditorModel {
         let p = v.pixel
         promptedThisGesture = false
         switch tool {
+        case .pencil where shadeMode != nil:
+            beginShade(at: p)
+
         case .pencil, .eraser:
             let c: RGBA = tool == .pencil ? color : .clear
             gesture = .stroke(last: p, color: c, before: snapshot())
+            strokePath = []
+            strokePainted = [:]
             revealActiveLayer()
             paintSegment(from: p, to: p, color: c)
 
@@ -327,13 +418,21 @@ final class EditorModel {
         case .select:
             if let f = floating, f.currentRect.contains(p) {
                 gesture = .move(start: v, startOffset: f.exactOffset, pathCount: f.path.points.count)
-            } else if let m = marquee, m.contains(p) {
+            } else if let m = marquee, m.contains(p), marqueeMask?.contains(p) ?? true {
                 lift(m)
                 gesture = .move(start: v, startOffset: .zero, pathCount: 1)
             } else {
                 commitSelection()
-                marquee = PixelRect(corner: p, p)
-                gesture = .marquee(start: p)
+                switch selectionMode {
+                case .box:
+                    marquee = PixelRect(corner: p, p)
+                    gesture = .marquee(start: p)
+                case .lasso:
+                    lassoTrail = [p]
+                    gesture = .lasso
+                case .wand:
+                    gesture = .tap(p)
+                }
             }
         }
     }
@@ -351,6 +450,14 @@ final class EditorModel {
             gesture = .stroke(last: p, color: c, before: before)
         case let .marquee(start):
             marquee = PixelRect(corner: start, v.pixel)
+        case .lasso:
+            let p = v.pixel
+            if lassoTrail?.last != p { lassoTrail?.append(p) }
+        case let .shade(last, ramp, baseIndex, region, before):
+            let p = v.pixel
+            guard p != last else { return }
+            shadeSegment(from: last, to: p, ramp: ramp, baseIndex: baseIndex, region: region)
+            gesture = .shade(last: p, ramp: ramp, baseIndex: baseIndex, region: region, before: before)
         case let .move(start, startOffset, _):
             guard var f = floating else { return }
             let next = startOffset + (v - start)
@@ -369,9 +476,18 @@ final class EditorModel {
         let ended = gesture
         gesture = .none   // first, so finishEdit can trim the canvas
         switch ended {
-        case let .stroke(_, _, before):
+        case let .stroke(_, _, before), let .shade(_, _, _, _, before):
             pushUndo(before)
+            strokePath = []
+            strokePainted = [:]
             finishEdit()
+        case .lasso:
+            let trail = lassoTrail ?? []
+            lassoTrail = nil
+            // A tap or a tiny scribble selects nothing.
+            let mask = Set(trail).count >= 3 ? SelectionMask.lasso(trail)?.clipped(to: bounds) : nil
+            marqueeMask = mask
+            marquee = mask?.rect
         case .move:
             finishEdit()
         case let .shape(_, _, _, before):
@@ -379,7 +495,12 @@ final class EditorModel {
             contentKnown = false
             finishEdit()
         case let .tap(p):
-            if tool == .fill {
+            if tool == .select {
+                // Magic wand: every touching pixel of the tapped colour, on the active layer.
+                let mask = SelectionMask.wand(in: currentLayerGrid, at: p - bounds.origin, origin: bounds.origin)
+                marqueeMask = mask
+                marquee = mask?.rect
+            } else if tool == .fill {
                 fill(at: p)
             } else {
                 let c = currentGrid[p - bounds.origin]
@@ -397,7 +518,7 @@ final class EditorModel {
     /// The touch turned into a pinch or pan: undo whatever it did.
     func touchCancelled() {
         switch gesture {
-        case let .stroke(_, _, before), let .shape(_, _, _, before):
+        case let .stroke(_, _, before), let .shape(_, _, _, before), let .shade(_, _, _, _, before):
             project.frames = before.frames
             project.bounds = before.bounds
             project.layers = before.layers
@@ -412,6 +533,8 @@ final class EditorModel {
             }
         case .marquee:
             marquee = nil
+        case .lasso:
+            lassoTrail = nil
         case .none, .tap:
             break
         }
@@ -419,7 +542,7 @@ final class EditorModel {
         offerPendingPro()
     }
 
-    private func requestPro(_ feature: ProFeature) {
+    func requestPro(_ feature: ProFeature) {
         if case .none = gesture { onProRequired?(feature) } else { pendingPro = feature }
     }
 
@@ -458,7 +581,40 @@ final class EditorModel {
         return out
     }
 
+    /// Pixel-perfect needs a 1-pixel solid brush.
+    var pixelPerfectActive: Bool { pixelPerfect && brushSize == 1 && !dither }
+
+    /// Paints a segment of a pixel-perfect stroke: when the last three pixels of the stroke form
+    /// an L, the corner pixel goes back to what it was before the stroke.
+    private func paintPixelPerfect(from a: PixelPoint, to b: PixelPoint, color c: RGBA, before: Snapshot) {
+        for p in PixelGrid.linePoints(from: a, to: b) {
+            if strokePath.last == p { continue }
+            strokePath.append(p)
+            let copies = symmetric(p)
+            for s in copies { strokePainted[s, default: 0] += 1 }
+            paintPixels(copies, color: c)
+            let n = strokePath.count
+            guard n >= 3, PixelPerfect.isCorner(strokePath[n - 3], strokePath[n - 2], strokePath[n - 1]) else { continue }
+            let corner = strokePath.remove(at: n - 2)
+            for s in symmetric(corner) {
+                let left = (strokePainted[s] ?? 1) - 1
+                strokePainted[s] = left
+                // Still part of the stroke somewhere else (it crossed itself): keep it.
+                guard left <= 0, bounds.contains(s), before.frames.indices.contains(currentIndex),
+                      before.frames[currentIndex].layers.indices.contains(activeLayer) else { continue }
+                let old = before.frames[currentIndex].layers[activeLayer][s - before.bounds.origin]
+                let o = bounds.origin
+                mutateCurrent(dirty: PixelRect(x: s.x, y: s.y, width: 1, height: 1)) { $0[s - o] = old }
+                contentKnown = false
+            }
+        }
+    }
+
     private func paintSegment(from a: PixelPoint, to b: PixelPoint, color c: RGBA) {
+        if pixelPerfectActive, case let .stroke(_, _, before) = gesture {
+            paintPixelPerfect(from: a, to: b, color: c, before: before)
+            return
+        }
         // A 1-pixel solid brush with at most left-right symmetry draws whole lines (fast path).
         if brushSize > 1 || dither || mirrorVertical {
             var pixels = Set<PixelPoint>()
@@ -553,7 +709,7 @@ final class EditorModel {
     /// (and offers Pro once, if Pro would allow it) when the art would exceed the size cap or the
     /// memory budget.
     @discardableResult
-    private func ensureCovers(_ r: PixelRect) -> Bool {
+    func ensureCovers(_ r: PixelRect) -> Bool {
         // Check the cap even when `r` is already on the canvas: the canvas keeps spare margin
         // around the art, and drawing into it must not take the art past the cap.
         let needed = contentBounds.map { $0.union(r) } ?? r
@@ -593,12 +749,65 @@ final class EditorModel {
         reframe(to: target)
     }
 
+    // MARK: Shading assistant
+
+    /// The ramp for a base colour with the current settings (dark to light, base included).
+    func ramp(for base: RGBA) -> [RGBA] {
+        ColorRamp.make(from: base, steps: rampSteps, hueShift: rampHueShift)
+    }
+
+    /// Starts a shading stroke on the shape under the finger. The ramp is built from your current
+    /// colour if the shape is drawn in it (or already shaded with it); otherwise from the colour
+    /// that was touched, which becomes the current colour.
+    private func beginShade(at p: PixelPoint) {
+        let local = p - bounds.origin
+        let touched = currentLayerGrid[local]
+        guard !touched.isClear, let box = currentLayerGrid.opaqueRegionBounds(around: local) else {
+            gesture = .none
+            return
+        }
+        var base = color
+        var steps = ramp(for: base)
+        if !steps.contains(touched) {
+            base = touched
+            color = touched
+            steps = ramp(for: base)
+        }
+        guard let baseIndex = steps.firstIndex(of: base) else { gesture = .none; return }
+        let region = box.offsetBy(bounds.origin)
+        gesture = .shade(last: p, ramp: steps, baseIndex: baseIndex, region: region, before: snapshot())
+        shadeSegment(from: p, to: p, ramp: steps, baseIndex: baseIndex, region: region)
+    }
+
+    /// Recolours the ramp-coloured pixels under the brush by how far they are from the light.
+    private func shadeSegment(from a: PixelPoint, to b: PixelPoint, ramp: [RGBA], baseIndex: Int, region: PixelRect) {
+        guard let mode = shadeMode else { return }
+        let o = bounds.origin
+        let cel = currentLayerGrid
+        var changes: [(PixelPoint, RGBA)] = []
+        var seen = Set<PixelPoint>()
+        for p in PixelGrid.linePoints(from: a, to: b) {
+            for q in brushFootprint(at: p) where seen.insert(q).inserted {
+                let current = cel[q - o]
+                guard !current.isClear, let index = ramp.firstIndex(of: current) else { continue }
+                let target = Shading.step(at: q, in: region, light: lightDirection, count: ramp.count,
+                                          baseIndex: baseIndex, mode: mode, current: index)
+                if target != index { changes.append((q, ramp[target])) }
+            }
+        }
+        guard let first = changes.first else { return }
+        let dirty = changes.dropFirst().reduce(PixelRect(x: first.0.x, y: first.0.y, width: 1, height: 1)) { $0.union($1.0) }
+        mutateCurrent(dirty: dirty) { g in for (q, c) in changes { g[q - o] = c } }
+    }
+
     // MARK: Selection
 
-    private func lift(_ rect: PixelRect) {
+    func lift(_ rect: PixelRect) {
         pushUndo()
-        floating = FloatingSelection(lifting: rect, from: currentLayerGrid, bounds: bounds)
+        floating = FloatingSelection(lifting: rect, mask: marqueeMask, from: currentLayerGrid, bounds: bounds)
+        floatingIsMasked = marqueeMask != nil
         marquee = nil
+        marqueeMask = nil
     }
 
     /// Drops a moved selection where it is.
@@ -612,6 +821,8 @@ final class EditorModel {
         }
         floating = nil
         marquee = nil
+        marqueeMask = nil
+        lassoTrail = nil
     }
 
     func deleteSelection() {
@@ -620,12 +831,18 @@ final class EditorModel {
         } else if let m = marquee {
             pushUndo()
             let local = m.offsetBy(PixelPoint.zero - bounds.origin)
-            mutateCurrent { $0.clear(local) }
+            if let mask = marqueeMask {
+                let o = bounds.origin
+                mutateCurrent { g in for p in mask.points { g[p - o] = .clear } }
+            } else {
+                mutateCurrent { $0.clear(local) }
+            }
         } else {
             return
         }
         floating = nil
         marquee = nil
+        marqueeMask = nil
         contentKnown = false
         finishEdit()
     }
@@ -677,6 +894,7 @@ final class EditorModel {
         }
         floating = nil
         marquee = nil
+        marqueeMask = nil
         contentKnown = false
         finishEdit()
     }
@@ -859,8 +1077,8 @@ final class EditorModel {
     var frameLimit: Int { access.frameLimit(forArea: area) }
 
     /// Pixels per frame across all layers (what the memory budget counts).
-    private var area: Int { bounds.width * bounds.height * project.layers.count }
-    private var blankGrid: PixelGrid { PixelGrid(width: bounds.width, height: bounds.height) }
+    var area: Int { bounds.width * bounds.height * project.layers.count }
+    var blankGrid: PixelGrid { PixelGrid(width: bounds.width, height: bounds.height) }
 
     // MARK: Shapes
 
@@ -868,7 +1086,7 @@ final class EditorModel {
     private func drawShape(from a: PixelPoint, to raw: PixelPoint) {
         guard case let .shape(_, base, baseBounds, _) = gesture else { return }
         let b = lockProportions ? ShapeRaster.constrained(shapeKind, from: a, to: raw) : raw
-        var pts = ShapeRaster.points(shapeKind, from: a, to: b, filled: shapeFilled)
+        var pts = ShapeRaster.points(shapeKind, from: a, to: b, filled: shapeFilled, thickness: shapeThickness)
         pts = pts.flatMap(symmetric)
         guard let first = pts.first else { return }
         let box = pts.dropFirst().reduce(PixelRect(x: first.x, y: first.y, width: 1, height: 1)) { $0.union($1) }
@@ -899,7 +1117,7 @@ final class EditorModel {
     }
 
     /// Drawing on a hidden layer would be invisible, so it's shown again.
-    private func revealActiveLayer() {
+    func revealActiveLayer() {
         guard project.layers.indices.contains(activeLayer), !project.layers[activeLayer].isVisible else { return }
         project.layers[activeLayer].isVisible = true
         reflattenAll()
@@ -1065,12 +1283,12 @@ final class EditorModel {
 
     // MARK: Internals
 
-    private func snapshot() -> Snapshot {
+    func snapshot() -> Snapshot {
         Snapshot(frames: project.frames, bounds: project.bounds, currentIndex: currentIndex,
                  layers: project.layers, activeLayer: activeLayer)
     }
 
-    private func pushUndo(_ s: Snapshot? = nil) {
+    func pushUndo(_ s: Snapshot? = nil) {
         undoStack.append(s ?? snapshot())
         // Snapshots share unchanged frames, but growing or trimming the canvas copies every frame,
         // so also cap the history by (worst-case) memory: large sprites keep fewer undo steps.
@@ -1104,12 +1322,16 @@ final class EditorModel {
     private func discardSelectionState() {
         floating = nil
         marquee = nil
+        marqueeMask = nil
+        lassoTrail = nil
+        adjustBase = nil
+        adjustMask = nil
         gesture = .none
     }
 
     /// Edits the active layer of the current frame. `dirty` (world) limits re-flattening to the
     /// area that changed, which keeps strokes fast on big sprites with several layers.
-    private func mutateCurrent(dirty: PixelRect? = nil, _ body: (inout PixelGrid) -> Void) {
+    func mutateCurrent(dirty: PixelRect? = nil, _ body: (inout PixelGrid) -> Void) {
         let local = dirty.map { $0.offsetBy(PixelPoint.zero - bounds.origin) }
         let visible = project.layerVisibility
         project.frames[currentIndex].editLayer(activeLayer, visible: visible, dirty: local, body)
@@ -1122,7 +1344,7 @@ final class EditorModel {
         return Frame(layers: cels, visible: project.layerVisibility).grid
     }
 
-    private func finishEdit() {
+    func finishEdit() {
         trimToContent()
         project.modifiedAt = Date()
         onChange?(project)

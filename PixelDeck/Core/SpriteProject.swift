@@ -21,6 +21,8 @@ struct Frame: Identifiable, Sendable {
     /// Changes on every pixel change, and is never reused (so restoring an undo snapshot can't
     /// match a stale cached thumbnail). Not persisted.
     private(set) var version = Frame.nextVersion()
+    /// How many beats the frame stays on screen (1 is normal). See `Frame.maxHold`.
+    var hold = 1
 
     private static var versionCounter = 0
     private static let versionLock = NSLock()
@@ -102,7 +104,7 @@ struct Frame: Identifiable, Sendable {
 }
 
 extension Frame: Codable {
-    private enum CodingKeys: String, CodingKey { case id, layers, grid }
+    private enum CodingKeys: String, CodingKey { case id, layers, grid, hold }
 
     /// Older files have a single `grid`.
     init(from decoder: Decoder) throws {
@@ -117,12 +119,14 @@ extension Frame: Codable {
             layers = [g]
             grid = g
         }
+        hold = min(max((try? c.decodeIfPresent(Int.self, forKey: .hold)) ?? 1, 1), Frame.maxHold)
     }
 
     func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         try c.encode(id, forKey: .id)
         try c.encode(layers, forKey: .layers)
+        if hold != 1 { try c.encode(hold, forKey: .hold) }
     }
 }
 
@@ -148,6 +152,11 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     /// How playback is paced across the frames (Pro). Linear: every frame lasts 1/fps.
     var playbackEasing: Easing = .linear
     var palette: [RGBA] = SpriteProject.defaultPalette
+    /// Colours added beyond the 10 swatches: ramps, colours from a photo, adjusted colours.
+    var extraColors: [RGBA] = []
+    static let maxExtraColors = 54
+    /// What playback does at the last frame.
+    var loopMode: LoopMode = .loop
     /// Bottom to top. Every frame has one cel per layer.
     var layers: [LayerInfo] = [LayerInfo(name: "Layer 1")]
     static let maxLayers = 8
@@ -202,7 +211,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         frames.map { $0.grid.reframed(from: bounds, to: world) }
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, layers, trace, createdAt, modifiedAt }
+    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, extraColors, loopMode, layers, trace, createdAt, modifiedAt }
 
     /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
     /// crashing the app (the editor assumes at least one frame, all the same size). Files from
@@ -235,13 +244,18 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         let normalized = valid.map { f -> Frame in
             var cels = Array(f.layers.prefix(n))
             while cels.count < n { cels.append(blank) }
-            return Frame(id: f.id, layers: cels, visible: visible)
+            var frame = Frame(id: f.id, layers: cels, visible: visible)
+            frame.hold = f.hold
+            return frame
         }
         frames = normalized.isEmpty ? [Frame.blank(width: w, height: h, layers: n)] : normalized
         fps = min(max((try? c.decode(Int.self, forKey: .fps)) ?? 8, 1), 30)
         playbackEasing = (try? c.decode(Easing.self, forKey: .playbackEasing)) ?? .linear
         let pal = ((try? c.decode([RGBA].self, forKey: .palette)) ?? []).map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         palette = pal.count == SpriteProject.defaultPalette.count ? pal : SpriteProject.defaultPalette
+        extraColors = Array(((try? c.decode([RGBA].self, forKey: .extraColors)) ?? [])
+            .map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }.prefix(SpriteProject.maxExtraColors))
+        loopMode = (try? c.decode(LoopMode.self, forKey: .loopMode)) ?? .loop
         trace = (try? c.decodeIfPresent(TraceSettings.self, forKey: .trace))?.sanitized
         createdAt = (try? c.decode(Date.self, forKey: .createdAt)) ?? Date()
         modifiedAt = (try? c.decode(Date.self, forKey: .modifiedAt)) ?? createdAt
@@ -256,6 +270,8 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         try c.encode(fps, forKey: .fps)
         try c.encode(playbackEasing, forKey: .playbackEasing)
         try c.encode(palette, forKey: .palette)
+        if !extraColors.isEmpty { try c.encode(extraColors, forKey: .extraColors) }
+        if loopMode != .loop { try c.encode(loopMode, forKey: .loopMode) }
         try c.encode(layers, forKey: .layers)
         try c.encodeIfPresent(trace, forKey: .trace)
         try c.encode(createdAt, forKey: .createdAt)
@@ -273,7 +289,11 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         var copy = self
         copy.id = UUID()
         copy.name = name
-        copy.frames = frames.map { Frame(layers: $0.layers, visible: layerVisibility) }
+        copy.frames = frames.map {
+            var f = Frame(layers: $0.layers, visible: layerVisibility)
+            f.hold = $0.hold
+            return f
+        }
         copy.createdAt = Date()
         copy.modifiedAt = Date()
         return copy
