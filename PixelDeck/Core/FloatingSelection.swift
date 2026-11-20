@@ -56,6 +56,19 @@ struct FloatingSelection: Sendable {
         baseGrid = base
     }
 
+    /// New pixels (a stamp, a paste) floating over `grid` with their top-left at `origin` (world).
+    init(pasting patch: PixelPatch, at origin: PixelPoint, onto grid: PixelGrid, bounds: PixelRect) {
+        let r = PixelRect(x: origin.x, y: origin.y, width: patch.width, height: patch.height)
+        sourceRect = r
+        liftedRect = r
+        self.patch = patch
+        liftedPatch = patch
+        patchOpaque = FloatingSelection.opaqueRect(of: patch)
+        self.bounds = bounds
+        originalGrid = grid
+        baseGrid = grid
+    }
+
     private static func opaqueRect(of patch: PixelPatch) -> PixelRect? {
         var opaque: PixelRect?
         for py in 0..<patch.height {

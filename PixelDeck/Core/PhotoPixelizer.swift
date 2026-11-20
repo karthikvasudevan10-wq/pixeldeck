@@ -212,3 +212,13 @@ enum PhotoPixelizer {
         return out
     }
 }
+
+extension SpriteProject {
+    /// A blank canvas in a retro mode: its palette is the mode's colours.
+    static func retro(name: String, mode: RetroMode) -> SpriteProject {
+        var p = SpriteProject(name: name)
+        p.retroMode = mode
+        p.palette = mode.colors
+        return p
+    }
+}

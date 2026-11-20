@@ -651,3 +651,292 @@ final class PhotoPixelizerTests: XCTestCase {
         XCTAssertEqual(PhotoPixelizer.medianCut(px, count: 8).count, 2, "never more colours than there are")
     }
 }
+
+// MARK: v2.1
+
+final class RetroModeTests: XCTestCase {
+    func testRetroCanvasLocksItsPalette() throws {
+        let p = SpriteProject.retro(name: "R", mode: .handheld)
+        XCTAssertEqual(p.palette, RetroMode.handheld.colors)
+        XCTAssertFalse(p.isBlank, "a retro canvas isn't reused as a plain new canvas")
+        let m = EditorModel(project: p)
+        XCTAssertTrue(m.isPaletteLocked)
+        m.setPaletteColor(.white, at: 0)
+        XCTAssertEqual(m.palette, RetroMode.handheld.colors)
+        m.applyPalette(SpriteProject.defaultPalette)
+        XCTAssertEqual(m.palette, RetroMode.handheld.colors)
+        // Dither is free here.
+        m.dither = true
+        XCTAssertTrue(m.dither)
+        let back = try JSONDecoder().decode(SpriteProject.self, from: JSONEncoder().encode(m.project))
+        XCTAssertEqual(back.retroMode, .handheld)
+        XCTAssertEqual(back.palette.count, 4)
+    }
+
+    func testOrdinaryCanvasesStillNeedProForDither() {
+        let m = makeModel()
+        m.dither = true
+        XCTAssertFalse(m.dither)
+    }
+}
+
+final class TileSceneTests: XCTestCase {
+    func testStarterTilesAreSixteenPixelsSquare() {
+        let tiles = StarterTiles.tiles
+        XCTAssertEqual(tiles.count, 8)
+        for t in tiles {
+            XCTAssertEqual(t.grid.width, TileScene.tileSize)
+            XCTAssertEqual(t.grid.height, TileScene.tileSize)
+            XCTAssertFalse(t.grid.isBlank)
+        }
+        XCTAssertTrue(tiles.first { $0.name == "brick" }!.solid)
+        XCTAssertTrue(tiles.first { $0.name == "water" }!.hazard)
+        XCTAssertEqual(StarterTiles.tiles.map(\.id), tiles.map(\.id), "ids are stable")
+    }
+
+    func testPaintFillAndRender() {
+        var s = TileScene(name: "S", columns: 6, rows: 4)
+        s[0, 3] = 2
+        XCTAssertEqual(s[0, 3], 2)
+        XCTAssertEqual(s[99, 99], -1)
+        s[1, 1] = 999
+        XCTAssertEqual(s[1, 1], -1, "unknown tiles are empty")
+        s.fill(1, at: PixelPoint(x: 3, y: 0))
+        XCTAssertEqual(s[5, 0], 1)
+        XCTAssertEqual(s[0, 3], 2, "the fill stops at other tiles")
+        let picture = s.rendered()
+        XCTAssertEqual(picture.width, 96)
+        XCTAssertEqual(picture.height, 64)
+        XCTAssertEqual(picture[0, 3 * 16], s.tiles[2].grid[0, 0])
+    }
+
+    func testResizeKeepsTheGround() {
+        var s = TileScene.starter(name: "Night hills")
+        let groundTile = s[0, s.rows - 1]
+        XCTAssertNotEqual(groundTile, -1)
+        XCTAssertFalse(s.needsPro)
+        let coins = s.coins.count
+        s.resize(columns: 40, rows: 16)
+        XCTAssertEqual(s.columns, 40)
+        XCTAssertEqual(s[0, 15], groundTile, "rows are added at the top")
+        XCTAssertEqual(s.coins.count, coins)
+        XCTAssertTrue(s.needsPro)
+    }
+
+    func testSceneStoreRoundTrip() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("scenes-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = SceneStore(directory: dir)
+        var s = TileScene.starter(name: "Night hills")
+        s.toggleCoin(at: PixelPoint(x: 0, y: 0))
+        store.save(s)
+        let again = SceneStore(directory: dir)
+        XCTAssertEqual(again.scenes.count, 1)
+        XCTAssertEqual(again.scenes[0].coins, s.coins)
+        XCTAssertEqual(again.scenes[0].tiles, s.tiles)
+        again.delete(id: s.id)
+        XCTAssertTrue(SceneStore(directory: dir).scenes.isEmpty)
+    }
+}
+
+final class PlaygroundTests: XCTestCase {
+    /// A flat floor along the bottom row of a 12 × 6 scene, hero starting at column 1.
+    private func flat() -> TileScene {
+        var s = TileScene(name: "T", columns: 12, rows: 6)
+        for x in 0..<12 { s[x, 5] = 1 }
+        s.start = PixelPoint(x: 1, y: 4)
+        return s
+    }
+
+    private func run(_ g: inout PlaygroundGame, seconds: Double, _ input: PlayInput) {
+        for _ in 0..<Int(seconds * 60) { g.step(1.0 / 60, input: input) }
+    }
+
+    func testHeroStandsOnTheFloor() {
+        var g = PlaygroundGame(scene: flat())
+        run(&g, seconds: 0.5, PlayInput())
+        XCTAssertTrue(g.onGround)
+        XCTAssertEqual(g.y + g.heroHeight, 80, accuracy: 0.01)
+    }
+
+    func testRunningAndWalls() {
+        var s = flat()
+        s[6, 4] = 2                                         // a wall on the floor
+        var g = PlaygroundGame(scene: s)
+        run(&g, seconds: 3, PlayInput(right: true))
+        XCTAssertEqual(g.x + g.heroWidth, 96, accuracy: 0.01, "stopped against the wall")
+        run(&g, seconds: 3, PlayInput(left: true))
+        XCTAssertEqual(g.x, 0, accuracy: 0.01, "the level's edge is a wall too")
+        XCTAssertTrue(g.facingLeft)
+    }
+
+    func testJumpGoesUpAndComesDown() {
+        var g = PlaygroundGame(scene: flat())
+        run(&g, seconds: 0.3, PlayInput())
+        let ground = g.y
+        var top = ground
+        var input = PlayInput(jump: true)
+        for _ in 0..<90 {
+            g.step(1.0 / 60, input: input)
+            top = min(top, g.y)
+            input.jump = true
+        }
+        XCTAssertLessThan(top, ground - 32, "clears two tiles")
+        XCTAssertGreaterThan(top, ground - 56)
+        XCTAssertEqual(g.y, ground, accuracy: 0.01, "holding jump doesn't bounce forever")
+        XCTAssertEqual(g.events.filter { $0 == .jump }.count, 1)
+    }
+
+    func testCoinsAndWinning() {
+        var s = flat()
+        s.coins = [PixelPoint(x: 4, y: 4), PixelPoint(x: 7, y: 4)]
+        var g = PlaygroundGame(scene: s)
+        XCTAssertEqual(g.coinTotal, 2)
+        run(&g, seconds: 1, PlayInput(right: true))
+        XCTAssertEqual(g.coinsCollected, 1)
+        XCTAssertEqual(g.status, .playing)
+        run(&g, seconds: 2, PlayInput(right: true))
+        XCTAssertEqual(g.status, .won)
+        XCTAssertTrue(g.events.contains(.win))
+        let t = g.elapsed
+        run(&g, seconds: 1, PlayInput(right: true))
+        XCTAssertEqual(g.elapsed, t, "the clock stops when you win")
+    }
+
+    func testGoalNeedsEveryCoinFirst() {
+        var s = flat()
+        s.coins = [PixelPoint(x: 9, y: 4)]
+        s.goal = PixelPoint(x: 5, y: 4)
+        var g = PlaygroundGame(scene: s)
+        run(&g, seconds: 1.2, PlayInput(right: true))       // past the flag, no coin yet
+        XCTAssertEqual(g.status, .playing)
+        run(&g, seconds: 2, PlayInput(right: true))          // the coin
+        XCTAssertEqual(g.coinsCollected, 1)
+        XCTAssertEqual(g.status, .playing)
+        run(&g, seconds: 2, PlayInput(left: true))           // back to the flag
+        XCTAssertEqual(g.status, .won)
+    }
+
+    func testWaterAndFallingSendYouBack() {
+        var s = flat()
+        s[5, 5] = -1
+        s[6, 5] = -1                                         // a gap
+        var g = PlaygroundGame(scene: s)
+        run(&g, seconds: 4, PlayInput(right: true))
+        XCTAssertGreaterThanOrEqual(g.falls, 1)
+        XCTAssertTrue(g.events.contains(.hurt))
+        var w = flat()
+        let water = w.tiles.firstIndex { $0.hazard }!
+        w[4, 4] = water
+        var g2 = PlaygroundGame(scene: w)
+        run(&g2, seconds: 1.5, PlayInput(right: true))
+        XCTAssertGreaterThanOrEqual(g2.falls, 1)
+    }
+
+    func testEnemiesPatrolAndHurt() {
+        var s = flat()
+        s.enemies = [PixelPoint(x: 8, y: 4)]
+        var g = PlaygroundGame(scene: s)
+        let startX = g.enemies[0].x
+        run(&g, seconds: 1, PlayInput())
+        XCTAssertNotEqual(g.enemies[0].x, startX)
+        run(&g, seconds: 12, PlayInput())                    // it reaches the hero in the end
+        XCTAssertGreaterThanOrEqual(g.falls, 1)
+    }
+
+    func testStarterLevelCanBeWalkedOnto() {
+        var g = PlaygroundGame(scene: TileScene.starter(name: "Night hills"))
+        run(&g, seconds: 1, PlayInput())
+        XCTAssertTrue(g.onGround)
+        XCTAssertEqual(g.falls, 0)
+        XCTAssertEqual(g.coinTotal, 5)
+    }
+}
+
+final class AcademyTests: XCTestCase {
+    func testEveryLessonHasFramesThatFitTheFreeCanvas() {
+        XCTAssertEqual(Academy.lessons.count, 6)
+        XCTAssertEqual(Academy.lessons.filter(\.isFree).map(\.id), ["blink", "walk"])
+        for lesson in Academy.lessons {
+            XCTAssertGreaterThanOrEqual(lesson.frames.count, 4)
+            XCTAssertLessThanOrEqual(lesson.frames.count, FeatureAccess.freeFrameLimit)
+            for frame in lesson.frames {
+                XCTAssertFalse(frame.isEmpty)
+                XCTAssertEqual(Set(frame).count, frame.count, "no repeated squares in \(lesson.id)")
+                XCTAssertTrue(frame.allSatisfy { abs($0.x) <= 16 && abs($0.y) <= 16 })
+            }
+        }
+        XCTAssertEqual(Academy.lesson(id: "walk")?.frames.count, 8)
+    }
+
+    func testFollowingTheGuideFinishesEachStep() {
+        let lesson = Academy.lesson(id: "blink")!
+        let m = makeModel()
+        m.pixelPerfect = false
+        for step in 0..<lesson.frames.count {
+            if step > 0 { m.addKeyframe() }
+            XCTAssertFalse(Academy.isDone(lesson, step: step, model: m, playCountAtStart: 0))
+            for p in Academy.guide(lesson, step: step)! { tap(m, Double(p.x) + 0.5, Double(p.y) + 0.5) }
+            XCTAssertTrue(Academy.isDone(lesson, step: step, model: m, playCountAtStart: 0))
+        }
+        // The last step is pressing Play.
+        XCTAssertNil(Academy.guide(lesson, step: lesson.frames.count))
+        XCTAssertFalse(Academy.isDone(lesson, step: lesson.frames.count, model: m, playCountAtStart: m.playCount))
+        m.isPlaying = true
+        XCTAssertTrue(Academy.isDone(lesson, step: lesson.frames.count, model: m, playCountAtStart: m.playCount - 1))
+    }
+
+    func testIdeaOfTheDayChangesDailyAndWraps() {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "UTC")!
+        let day = Date(timeIntervalSince1970: 1_800_000_000)
+        let a = DailyIdea.index(for: day, count: 30, calendar: cal)
+        let b = DailyIdea.index(for: day.addingTimeInterval(86_400), count: 30, calendar: cal)
+        XCTAssertEqual(b, (a + 1) % 30)
+        XCTAssertEqual(DailyIdea.index(for: day.addingTimeInterval(3_600), count: 30, calendar: cal), a, "the same all day")
+        XCTAssertEqual(DailyIdea.index(for: day, count: 0, calendar: cal), 0)
+    }
+}
+
+// MARK: v2.2
+
+final class StampTests: XCTestCase {
+    func testStarterStamps() {
+        let stamps = StarterStamps.stamps
+        XCTAssertEqual(stamps.count, 8)
+        XCTAssertTrue(stamps.allSatisfy { !$0.grid.isBlank && $0.grid.width <= Stamp.maxSide })
+    }
+
+    func testSaveASelectionAndStampItElsewhere() throws {
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("stamps-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let library = StampLibrary(url: dir.appendingPathComponent("stamps.json"))
+        let m = makeModel()
+        drawBlock(m, x: 0, y: 0, side: 3, color: .black)
+        m.pixelPerfect = false
+        tap(m, 10.5, 0.5)                                    // something else, not in the stamp
+        m.tool = .select
+        stroke(m, [(0.5, 0.5), (2.5, 2.5)])
+        let source = try XCTUnwrap(m.stampSource())
+        XCTAssertEqual(source.width, 3)
+        XCTAssertEqual(opaqueCount(source), 9)
+        let stamp = try XCTUnwrap(library.add(name: "  Block  ", grid: source))
+        XCTAssertEqual(stamp.name, "Block")
+        XCTAssertEqual(StampLibrary(url: library.url).stamps, [stamp], "saved to disk")
+
+        let other = makeModel()
+        XCTAssertTrue(other.placeStamp(stamp.grid, at: P(20, 20)))
+        XCTAssertNotNil(other.floating, "it arrives as a selection you can move")
+        other.commitSelection()
+        XCTAssertEqual(opaqueCount(other.currentGrid), 9)
+        XCTAssertEqual(other.pixel(P(20, 20)), .black)
+        other.undo()
+        XCTAssertTrue(other.currentGrid.isBlank)
+    }
+
+    func testStampTooBigForTheFreeCanvasIsRefused() {
+        let m = makeModel()
+        XCTAssertFalse(m.placeStamp(PixelGrid(width: 80, height: 80, fill: .black)))
+        XCTAssertNil(m.floating)
+    }
+}

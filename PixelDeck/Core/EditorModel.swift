@@ -106,7 +106,8 @@ final class EditorModel {
     /// Dither brush (Pro): paints only every other pixel, in a checkerboard fixed to the canvas.
     var dither = false {
         didSet {
-            if dither && !access.allowsArtistBrushes { dither = false; onProRequired?(.artistBrushes) }
+            // Dither is part of every retro canvas; elsewhere it comes with Pro.
+            if dither && !access.allowsArtistBrushes && project.retroMode == nil { dither = false; onProRequired?(.artistBrushes) }
         }
     }
     /// Pixel-perfect strokes: L-shaped corners are cleaned as you draw, so 1-pixel lines and
@@ -282,6 +283,8 @@ final class EditorModel {
     var currentLayerGrid: PixelGrid { project.frames[currentIndex].layers[activeLayer] }
     var layers: [LayerInfo] { project.layers }
     var palette: [RGBA] { project.palette }
+    /// Retro canvases keep their mode's colours: swatches can't be changed or swapped.
+    var isPaletteLocked: Bool { project.retroMode != nil }
 
     /// Colour at a world pixel in a frame (the current one by default); clear outside the canvas.
     func pixel(_ p: PixelPoint, frame: Int? = nil) -> RGBA {
@@ -382,7 +385,7 @@ final class EditorModel {
     /// Long-press edit of a palette swatch. Also selects the new colour. Pass `commit: false`
     /// for live updates while the picker is being dragged (shown, not saved yet).
     func setPaletteColor(_ c: RGBA, at index: Int, commit: Bool = true) {
-        guard project.palette.indices.contains(index) else { return }
+        guard project.palette.indices.contains(index), !isPaletteLocked else { return }
         let opaque = RGBA(r: c.r, g: c.g, b: c.b, a: 255)
         project.palette[index] = opaque
         color = opaque

@@ -157,6 +157,8 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     static let maxExtraColors = 54
     /// What playback does at the last frame.
     var loopMode: LoopMode = .loop
+    /// A retro canvas: the palette is locked to the mode's colours, and dither is free.
+    var retroMode: RetroMode?
     /// Bottom to top. Every frame has one cel per layer.
     var layers: [LayerInfo] = [LayerInfo(name: "Layer 1")]
     static let maxLayers = 8
@@ -211,7 +213,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         frames.map { $0.grid.reframed(from: bounds, to: world) }
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, extraColors, loopMode, layers, trace, createdAt, modifiedAt }
+    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, extraColors, loopMode, retroMode, layers, trace, createdAt, modifiedAt }
 
     /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
     /// crashing the app (the editor assumes at least one frame, all the same size). Files from
@@ -252,7 +254,13 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         fps = min(max((try? c.decode(Int.self, forKey: .fps)) ?? 8, 1), 30)
         playbackEasing = (try? c.decode(Easing.self, forKey: .playbackEasing)) ?? .linear
         let pal = ((try? c.decode([RGBA].self, forKey: .palette)) ?? []).map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
-        palette = pal.count == SpriteProject.defaultPalette.count ? pal : SpriteProject.defaultPalette
+        retroMode = try? c.decodeIfPresent(RetroMode.self, forKey: .retroMode)
+        // Ten swatches, except retro canvases, which have just their mode's colours.
+        if let mode = retroMode {
+            palette = mode.colors
+        } else {
+            palette = pal.count == SpriteProject.defaultPalette.count ? pal : SpriteProject.defaultPalette
+        }
         extraColors = Array(((try? c.decode([RGBA].self, forKey: .extraColors)) ?? [])
             .map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }.prefix(SpriteProject.maxExtraColors))
         loopMode = (try? c.decode(LoopMode.self, forKey: .loopMode)) ?? .loop
@@ -272,6 +280,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         try c.encode(palette, forKey: .palette)
         if !extraColors.isEmpty { try c.encode(extraColors, forKey: .extraColors) }
         if loopMode != .loop { try c.encode(loopMode, forKey: .loopMode) }
+        try c.encodeIfPresent(retroMode, forKey: .retroMode)
         try c.encode(layers, forKey: .layers)
         try c.encodeIfPresent(trace, forKey: .trace)
         try c.encode(createdAt, forKey: .createdAt)
@@ -281,7 +290,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     /// Nothing drawn yet: one frame, no pixels on any layer, no tracing picture. New canvases reuse
     /// a blank sprite instead of piling up empty ones.
     var isBlank: Bool {
-        frames.count == 1 && trace == nil && frames[0].layers.allSatisfy { $0.opaqueBounds == nil }
+        frames.count == 1 && trace == nil && retroMode == nil && frames[0].layers.allSatisfy { $0.opaqueBounds == nil }
     }
 
     /// A copy with fresh identifiers, so caches never confuse it with the original.

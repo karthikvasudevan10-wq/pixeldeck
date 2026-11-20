@@ -33,7 +33,7 @@ extension EditorModel {
     /// Replaces the sprite's palette. The selected swatch position stays selected, so you keep
     /// drawing with "the same slot" in the new colours.
     func applyPalette(_ colors: [RGBA]) {
-        guard colors.count == SpriteProject.defaultPalette.count else { return }
+        guard colors.count == SpriteProject.defaultPalette.count, !isPaletteLocked else { return }
         let slot = selectedPaletteIndex
         let opaque = colors.map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         updateProject { $0.palette = opaque }
