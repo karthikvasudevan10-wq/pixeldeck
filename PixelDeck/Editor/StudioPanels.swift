@@ -407,61 +407,69 @@ struct OnionTimingSheet: View {
     let model: EditorModel
     @Environment(\.dismiss) private var dismiss
 
-    /// The blue used for "frames after", matching the onion skin's blue.
-    private static let ahead = Color(red: 0x5B / 255, green: 0x8D / 255, blue: 1)
-
     var body: some View {
         VStack(spacing: 0) {
             SheetHeader(title: "Onion skin and timing", onClose: { dismiss() })
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Toggle(isOn: Binding(get: { model.onionSkinEnabled }, set: { model.onionSkinEnabled = $0 })) {
-                            Text("Onion skin").font(AppFont.body(15, .bold, relativeTo: .body)).foregroundStyle(Theme.cream)
-                        }
-                        .tint(Theme.accent)
-                        counter("Frames before", value: model.onionBefore, range: 0...EditorModel.maxOnionBefore, tint: Theme.accent) {
-                            model.onionBefore = $0
-                        }
-                        counter("Frames after", value: model.onionAfter, range: 0...EditorModel.maxOnionAfter, tint: Self.ahead) {
-                            model.onionAfter = $0
-                        }
-                        Text("Older frames fade more. Pink looks back, blue looks ahead.")
-                            .font(AppFont.body(13, relativeTo: .footnote))
-                            .foregroundStyle(Theme.muted)
-                        HStack(spacing: 6) {
-                            SectionLabel(text: "Strength")
-                            Spacer()
-                            ForEach([0.2, 0.38, 0.6], id: \.self) { v in
-                                StripChip(title: Text(v, format: .percent), on: model.onionOpacity == v) { model.onionOpacity = v }
-                            }
-                        }
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        let hold = model.project.frames[model.currentIndex].hold
-                        SectionLabel(text: "Hold")
-                        counter(LocalizedStringKey(String(localized: "Hold frame \(model.currentIndex + 1)", comment: "Per-frame hold; the placeholder is the frame number")),
-                                value: hold, range: 1...Frame.maxHold, tint: Theme.accent2, prefix: "×") {
-                            model.setHold($0, at: model.currentIndex)
-                        }
-                        Text("Stays on screen for \(hold) beats", comment: "Per-frame hold; plural")
-                            .font(AppFont.body(13, relativeTo: .footnote))
-                            .foregroundStyle(Theme.muted)
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        SectionLabel(text: "When it ends")
-                        ChoiceRow(options: LoopMode.allCases,
-                                  selection: Binding(get: { model.project.loopMode }, set: { model.setLoopMode($0) })) { Text($0.title) }
-                    }
-                }
-                .padding(16)
+                OnionTimingControls(model: model).padding(16)
             }
             .scrollBounceBehavior(.basedOnSize)
         }
         .screenBackground()
         .presentationDetents([.medium, .large])
+    }
+}
+
+/// The controls of the Onion skin and timing panel (also shown in the desk inspector).
+struct OnionTimingControls: View {
+    let model: EditorModel
+
+    /// The blue used for "frames after", matching the onion skin's blue.
+    private static let ahead = Color(red: 0x5B / 255, green: 0x8D / 255, blue: 1)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 8) {
+                Toggle(isOn: Binding(get: { model.onionSkinEnabled }, set: { model.onionSkinEnabled = $0 })) {
+                    Text("Onion skin").font(AppFont.body(15, .bold, relativeTo: .body)).foregroundStyle(Theme.cream)
+                }
+                .tint(Theme.accent)
+                counter("Frames before", value: model.onionBefore, range: 0...EditorModel.maxOnionBefore, tint: Theme.accent) {
+                    model.onionBefore = $0
+                }
+                counter("Frames after", value: model.onionAfter, range: 0...EditorModel.maxOnionAfter, tint: Self.ahead) {
+                    model.onionAfter = $0
+                }
+                Text("Older frames fade more. Pink looks back, blue looks ahead.")
+                    .font(AppFont.body(13, relativeTo: .footnote))
+                    .foregroundStyle(Theme.muted)
+                HStack(spacing: 6) {
+                    SectionLabel(text: "Strength")
+                    Spacer()
+                    ForEach([0.2, 0.38, 0.6], id: \.self) { v in
+                        StripChip(title: Text(v, format: .percent), on: model.onionOpacity == v) { model.onionOpacity = v }
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                let hold = model.project.frames[model.currentIndex].hold
+                SectionLabel(text: "Hold")
+                counter(LocalizedStringKey(String(localized: "Hold frame \(model.currentIndex + 1)", comment: "Per-frame hold; the placeholder is the frame number")),
+                        value: hold, range: 1...Frame.maxHold, tint: Theme.accent2, prefix: "×") {
+                    model.setHold($0, at: model.currentIndex)
+                }
+                Text("Stays on screen for \(hold) beats", comment: "Per-frame hold; plural")
+                    .font(AppFont.body(13, relativeTo: .footnote))
+                    .foregroundStyle(Theme.muted)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "When it ends")
+                ChoiceRow(options: LoopMode.allCases,
+                          selection: Binding(get: { model.project.loopMode }, set: { model.setLoopMode($0) })) { Text($0.title) }
+            }
+        }
     }
 
     private func counter(_ title: LocalizedStringKey, value: Int, range: ClosedRange<Int>, tint: Color, prefix: String = "",
@@ -470,17 +478,17 @@ struct OnionTimingSheet: View {
             Text(title).font(AppFont.body(15, relativeTo: .body)).foregroundStyle(Theme.text)
             Spacer(minLength: 8)
             Button { set(max(range.lowerBound, value - 1)) } label: {
-                Text(verbatim: "−").font(AppFont.pixel(18)).frame(width: 44, height: 40)
+                Text(verbatim: "−").font(AppFont.pixel(18)).frame(width: 40, height: 40)
             }
             .buttonStyle(TileButtonStyle())
             .disabled(value <= range.lowerBound)
             Text(verbatim: "\(prefix)\(value)")
                 .font(AppFont.pixel(15))
                 .foregroundStyle(tint)
-                .frame(width: 44, height: 40)
-                .background(Theme.surface)
+                .frame(width: 40, height: 40)
+                .background(Theme.ink)
             Button { set(min(range.upperBound, value + 1)) } label: {
-                Text(verbatim: "+").font(AppFont.pixel(18)).frame(width: 44, height: 40)
+                Text(verbatim: "+").font(AppFont.pixel(18)).frame(width: 40, height: 40)
             }
             .buttonStyle(TileButtonStyle())
             .disabled(value >= range.upperBound)

@@ -59,7 +59,20 @@ struct EditorView: View {
     @State var tourCelebrating = false
     @State var tourNudge: String?
 
-    var layout: StudioLayout { StudioLayout.choose(for: size, easel: easelMode) }
+    /// The desk layout is for iPad and Mac (not during the guided tour, which points at the dock).
+    static let deskDevice = UIDevice.current.userInterfaceIdiom == .pad || ProcessInfo.processInfo.isMacCatalystApp
+    static let isMac = ProcessInfo.processInfo.isMacCatalystApp
+
+    var layout: StudioLayout {
+        StudioLayout.choose(for: size, easel: easelMode, desk: Self.deskDevice && tourStep == nil)
+    }
+
+    /// Desk layout: the sprite list on the left (shown by default on the Mac), the inspector on
+    /// the right, and which of its tabs is open.
+    @AppStorage("deskSidebar") var showingSidebar = ProcessInfo.processInfo.isMacCatalystApp
+    @AppStorage("deskInspector") var showingInspector = true
+    @State var inspectorTab: InspectorTab = .layers
+    @State var showingCommunity = false
 
     init(project: SpriteProject) {
         _model = State(initialValue: EditorModel(project: project))
@@ -79,9 +92,11 @@ struct EditorView: View {
             // so switching layout (folding, unfolding, rotating) changes nothing but the
             // arrangement. A short cross-fade covers the switch.
             switch layout {
+            case .desk:
+                desk.transition(.opacity)
             case .pocket:
                 VStack(spacing: 0) {
-                    canvasArea
+                    canvasArea()
                     dock
                         .background(Theme.surface.ignoresSafeArea(edges: .bottom))
                         .overlay(alignment: .top) { Theme.line.frame(height: 2) }
@@ -89,7 +104,7 @@ struct EditorView: View {
                 .transition(.opacity)
             case .sidePanel:
                 HStack(spacing: 0) {
-                    canvasArea
+                    canvasArea()
                     ScrollView {
                         dock
                     }
@@ -170,8 +185,13 @@ struct EditorView: View {
         .sheet(isPresented: $showingTrace) { TraceSheet(model: model, image: $traceImage) }
         .sheet(isPresented: $showingPalettes) { PaletteSheet(model: model) }
         .sheet(isPresented: $sharingToCommunity) { ShareToCommunityView(project: model.project) }
+        // On the Mac the menu bar carries every shortcut (StudioCommands); elsewhere, hidden buttons do.
+        #if !targetEnvironment(macCatalyst)
         .background { KeyboardShortcuts(model: model, canvas: canvas, onExport: openExport,
                                         onNewCanvas: newCanvas, onLayers: { showingLayers = true }) }
+        #endif
+        .focusedSceneValue(\.studio, studioActions)
+        .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
         .overlay(alignment: .top) {
             if pencilNotice {
                 Text("Apple Pencil draws. Fingers now move and zoom the canvas.")
@@ -216,14 +236,16 @@ struct EditorView: View {
 
     // MARK: Canvas
 
-    var canvasArea: some View {
+    /// `chips`: the sprite menu and layer chip float over the canvas (the desk layout has them
+    /// in its top bar and inspector instead).
+    func canvasArea(chips: Bool = true) -> some View {
         SwipeCanvas(swipeAnywhere: swipeAnywhere,
                     onNewFrame: { model.addKeyframe() },   // also stops playback
                     onNewCanvas: newCanvas) {
             canvas
         }
-        .overlay(alignment: .topLeading) { chip.padding(.leading, 12).padding(.top, 14) }
-        .overlay(alignment: .topTrailing) { layersButton.padding(.trailing, 12).padding(.top, 14) }
+        .overlay(alignment: .topLeading) { if chips { chip.padding(.leading, 12).padding(.top, 14) } }
+        .overlay(alignment: .topTrailing) { if chips { layersButton.padding(.trailing, 12).padding(.top, 14) } }
         .overlay(alignment: .bottom) {
             VStack(spacing: 10) {
                 if model.tool == .select && !model.isPlaying { selectionStrip }

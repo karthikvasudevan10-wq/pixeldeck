@@ -12,11 +12,16 @@ import UIKit
 
 enum StudioLayout: Equatable {
     case pocket, sidePanel, flipbook, easel
+    /// iPad and Mac: tool rail, canvas, inspector and a timeline, like a desk.
+    case desk
 
     /// The single place the layout is decided. When iOS publishes a fold-posture API, read it here
     /// and return `.easel` for "half open" instead of relying on the menu choice.
-    nonisolated static func choose(for size: CGSize, easel: Bool) -> StudioLayout {
+    nonisolated static func choose(for size: CGSize, easel: Bool, desk: Bool = false) -> StudioLayout {
         if easel && supportsEasel(size) { return .easel }
+        // iPad and Mac windows with room for the inspector. (An unfolded iPhone Duo is as wide,
+        // but it's a phone: it keeps the Flipbook.)
+        if desk && size.width >= 900 && size.height >= 560 { return .desk }
         // A big landscape space: an unfolded iPhone Duo (and iPad in landscape).
         if size.width >= 900 && size.height >= 600 && size.width > size.height { return .flipbook }
         if EditorView.prefersSidePanel(size) { return .sidePanel }
@@ -263,7 +268,7 @@ extension EditorView {
         .accessibilityLabel(Text("Frame rate, \(model.project.fps) frames per second"))
     }
 
-    private func barButton(_ icon: PixelIcon, _ label: LocalizedStringKey, tint: Color = Theme.text,
+    func barButton(_ icon: PixelIcon, _ label: LocalizedStringKey, tint: Color = Theme.text,
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             icon.view(size: 20).foregroundStyle(tint).frame(width: 44, height: 44).contentShape(Rectangle())

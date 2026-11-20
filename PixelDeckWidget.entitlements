@@ -16,5 +16,10 @@
 	<array>
 		<string>group.karthikvasudevan.pixeldeck</string>
 	</array>
+	<!-- Mac (Catalyst): the App Sandbox, required for the Mac App Store. Ignored on iPhone and iPad. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
 </dict>
 </plist>

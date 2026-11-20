@@ -1,6 +1,7 @@
 import PhotosUI
 import SwiftUI
 import UIKit
+import UniformTypeIdentifiers
 
 /// Photo to pixel art (Pro to keep the result; anyone can try it). Two steps: frame the part of
 /// the photo you want, then choose the size, colours and tidy-up, and open it in the Studio as a
@@ -453,6 +454,8 @@ struct NewCanvasFlow: ViewModifier {
     @Binding var showingPhoto: Bool
     var onBlank: () -> Void
     var onOpen: (SpriteProject) -> Void
+    /// A picture dragged in (from Finder on the Mac, or another app on iPad).
+    @State private var dropped: UIImage?
 
     func body(content: Content) -> some View {
         content
@@ -460,11 +463,23 @@ struct NewCanvasFlow: ViewModifier {
                 NewCanvasSheet(onBlank: { close { onBlank() } },
                                onPhoto: { close { showingPhoto = true } })
             }
-            .fullScreenCover(isPresented: $showingPhoto) {
-                PhotoToPixelView { project in
+            .fullScreenCover(isPresented: $showingPhoto, onDismiss: { dropped = nil }) {
+                PhotoToPixelView(initialPhoto: dropped) { project in
                     showingPhoto = false
                     after { onOpen(project) }
                 }
+            }
+            // Drop a picture on the gallery to turn it into pixel art.
+            .onDrop(of: [UTType.image], isTargeted: nil) { providers in
+                guard !showingPhoto, let provider = providers.first(where: { $0.canLoadObject(ofClass: UIImage.self) }) else { return false }
+                _ = provider.loadObject(ofClass: UIImage.self) { object, _ in
+                    guard let image = object as? UIImage else { return }
+                    Task { @MainActor in
+                        dropped = image
+                        showingPhoto = true
+                    }
+                }
+                return true
             }
     }
 

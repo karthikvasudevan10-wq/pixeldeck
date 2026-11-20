@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct PixelDeckApp: App {
@@ -18,6 +19,15 @@ struct PixelDeckApp: App {
         _cloud = State(initialValue: CloudSync(store: store))
     }
 
+    /// On the Mac, keep the window big enough for the desk layout.
+    private static func setMinimumWindowSize() {
+        #if targetEnvironment(macCatalyst)
+        for scene in UIApplication.shared.connectedScenes {
+            (scene as? UIWindowScene)?.sizeRestrictions?.minimumSize = CGSize(width: 980, height: 640)
+        }
+        #endif
+    }
+
     var body: some Scene {
         WindowGroup {
             ProjectListView()
@@ -29,6 +39,14 @@ struct PixelDeckApp: App {
                 .task { cloud.start() }
                 // Night (dark) and Paper (light) follow the system appearance.
                 .tint(Theme.accent)
+                .onAppear(perform: Self.setMinimumWindowSize)
+        }
+        .defaultSize(width: 1280, height: 820)
+        .commands {
+            // The Mac menu bar. (On iPhone and iPad the Studio's own shortcuts are used.)
+            #if targetEnvironment(macCatalyst)
+            StudioCommands()
+            #endif
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { store.flush() }
