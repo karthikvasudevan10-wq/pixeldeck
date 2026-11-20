@@ -27,6 +27,12 @@ struct PaletteSheet: View {
                 VStack(alignment: .leading, spacing: 18) {
                     switch tab {
                     case .palette:
+                        if let mode = model.project.retroMode {
+                            Text("A retro canvas (\(Text(mode.title))): its colours are fixed, and the dither brush paints the shades in between.",
+                                 comment: "Colours panel note on a retro canvas; the placeholder is the mode's name")
+                                .font(AppFont.body(13, .medium, relativeTo: .footnote))
+                                .foregroundStyle(Theme.accent2)
+                        }
                         current
                         MoreColorsSection(model: model)
                         ColorCountHint(model: model)
@@ -46,6 +52,7 @@ struct PaletteSheet: View {
         .presentationDetents([.medium, .large])
         .onChange(of: editing) { _, edit in
             guard let edit, model.palette.indices.contains(edit.index) else { return }
+            guard !model.isPaletteLocked else { editing = nil; return }
             SystemColorPicker.present(
                 initial: model.palette[edit.index],
                 onChange: { c, final in model.setPaletteColor(c, at: edit.index, commit: final) },
@@ -96,6 +103,7 @@ struct PaletteSheet: View {
                 PrimaryActionLabel(title: "Change this colour", icon: .picker, height: 48)
             }
             .buttonStyle(PrimaryButtonStyle(depth: 4))
+            .disabled(model.isPaletteLocked)
             .accessibilityHint("Opens the colour picker with a grid, spectrum and sliders for the selected swatch")
             Text("Tap a swatch to draw with it. Long-press any swatch to change it with the colour picker, then save the set below.")
                 .font(AppFont.body(12, relativeTo: .caption))

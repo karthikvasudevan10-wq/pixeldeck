@@ -70,8 +70,12 @@ struct TileScene: Identifiable, Codable, Equatable, Sendable {
     /// Row-major tile indices; -1 is empty.
     private(set) var cells: [Int]
     var sky = RGBA(hex: 0x241A3E)
-    /// The sprite that plays the hero (nil: the starter slime).
+    /// The sprite that plays the hero (nil: the starter slime), with a copy of its frames so a
+    /// shared level brings its hero along.
     var heroID: UUID?
+    var heroName: String?
+    var heroFrames: [PixelGrid] = []
+    var heroFPS = 8
     /// Tile coordinates.
     var start = PixelPoint(x: 1, y: 8)
     var coins: [PixelPoint] = []
@@ -182,6 +186,18 @@ struct TileScene: Identifiable, Codable, Equatable, Sendable {
         }
         return g
     }
+
+    /// Makes `project` the hero: its frames (trimmed to the art, at most `maxHeroFrames`) are
+    /// copied into the scene.
+    mutating func setHero(_ project: SpriteProject) {
+        guard let r = project.visibleContentBounds else { return }
+        heroID = project.id
+        heroName = project.name
+        heroFrames = Array(project.grids(croppedTo: r).prefix(TileScene.maxHeroFrames))
+        heroFPS = project.fps
+    }
+
+    static let maxHeroFrames = 24
 
     /// Whether the scene is within the free size and uses no Pro extras.
     var needsPro: Bool {

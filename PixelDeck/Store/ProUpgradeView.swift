@@ -175,6 +175,8 @@ extension ProFeature {
         case .photoToPixel: .picker
         case .animationPresets: .play
         case .adjustAllFrames: .swatches
+        case .academy: .check
+        case .playground: .play
         }
     }
 }

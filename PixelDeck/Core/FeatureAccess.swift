@@ -20,6 +20,10 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case animationPresets
     /// Colour adjustments across every frame at once.
     case adjustAllFrames
+    /// The Pixel Academy lessons beyond the first two.
+    case academy
+    /// Bigger Playground levels, enemies and sound.
+    case playground
 
     var id: String { rawValue }
 
@@ -80,4 +84,7 @@ struct FeatureAccess: Equatable, Sendable {
     var allowsPhotoToPixel: Bool { isPro }
     func allows(_ preset: AnimationPreset) -> Bool { isPro || preset.isFree }
     var allowsAdjustAllFrames: Bool { isPro }
+    func allows(_ lesson: Lesson) -> Bool { isPro || lesson.isFree }
+    /// Levels bigger than 24 × 12, enemies and sound.
+    var allowsPlaygroundExtras: Bool { isPro }
 }

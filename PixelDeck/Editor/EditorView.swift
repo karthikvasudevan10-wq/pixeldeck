@@ -58,6 +58,13 @@ struct EditorView: View {
     @State var tourBaseline = TourBaseline()
     @State var tourCelebrating = false
     @State var tourNudge: String?
+    /// A Pixel Academy lesson (Core/Academy.swift): which sprite it runs on, which lesson, and
+    /// the step, kept across launches so a lesson can be carried on later.
+    @AppStorage("lessonProjectID") var lessonProjectID = ""
+    @AppStorage("lessonID") var lessonID = ""
+    @AppStorage("lessonStep") var lessonStep = 0
+    @State var lessonPlayBaseline = 0
+    @State var lessonCelebrating = false
 
     /// The desk layout is for iPad and Mac (not during the guided tour, which points at the dock).
     static let deskDevice = UIDevice.current.userInterfaceIdiom == .pad || ProcessInfo.processInfo.isMacCatalystApp
@@ -73,6 +80,7 @@ struct EditorView: View {
     @AppStorage("deskInspector") var showingInspector = true
     @State var inspectorTab: InspectorTab = .layers
     @State var showingCommunity = false
+    @State var showingPlayground = false
 
     init(project: SpriteProject) {
         _model = State(initialValue: EditorModel(project: project))
@@ -138,6 +146,8 @@ struct EditorView: View {
             }
         }
         .overlay { TourEdgeArrow(target: tourTarget) }
+        .modifier(LessonOverlay(lesson: activeLesson, step: lessonStep, stepDone: lessonStepDone, celebrating: lessonCelebrating,
+                                onAdvance: advanceLesson, onLeave: { dismiss() }, onAppear: prepareLesson))
         .animation(.easeOut(duration: 0.25), value: tourStepRaw)
         .onChange(of: tourStepDone) { _, done in if done { advanceTour() } }
         .sensoryFeedback(.success, trigger: tourStepRaw)
@@ -192,6 +202,7 @@ struct EditorView: View {
         #endif
         .focusedSceneValue(\.studio, studioActions)
         .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
+        .fullScreenCover(isPresented: $showingPlayground) { PlaygroundHomeView() }
         .overlay(alignment: .top) {
             if pencilNotice {
                 Text("Apple Pencil draws. Fingers now move and zoom the canvas.")
@@ -210,6 +221,8 @@ struct EditorView: View {
         .fullScreenCover(isPresented: $showingExport) { ExportView(project: model.project) }
         .onChange(of: editingSwatch) { _, edit in
             guard let edit, model.palette.indices.contains(edit.index) else { return }
+            // Retro canvases keep their mode's colours.
+            guard !model.isPaletteLocked else { editingSwatch = nil; return }
             SystemColorPicker.present(
                 initial: model.palette[edit.index],
                 onChange: { c, final in model.setPaletteColor(c, at: edit.index, commit: final) },
@@ -265,7 +278,7 @@ struct EditorView: View {
         return TimelineView(.animation(minimumInterval: PlaybackClock.tick(sequence.durations), paused: !model.isPlaying)) { ctx in
             let elapsed = sequence.repeats ? ctx.date.timeIntervalSinceReferenceDate : ctx.date.timeIntervalSince(playStarted)
             let frame: Int? = model.isPlaying ? sequence.frame(at: elapsed) : nil
-            PixelCanvas(state: withTourGuide(model.canvasState(playingFrame: frame)), model: model, fit: fit,
+            PixelCanvas(state: withLessonGuide(withTourGuide(model.canvasState(playingFrame: frame))), model: model, fit: fit,
                         drawingEnabled: !swipeAnywhere && !model.isPlaying,
                         pencilOnly: pencilOnly,
                         onPencilDetected: pencilFirstSeen,
@@ -490,7 +503,7 @@ struct EditorView: View {
                     .accessibilityLabel("Shading assistant")
                     .accessibilityHint("The brush shades or highlights what you've drawn, following your light")
                 }
-                stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes) { model.dither.toggle() }
+                stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes && model.project.retroMode == nil) { model.dither.toggle() }
                     .accessibilityLabel("Dither brush")
                 stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes) { model.mirrorVertical.toggle() }
                     .accessibilityLabel("Top-bottom symmetry")

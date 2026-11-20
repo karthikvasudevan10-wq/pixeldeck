@@ -39,6 +39,13 @@ struct ProjectListView: View {
     @State private var showingNewCanvas = false
     @State private var showingPhoto = false
     @State private var upgrade: ProFeature?
+    /// Pixel Playground (the Play tab) and Pixel Academy.
+    @State private var showingPlayground = false
+    @State private var showingAcademy = false
+    @State private var incomingLevel: URL?
+    @AppStorage("lessonProjectID") private var lessonProjectID = ""
+    @AppStorage("lessonID") private var lessonID = ""
+    @AppStorage("lessonStep") private var lessonStep = 0
 
     enum GalleryFilter: Hashable { case moving, stills }
 
@@ -51,7 +58,8 @@ struct ProjectListView: View {
     /// Live previews run only while the gallery is actually on screen — not under the Studio,
     /// the welcome screens or export, and not in the background.
     private var galleryVisible: Bool {
-        path.isEmpty && !showingWelcome && exporting == nil && !showingSettings && !showingPhoto && scenePhase == .active
+        path.isEmpty && !showingWelcome && exporting == nil && !showingSettings && !showingPhoto
+            && !showingPlayground && !showingAcademy && scenePhase == .active
     }
 
     private var filtered: [SpriteProject] {
@@ -64,6 +72,11 @@ struct ProjectListView: View {
                 header
                 if !tourOffered && hasSeenOnboarding && !selecting { tourBanner }
                 ScrollView {
+                    if !selecting {
+                        IdeaCard(onDraw: drawIdea)
+                            .padding(.horizontal, 16)
+                            .padding(.bottom, 12)
+                    }
                     // Two columns on iPhone (as designed); more on iPad as the width allows.
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 165, maximum: 260), spacing: 12)], spacing: 12) {
                         if !selecting { newCanvasTile }
@@ -132,6 +145,15 @@ struct ProjectListView: View {
         }
         // pixeldeck://community/<post id>, from the Home Screen widget.
         .onOpenURL { url in
+            // A level someone sent, opened from Files or Messages.
+            if url.isFileURL {
+                if url.pathExtension.lowercased() == LevelFile.fileExtension {
+                    path = []
+                    incomingLevel = url
+                    showingPlayground = true
+                }
+                return
+            }
             guard url.scheme == "pixeldeck", url.host == "community" else { return }
             path = []
             communityPostID = url.pathComponents.dropFirst().first
@@ -139,7 +161,9 @@ struct ProjectListView: View {
         }
         .sheet(item: $sharing) { ShareToCommunityView(project: $0) }
         .modifier(NewCanvasFlow(showingChooser: $showingNewCanvas, showingPhoto: $showingPhoto,
-                                onBlank: createAndOpen, onOpen: openNew))
+                                showingPlayground: $showingPlayground, showingAcademy: $showingAcademy,
+                                incomingLevel: $incomingLevel,
+                                onBlank: createAndOpen, onOpen: openNew, onStartLesson: startLesson))
         .proUpgradeSheet($upgrade)
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
         .alert("Rename sprite", isPresented: Binding(get: { renamingID != nil }, set: { if !$0 { renamingID = nil } })) {
@@ -205,6 +229,11 @@ struct ProjectListView: View {
                     }
                     .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
                     .accessibilityLabel("Community")
+                    Button { showingAcademy = true } label: {
+                        Image(systemName: "graduationcap.fill").font(.system(size: 17)).frame(width: 42, height: 42)
+                    }
+                    .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent2))
+                    .accessibilityLabel("Pixel Academy")
                     Button { showingSettings = true } label: {
                         PixelIcon.settings.view(size: 20).frame(width: 42, height: 42)
                     }
@@ -286,8 +315,8 @@ struct ProjectListView: View {
             .buttonStyle(PrimaryButtonStyle(fill: Theme.accent2, shadow: Theme.accent2Shadow, depth: 5))
             .frame(maxWidth: .infinity)
             .accessibilityLabel("New canvas")
-            barItem(.export, "Export", color: Theme.muted) { exporting = store.projects.first }
-                .disabled(store.projects.isEmpty)
+            barItem(.play, "Play", color: Theme.muted) { showingPlayground = true }
+                .accessibilityLabel("Playground")
         }
         .frame(height: 76)
         .background(Theme.ink.ignoresSafeArea(edges: .bottom))
@@ -433,6 +462,29 @@ struct ProjectListView: View {
         store.save(project)
         filter = project.frames.count > 1 ? .moving : .stills
         path = [project.id]
+    }
+
+    /// A new sprite named after today's idea.
+    private func drawIdea(_ idea: String) {
+        var p = SpriteProject(name: String(idea.prefix(40)))
+        p.modifiedAt = Date()
+        openNew(p)
+    }
+
+    /// Starts a Pixel Academy lesson on a fresh sprite, or carries on with the one in progress.
+    private func startLesson(_ lesson: Lesson) {
+        if lessonID == lesson.id, let id = UUID(uuidString: lessonProjectID), store.project(id: id) != nil {
+            path = [id]
+            return
+        }
+        var p = SpriteProject(name: String(localized: lesson.title))
+        p.fps = lesson.fps
+        store.save(p)
+        lessonID = lesson.id
+        lessonStep = 0
+        lessonProjectID = p.id.uuidString
+        filter = .moving
+        path = [p.id]
     }
 
     private func createAndOpen() {

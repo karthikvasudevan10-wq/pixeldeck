@@ -3,6 +3,8 @@ import SwiftUI
 /// Shares a sprite to Community: a title, your nickname, and (the first time) agreeing to the rules.
 struct ShareToCommunityView: View {
     let project: SpriteProject
+    /// Set when sharing a Playground level (`project` is then its picture).
+    var level: TileScene? = nil
     @Environment(CommunityService.self) private var community
     @Environment(AgeGate.self) private var ageGate
     @Environment(\.dismiss) private var dismiss
@@ -53,6 +55,10 @@ struct ShareToCommunityView: View {
                             .foregroundStyle(Theme.accent2)
                     }
 
+                    if let remix = project.remix, !remix.title.isEmpty {
+                        Text("Shared as a remix of \(remix.title) by \(remix.author), with credit.", comment: "Sharing a remix; placeholders are the original post's title and its author's nickname")
+                            .font(AppFont.body(13, .medium, relativeTo: .footnote)).foregroundStyle(Theme.accent2)
+                    }
                     Text("Everyone using Pixel Deck can see, and remix, what you share. You can delete it later from Community › Mine.")
                         .font(AppFont.body(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
 
@@ -108,7 +114,7 @@ struct ShareToCommunityView: View {
         posting = true
         Task {
             do {
-                try await community.publish(project, title: title, nickname: nickname)
+                try await community.publish(project, title: title, nickname: nickname, level: level)
                 rulesAccepted = true
                 posted = true
                 try? await Task.sleep(for: .seconds(1))

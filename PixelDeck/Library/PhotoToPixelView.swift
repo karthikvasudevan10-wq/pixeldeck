@@ -448,25 +448,60 @@ struct NewCanvasOption: Identifiable {
     var action: () -> Void
 }
 
-/// Presents the New canvas chooser and what it leads to. One sheet closes before the next opens.
+/// Presents the New canvas chooser and what it leads to (the photo flow, retro modes, the
+/// Playground), plus Pixel Academy. One sheet closes before the next opens.
 struct NewCanvasFlow: ViewModifier {
     @Binding var showingChooser: Bool
     @Binding var showingPhoto: Bool
+    @Binding var showingPlayground: Bool
+    @Binding var showingAcademy: Bool
+    /// A level file to open in the Playground (from Files or Messages).
+    @Binding var incomingLevel: URL?
     var onBlank: () -> Void
     var onOpen: (SpriteProject) -> Void
+    var onStartLesson: (Lesson) -> Void
     /// A picture dragged in (from Finder on the Mac, or another app on iPad).
     @State private var dropped: UIImage?
+    @State private var showingRetro = false
 
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $showingChooser) {
                 NewCanvasSheet(onBlank: { close { onBlank() } },
-                               onPhoto: { close { showingPhoto = true } })
+                               onPhoto: { close { showingPhoto = true } },
+                               extras: [
+                                   NewCanvasOption(id: "retro", icon: .swatches, title: "Retro mode",
+                                                   detail: "1-bit, handheld, ink or 8-colour, with the right palette and dither",
+                                                   action: { close { showingRetro = true } }),
+                                   NewCanvasOption(id: "tiles", icon: .gallery, title: "Tiles",
+                                                   detail: "Draw tiles, paint scenes", action: { close { showingPlayground = true } }),
+                                   NewCanvasOption(id: "level", icon: .play, title: "Playground level",
+                                                   detail: "Make your sprite a hero", action: { close { showingPlayground = true } }),
+                               ])
+            }
+            .sheet(isPresented: $showingRetro) {
+                RetroModeSheet { mode in
+                    showingRetro = false
+                    after {
+                        onOpen(SpriteProject.retro(name: String(localized: "\(String(localized: mode.title)) sprite",
+                                                                 comment: "Default name for a retro-mode sprite; the placeholder is the mode, e.g. Handheld"),
+                                                   mode: mode))
+                    }
+                }
             }
             .fullScreenCover(isPresented: $showingPhoto, onDismiss: { dropped = nil }) {
                 PhotoToPixelView(initialPhoto: dropped) { project in
                     showingPhoto = false
                     after { onOpen(project) }
+                }
+            }
+            .fullScreenCover(isPresented: $showingPlayground, onDismiss: { incomingLevel = nil }) {
+                PlaygroundHomeView(incoming: incomingLevel)
+            }
+            .fullScreenCover(isPresented: $showingAcademy) {
+                AcademyView { lesson in
+                    showingAcademy = false
+                    after { onStartLesson(lesson) }
                 }
             }
             // Drop a picture on the gallery to turn it into pixel art.

@@ -30,6 +30,7 @@ extension EditorView {
             HStack(spacing: 0) {
                 if showingSidebar {
                     DeskSidebar(currentID: model.project.id, onOpen: openProject, onNew: newCanvas,
+                                onPlayground: { showingPlayground = true },
                                 onCommunity: { showingCommunity = true })
                         .frame(width: Self.sidebarWidth)
                     Theme.line.frame(width: 2)
@@ -367,6 +368,7 @@ struct DeskSidebar: View {
     let currentID: UUID
     var onOpen: (SpriteProject) -> Void
     var onNew: () -> Void
+    var onPlayground: () -> Void
     var onCommunity: () -> Void
     @State private var search = ""
 
@@ -406,6 +408,7 @@ struct DeskSidebar: View {
             Theme.line.frame(height: 2)
             VStack(spacing: 2) {
                 footer(.plus, "New canvas", tint: Theme.accent2, action: onNew)
+                footer(.play, "Playground", tint: Theme.accent2, action: onPlayground)
                 footer(.community, "Community", tint: Theme.accent, action: onCommunity)
             }
             .padding(6)

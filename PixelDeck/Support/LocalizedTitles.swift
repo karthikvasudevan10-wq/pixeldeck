@@ -123,6 +123,8 @@ extension ProFeature {
         case .photoToPixel: "Photo to pixel art"
         case .animationPresets: "Every animation preset"
         case .adjustAllFrames: "Recolour every frame at once"
+        case .academy: "Every Pixel Academy lesson"
+        case .playground: "Bigger Playground levels, enemies, sound"
         }
     }
 
@@ -138,6 +140,8 @@ extension ProFeature {
         case .photoToPixel: "Turn any photo into pixel art in its own colours, your palette or a retro look, ready to tidy and animate."
         case .animationPresets: "Bounce and Blink are free. Pro adds Float, Shake, Colour cycle and Squash, drawn for you as real frames."
         case .adjustAllFrames: "Change brightness, contrast, hue and saturation across a whole animation in one go."
+        case .academy: "The first two lessons are free. Pro adds squash and stretch, a looping campfire, a spinning coin and an explosion."
+        case .playground: "Free levels are \(TileScene.freeColumns) × \(TileScene.freeRows) tiles. Pro levels can be four times as long, with enemies to dodge and a chiptune soundtrack."
         }
     }
 }

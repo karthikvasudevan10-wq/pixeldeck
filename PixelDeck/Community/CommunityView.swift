@@ -166,6 +166,9 @@ struct CommunityPostView: View {
     @State private var confirmingBlock = false
     @State private var confirmingDelete = false
     @State private var remixed = false
+    @State private var family: [CommunityPost] = []
+    @State private var openRemix: CommunityPost?
+    @State private var playingLevel: TileScene?
     @State private var error: String?
     @State private var heartError: String?
     /// The live copy from the service (hearts change while this is open).
@@ -222,12 +225,23 @@ struct CommunityPostView: View {
                         }
                     }
 
-                    Button(action: remix) {
-                        PrimaryActionLabel(title: remixed ? "Added to your gallery" : "Remix", icon: remixed ? .check : .create, height: 50)
+                    if let remix = post.remix, !remix.title.isEmpty {
+                        Text("A remix of \(remix.title) by \(remix.author)", comment: "Community post credit; placeholders are the original post's title and its author's nickname")
+                            .font(AppFont.body(13, .medium, relativeTo: .footnote)).foregroundStyle(Theme.accent2)
                     }
-                    .buttonStyle(PrimaryButtonStyle(depth: 4))
-                    .disabled(remixed)
-                    .accessibilityHint("Copies this sprite into your gallery so you can edit it")
+
+                    if let level = post.level {
+                        LevelPostActions(post: post, level: level, onPlay: { playingLevel = level })
+                    } else {
+                        Button(action: remix) {
+                            PrimaryActionLabel(title: remixed ? "Added to your gallery" : "Remix", icon: remixed ? .check : .create, height: 50)
+                        }
+                        .buttonStyle(PrimaryButtonStyle(depth: 4))
+                        .disabled(remixed)
+                        .accessibilityHint("Copies this sprite into your gallery so you can edit it. Sharing your version credits this one.")
+                    }
+
+                    RemixFamilyRow(family: family, isMine: post.isMine, onOpen: { openRemix = $0 })
 
                     HStack(spacing: 8) {
                         if post.isMine || community.isModerator {
@@ -250,6 +264,9 @@ struct CommunityPostView: View {
         }
         .screenBackground()
         .presentationDetents([.large])
+        .task { family = await community.remixes(of: post) }
+        .sheet(item: $openRemix) { CommunityPostView(post: $0) }
+        .fullScreenCover(item: $playingLevel) { PlaygroundPlayView(scene: $0) }
         .confirmationDialog("Report this post?", isPresented: $confirmingReport, titleVisibility: .visible) {
             ForEach(Self.reasons, id: \.self) { reason in
                 Button(LocalizedStringKey(reason)) {
@@ -290,8 +307,79 @@ struct CommunityPostView: View {
     private func remix() {
         var p = post.art.makeProject(name: String(localized: "\(post.title) remix", comment: "Name for a sprite copied from Community; the placeholder is the post's title"))
         p.modifiedAt = Date()
+        // Remembered with the sprite, so sharing the remix credits this post.
+        p.remix = RemixCredit(postID: post.id, title: post.title, author: post.author)
         store.save(p)
         remixed = true
+    }
+}
+
+/// A post that is a Playground level: play it, or keep a copy to edit.
+private struct LevelPostActions: View {
+    let post: CommunityPost
+    let level: TileScene
+    var onPlay: () -> Void
+    @State private var saved = false
+
+    var body: some View {
+        Button(action: onPlay) {
+            PrimaryActionLabel(title: "Play this level", icon: .play, height: 50)
+        }
+        .buttonStyle(PrimaryButtonStyle(depth: 4))
+        Button {
+            var copy = level
+            copy.id = UUID()
+            copy.name = post.title
+            copy.author = post.author
+            SceneStore.forApp().save(copy)
+            saved = true
+        } label: {
+            Text(saved ? "Added to your levels" : "Add to my levels").font(AppFont.pixel(13))
+                .frame(maxWidth: .infinity, minHeight: 46).contentShape(Rectangle())
+        }
+        .buttonStyle(TileButtonStyle())
+        .disabled(saved)
+        .accessibilityHint("Copies this level into Playground so you can edit it")
+    }
+}
+
+/// The posts remixed from this one.
+private struct RemixFamilyRow: View {
+    let family: [CommunityPost]
+    let isMine: Bool
+    var onOpen: (CommunityPost) -> Void
+
+    var body: some View {
+        if !family.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Remix family · \(family.count)", comment: "Heading above the posts remixed from this one")
+                    .font(AppFont.pixel(12)).foregroundStyle(Theme.muted)
+                if isMine {
+                    Text("Your art inspired \(family.count) remixes.", comment: "Shown on your own post; plural")
+                        .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.accent2)
+                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(family) { r in
+                            Button { onOpen(r) } label: {
+                                VStack(spacing: 4) {
+                                    ZStack {
+                                        Theme.chip
+                                        if let first = r.frames.first { PixelImage(frame: first, checker: false).padding(6) }
+                                    }
+                                    .frame(width: 84, height: 84)
+                                    Text(verbatim: r.title).font(AppFont.body(12, .bold, relativeTo: .caption)).foregroundStyle(Theme.cream).lineLimit(1)
+                                    Text("by \(r.author)", comment: "Community post credit; the placeholder is a nickname")
+                                        .font(AppFont.body(11, relativeTo: .caption2)).foregroundStyle(Theme.muted).lineLimit(1)
+                                }
+                                .frame(width: 84)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

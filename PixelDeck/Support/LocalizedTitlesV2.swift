@@ -128,3 +128,61 @@ extension VideoShape {
         }
     }
 }
+
+extension Lesson {
+    var title: LocalizedStringResource {
+        switch id {
+        case "blink": "Blinking eye"
+        case "walk": "Walk cycle"
+        case "squash": "Squash and stretch"
+        case "campfire": "A looping campfire"
+        case "coin": "Spinning coin"
+        case "explosion": "An explosion"
+        default: "Lesson"
+        }
+    }
+
+    /// What to notice while drawing frame `step` (counted from 0).
+    func tip(step: Int) -> LocalizedStringResource {
+        let tips: [LocalizedStringResource]
+        switch id {
+        case "blink":
+            tips = ["The open eye: an almond outline with a round pupil.",
+                    "Half shut: the lids come towards the middle.",
+                    "Shut: one line, with lashes underneath.",
+                    "Half shut again, so it opens smoothly."]
+        case "walk":
+            tips = ["Passing: the legs are together and the body is at its tallest.",
+                    "The front leg reaches forward as the body starts to drop.",
+                    "Contact: legs wide apart, the body at its lowest.",
+                    "The legs swing back towards each other.",
+                    "Passing again, with the other leg in front.",
+                    "The other leg reaches forward.",
+                    "Contact on the other side: arms always swing opposite to legs.",
+                    "Back towards the start, so the loop joins up."]
+        case "squash":
+            tips = ["A round ball at the top of its bounce.",
+                    "Falling: a little taller and thinner.",
+                    "Faster: stretched the most just before it lands.",
+                    "Squash! Wide and flat on the ground.",
+                    "Springing up: stretched tall again.",
+                    "Slowing near the top: almost round."]
+        case "campfire":
+            tips = ["Logs crossed at the bottom, the flame leaning left.",
+                    "The flame stands up straight.",
+                    "Now it leans right.",
+                    "Straight again, a little different, so it flickers."]
+        case "coin":
+            tips = ["The coin facing you: a full oval.",
+                    "Turning: narrower.",
+                    "Edge on: just a thin bar.",
+                    "Opening up again on its way round."]
+        case "explosion":
+            tips = ["A tiny flash.", "It swells.", "At its biggest and brightest.",
+                    "The middle clears: now it's a ring.", "The ring thins and sparks fly.", "Only sparks are left."]
+        default:
+            tips = []
+        }
+        return tips.indices.contains(step) ? tips[step] : "Draw the next frame."
+    }
+}

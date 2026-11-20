@@ -20,6 +20,10 @@ struct CommunityPost: Identifiable, Equatable {
     var heartedByMe = false
     /// Shared before posts carried a preview image (the widget needs one).
     var needsThumb = false
+    /// The post this one was remixed from, for credit and the remix family.
+    var remix: RemixCredit? = nil
+    /// A Playground level to play, when the post is one.
+    var level: TileScene? = nil
 
     static func == (l: CommunityPost, r: CommunityPost) -> Bool {
         l.id == r.id && l.isMine == r.isMine && l.hearts == r.hearts && l.heartedByMe == r.heartedByMe
@@ -40,7 +44,8 @@ struct CommunityPost: Identifiable, Equatable {
 ///
 /// Record types (see AppStore/SUBMISSION_CHECKLIST.md for the indexes and security roles):
 /// - `Post`: title, author, width, height, frames, fps (all plain fields) and art (an asset: the
-///   PostArt JSON).
+///   PostArt JSON). Remixes add remixOf (a reference to the original Post, queryable),
+///   remixOfTitle and remixOfAuthor. Playground levels add level (an asset: the TileScene JSON).
 /// - `Report`: post (a reference to the Post), reason. One per person per post.
 /// - `Heart`: post (reference). One per person per post (record name `heart-<post>-<user>`),
 ///   so a heart can't be counted twice. Only its creator can delete it.
@@ -309,6 +314,22 @@ final class CommunityService {
         return post
     }
 
+    /// The posts remixed from `post`, newest first (hidden and blocked ones left out).
+    func remixes(of post: CommunityPost) async -> [CommunityPost] {
+        guard let db else { return [] }
+        let ref = CKRecord.Reference(recordID: CKRecord.ID(recordName: post.id), action: .none)
+        let query = CKQuery(recordType: "Post", predicate: NSPredicate(format: "remixOf == %@", ref))
+        query.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        guard let page = try? await db.records(matching: query, resultsLimit: 30) else { return [] }
+        let records = page.matchResults.compactMap { try? $0.1.get() }
+        let reporters = await reports(for: records.map(\.recordID))
+        return records.compactMap(makePost).filter { p in
+            p.isMine || CommunityModeration.isVisible(
+                postID: p.id, authorID: p.authorID, title: p.title, author: p.author,
+                reporters: reporters[p.id] ?? [], blockedAuthors: blockedAuthors, reportedByMe: reportedByMe)
+        }
+    }
+
     /// Who reported each of these posts (record name → reporter ids).
     private func reports(for ids: [CKRecord.ID]) async -> [String: Set<String>] {
         guard let db, !ids.isEmpty else { return [:] }
@@ -330,6 +351,16 @@ final class CommunityService {
         let creator = r.creatorUserRecordID?.recordName
         // CloudKit names the current user's own records "__defaultOwner__".
         let mine = creator == CKCurrentUserDefaultName || (creator != nil && creator == myUserID)
+        var remix: RemixCredit?
+        if let parent = (r["remixOf"] as? CKRecord.Reference)?.recordID.recordName {
+            remix = RemixCredit(postID: parent, title: ContentFilter.isAcceptable((r["remixOfTitle"] as? String) ?? "") ? ((r["remixOfTitle"] as? String) ?? "") : "",
+                                author: ContentFilter.isAcceptable((r["remixOfAuthor"] as? String) ?? "") ? ((r["remixOfAuthor"] as? String) ?? "") : "")
+        }
+        var level: TileScene?
+        if let asset = r["level"] as? CKAsset, let levelURL = asset.fileURL, let levelData = try? Data(contentsOf: levelURL),
+           levelData.count < 8_000_000 {
+            level = try? JSONDecoder().decode(TileScene.self, from: levelData)
+        }
         return CommunityPost(
             id: r.recordID.recordName,
             title: (r["title"] as? String) ?? "",
@@ -338,7 +369,8 @@ final class CommunityService {
             created: r.creationDate ?? Date(),
             art: art, isMine: mine,
             frames: art.frames.map { Frame(grid: $0) },
-            needsThumb: r["thumb"] == nil)
+            needsThumb: r["thumb"] == nil,
+            remix: remix, level: level)
     }
 
     /// Looks up this person's CloudKit id once (nil without an iCloud account).
@@ -364,7 +396,8 @@ final class CommunityService {
     }
 
     /// Shares a sprite. Throws a readable error (no iCloud account, offline, too big, filtered).
-    func publish(_ project: SpriteProject, title rawTitle: String, nickname rawNick: String) async throws {
+    /// With `level`, the post is a Playground level (the sprite is its picture).
+    func publish(_ project: SpriteProject, title rawTitle: String, nickname rawNick: String, level: TileScene? = nil) async throws {
         guard let db, let container else { throw PostError.notSetUp }
         let title = ContentFilter.tidy(rawTitle, maxLength: ContentFilter.maxTitleLength)
         let nick = ContentFilter.tidy(rawNick, maxLength: ContentFilter.nicknameLength.upperBound)
@@ -389,6 +422,20 @@ final class CommunityService {
             record["frames"] = art.frames.count
             record["fps"] = art.fps
             record["art"] = CKAsset(fileURL: url)
+            // A remix credits the post it came from.
+            if let remix = project.remix {
+                record["remixOf"] = CKRecord.Reference(recordID: CKRecord.ID(recordName: remix.postID), action: .none)
+                record["remixOfTitle"] = remix.title
+                record["remixOfAuthor"] = remix.author
+            }
+            let levelURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("json")
+            defer { try? FileManager.default.removeItem(at: levelURL) }
+            if var shared = level {
+                shared.author = nick
+                shared.heroID = nil
+                try JSONEncoder().encode(shared).write(to: levelURL)
+                record["level"] = CKAsset(fileURL: levelURL)
+            }
             // A small PNG of the first frame, for the Home Screen widget.
             let thumbURL = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("png")
             defer { try? FileManager.default.removeItem(at: thumbURL) }
