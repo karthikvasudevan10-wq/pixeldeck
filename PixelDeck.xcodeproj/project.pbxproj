@@ -346,6 +346,7 @@
 				DEVELOPMENT_TEAM = 8SCM6833N9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PixelDeck-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Pixel Deck";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
@@ -383,6 +384,7 @@
 				DEVELOPMENT_TEAM = 8SCM6833N9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "PixelDeck-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = "Pixel Deck";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";

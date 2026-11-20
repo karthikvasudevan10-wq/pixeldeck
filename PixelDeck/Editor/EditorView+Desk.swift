@@ -355,6 +355,24 @@ struct DeskInspector: View {
                 .font(AppFont.body(12, relativeTo: .caption))
                 .foregroundStyle(Theme.muted)
         }
+        Menu {
+            Picker(selection: Binding(get: { model.motionGuide }, set: { model.motionGuide = $0 })) {
+                Text("Off").tag(MotionGuide?.none)
+                ForEach(MotionGuide.allCases) { g in Text(g.title).tag(MotionGuide?.some(g)) }
+            } label: {
+                Text("Movement")
+            }
+        } label: {
+            HStack(spacing: 6) {
+                (model.motionGuide.map { Text("Motion guide: \(Text($0.title))", comment: "The placeholder is the movement, e.g. Walk") } ?? Text("Motion guides"))
+                    .font(AppFont.body(13, .medium, relativeTo: .footnote))
+                if !model.access.allowsMotionGuides { ProBadge() }
+                Spacer(minLength: 0)
+            }
+            .foregroundStyle(Theme.accent2)
+            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+            .contentShape(Rectangle())
+        }
         Theme.line.frame(height: 2)
         OnionTimingControls(model: model)
     }

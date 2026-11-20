@@ -95,6 +95,11 @@ struct SettingsView: View {
                             }
                         }
 
+                        // AI assistants draw through a local server, which only the Mac app runs.
+                        if ProcessInfo.processInfo.isMacCatalystApp {
+                            group("AI assistants") { AISettingsSection() }
+                        }
+
                         group("Help") {
                             if let onStartTour {
                                 row(icon: .play, title: "Take the guided tour", tint: Theme.accent2, action: onStartTour)

@@ -186,3 +186,14 @@ extension Lesson {
         return tips.indices.contains(step) ? tips[step] : "Draw the next frame."
     }
 }
+
+extension MotionGuide {
+    var title: LocalizedStringResource {
+        switch self {
+        case .walk: LocalizedStringResource("Walk", comment: "Motion guide")
+        case .run: LocalizedStringResource("Run", comment: "Motion guide")
+        case .jump: LocalizedStringResource("Jump", comment: "Motion guide")
+        case .idle: LocalizedStringResource("Idle bob", comment: "Motion guide: standing and breathing")
+        }
+    }
+}

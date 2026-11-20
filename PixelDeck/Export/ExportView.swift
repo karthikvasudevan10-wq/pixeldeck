@@ -22,6 +22,7 @@ struct ExportView: View {
     /// Copy "Made with #PixelDeck" and the link when sharing a video, ready to paste as the caption.
     @AppStorage("shareCaption") private var shareCaption = true
     @State private var captionToast = false
+    @State private var showingBeads = false
 
     init(project: SpriteProject) {
         self.project = project
@@ -52,6 +53,7 @@ struct ExportView: View {
                     if options.format == .video && options.videoShape == .square { videoResolution }
                     formatSection
                     if options.format != .spriteSheet && access.addsWatermark { watermarkNote }
+                    moreWays
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -71,6 +73,7 @@ struct ExportView: View {
         .onChange(of: options.format) { _, _ in clampScale() }
         .onChange(of: options.layout) { _, _ in clampScale() }
         .proUpgradeSheet($upgrade)
+        .sheet(isPresented: $showingBeads) { BeadPatternView(project: project) }
         .sheet(item: $shareItems) { items in
             ActivityView(items: items.urls) { completed in
                 shareItems = nil
@@ -307,6 +310,39 @@ struct ExportView: View {
                 if on && f == .spriteSheet { sheetOptions }
             }
         }
+    }
+
+    /// Beyond pictures and video: a file for the desktop, and a pattern for the craft table.
+    private var moreWays: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: "More")
+            moreRow("Aseprite file", "Layers, frames and timing, for desktop pixel-art apps", ext: ".aseprite", pro: !access.allowsAseprite) {
+                guard access.allowsAseprite else { upgrade = .aseprite; return }
+                if let url = AsepriteFiles.export(project) { shareItems = ShareItems(urls: [url]) }
+                else { errorMessage = String(localized: "Couldn't make the Aseprite file.") }
+            }
+            moreRow("Bead or cross-stitch pattern", "A printable chart and a shopping list", ext: ".pdf", pro: false) { showingBeads = true }
+        }
+    }
+
+    private func moreRow(_ title: LocalizedStringKey, _ detail: LocalizedStringKey, ext: String, pro: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title).font(AppFont.body(15, .bold, relativeTo: .body)).foregroundStyle(Theme.cream)
+                    Text(detail).font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                }
+                Spacer()
+                if pro { ProBadge() }
+                Text(verbatim: ext).font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            }
+            .padding(.horizontal, 14)
+            .frame(minHeight: 60)
+            .background(Theme.surface)
+            .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var sheetOptions: some View {

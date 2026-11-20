@@ -94,3 +94,59 @@ struct LessonOverlay: ViewModifier {
             .onAppear(perform: onAppear)
     }
 }
+
+/// Motion guides (Pro): choose a movement and a figure size; a pose appears on every frame.
+struct MotionGuideMenu: View {
+    let model: EditorModel
+
+    var body: some View {
+        Menu {
+            Picker(selection: Binding(get: { model.motionGuide }, set: { model.motionGuide = $0 })) {
+                Text("Off").tag(MotionGuide?.none)
+                ForEach(MotionGuide.allCases) { g in
+                    if model.access.allowsMotionGuides {
+                        Text(g.title).tag(MotionGuide?.some(g))
+                    } else {
+                        Text("\(Text(g.title)) · Pro", comment: "A locked option; the placeholder is the option name").tag(MotionGuide?.some(g))
+                    }
+                }
+            } label: {
+                Text("Movement")
+            }
+            Picker(selection: Binding(get: { model.motionGuideHeight }, set: { model.motionGuideHeight = $0 })) {
+                ForEach(MotionGuides.heights, id: \.self) { h in
+                    Text("\(h) pixels tall", comment: "Motion guide figure height").tag(h)
+                }
+            } label: {
+                Text("Figure size")
+            }
+            .pickerStyle(.menu)
+        } label: {
+            Label("Motion guides", systemImage: "figure.walk")
+        }
+    }
+}
+
+/// Connects this Studio to AI assistants on the Mac (Support/AIBridge.swift): tools draw in the
+/// Studio that's on screen, and a banner shows while they do.
+struct AIStudioLink: ViewModifier {
+    let model: EditorModel
+    var onNewCanvas: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .top) {
+                if ProcessInfo.processInfo.isMacCatalystApp { AIBanner() }
+            }
+            .onAppear {
+                AIBridge.shared.model = model
+                AIBridge.shared.startNewCanvas = onNewCanvas
+            }
+            .onDisappear {
+                if AIBridge.shared.model === model {
+                    AIBridge.shared.model = nil
+                    AIBridge.shared.startNewCanvas = nil
+                }
+            }
+    }
+}

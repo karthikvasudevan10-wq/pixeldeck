@@ -203,6 +203,7 @@ struct EditorView: View {
         .focusedSceneValue(\.studio, studioActions)
         .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
         .fullScreenCover(isPresented: $showingPlayground) { PlaygroundHomeView() }
+        .modifier(AIStudioLink(model: model, onNewCanvas: newCanvas))
         .overlay(alignment: .top) {
             if pencilNotice {
                 Text("Apple Pencil draws. Fingers now move and zoom the canvas.")
@@ -334,6 +335,12 @@ struct EditorView: View {
             Button { panels.onionTiming = true } label: { Label("Onion skin and timing…", systemImage: "timer") }
             Button { panels.presets = true } label: { Label("Animate with a preset…", systemImage: "wand.and.stars") }
             Button { panels.adjust = true } label: { Label("Adjust colours…", systemImage: "slider.horizontal.3") }
+            Button { panels.stamps = true } label: { Label("Stamps…", systemImage: "seal") }
+            MotionGuideMenu(model: model)
+            Button {
+                model.commitSelection()
+                panels.beads = true
+            } label: { Label("Bead or cross-stitch pattern…", systemImage: "circle.grid.3x3") }
             TransformMenu(model: model, frame: nil)
             Button {
                 saveTimelapse()

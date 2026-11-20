@@ -7,6 +7,8 @@ final class StudioPanelState {
     var presets = false
     var onionTiming = false
     var adjust = false
+    var stamps = false
+    var beads = false
 }
 
 /// Presents the v2 panels. Kept apart from `EditorView.body` so that body stays quick to compile.
@@ -19,6 +21,8 @@ struct StudioPanelSheets: ViewModifier {
             .sheet(isPresented: $panels.presets) { PresetSheet(model: model) }
             .sheet(isPresented: $panels.onionTiming) { OnionTimingSheet(model: model) }
             .sheet(isPresented: $panels.adjust) { AdjustColorsSheet(model: model) }
+            .sheet(isPresented: $panels.stamps) { StampsSheet(model: model) }
+            .sheet(isPresented: $panels.beads) { BeadPatternView(project: model.project, frame: model.currentIndex) }
     }
 }
 
@@ -189,6 +193,7 @@ struct SelectionStrip: View {
                     if let panels {
                         StripChip(title: Text("Animate")) { panels.presets = true }
                         StripChip(title: Text("Colours")) { panels.adjust = true }
+                        StripChip(title: Text("Stamp")) { panels.stamps = true }
                     }
                     Button { model.deleteSelection(); dial = nil } label: {
                         PixelIcon.trash.view(size: 18).frame(width: 36, height: 36).contentShape(Rectangle())

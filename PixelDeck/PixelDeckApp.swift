@@ -37,6 +37,7 @@ struct PixelDeckApp: App {
                 .environment(community)
                 .environment(ageGate)
                 .task { cloud.start() }
+                .task { AIBridge.shared.startIfEnabled() }
                 // Night (dark) and Paper (light) follow the system appearance.
                 .tint(Theme.accent)
                 .onAppear(perform: Self.setMinimumWindowSize)

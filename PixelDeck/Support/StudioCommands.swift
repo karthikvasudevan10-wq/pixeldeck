@@ -89,6 +89,8 @@ struct StudioCommands: Commands {
             Divider()
             Button("Colours and Palettes…") { studio?.palettes() }.keyboardShortcut("k", modifiers: .command)
             Button("Adjust Colours…") { studio?.panels.adjust = true }.keyboardShortcut("u", modifiers: .command)
+            Button("Stamps…") { studio?.panels.stamps = true }.keyboardShortcut("s", modifiers: [.command, .shift])
+            Button("Bead or Cross-stitch Pattern…") { studio?.panels.beads = true }
             Button("Tracing Image…") { studio?.trace() }
             Button("Timelapse") { studio?.timelapse() }
         }

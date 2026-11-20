@@ -460,9 +460,15 @@ struct NewCanvasFlow: ViewModifier {
     var onBlank: () -> Void
     var onOpen: (SpriteProject) -> Void
     var onStartLesson: (Lesson) -> Void
+    /// An Aseprite file to import (opened from Files, or picked from New canvas).
+    @Binding var incomingAseprite: URL?
+    var onImport: ([SpriteProject]) -> Void
     /// A picture dragged in (from Finder on the Mac, or another app on iPad).
     @State private var dropped: UIImage?
     @State private var showingRetro = false
+    @State private var pickingAseprite = false
+    @State private var aseprite: AsepriteImport?
+    @State private var asepriteError: String?
 
     func body(content: Content) -> some View {
         content
@@ -477,7 +483,25 @@ struct NewCanvasFlow: ViewModifier {
                                                    detail: "Draw tiles, paint scenes", action: { close { showingPlayground = true } }),
                                    NewCanvasOption(id: "level", icon: .play, title: "Playground level",
                                                    detail: "Make your sprite a hero", action: { close { showingPlayground = true } }),
+                                   NewCanvasOption(id: "aseprite", icon: .download, title: "Open an Aseprite file",
+                                                   detail: "With its layers, frames and tags", pro: true,
+                                                   action: { close { pickingAseprite = true } }),
                                ])
+            }
+            .fileImporter(isPresented: $pickingAseprite, allowedContentTypes: AsepriteFiles.contentTypes, allowsMultipleSelection: false) { result in
+                if case .success(let urls) = result, let url = urls.first { openAseprite(url) }
+            }
+            .sheet(item: $aseprite) { item in AsepriteImportSheet(item: item, onImport: onImport) }
+            .onChange(of: incomingAseprite) { _, url in
+                if let url {
+                    openAseprite(url)
+                    incomingAseprite = nil
+                }
+            }
+            .alert("Aseprite", isPresented: Binding(get: { asepriteError != nil }, set: { if !$0 { asepriteError = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(verbatim: asepriteError ?? "")
             }
             .sheet(isPresented: $showingRetro) {
                 RetroModeSheet { mode in
@@ -521,6 +545,15 @@ struct NewCanvasFlow: ViewModifier {
     private func close(then next: @escaping () -> Void) {
         showingChooser = false
         after(next)
+    }
+
+    private func openAseprite(_ url: URL) {
+        switch AsepriteFiles.read(url) {
+        case .success(let file):
+            aseprite = AsepriteImport(name: url.deletingPathExtension().lastPathComponent, file: file)
+        case .failure(let e):
+            asepriteError = e.message
+        }
     }
 
     /// After the sheet has gone, so the next presentation (or navigation push) isn't lost.

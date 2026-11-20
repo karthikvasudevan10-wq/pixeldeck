@@ -43,6 +43,8 @@ struct ProjectListView: View {
     @State private var showingPlayground = false
     @State private var showingAcademy = false
     @State private var incomingLevel: URL?
+    @State private var incomingAseprite: URL?
+    @State private var beadPattern: SpriteProject?
     @AppStorage("lessonProjectID") private var lessonProjectID = ""
     @AppStorage("lessonID") private var lessonID = ""
     @AppStorage("lessonStep") private var lessonStep = 0
@@ -151,6 +153,9 @@ struct ProjectListView: View {
                     path = []
                     incomingLevel = url
                     showingPlayground = true
+                } else if AsepriteFiles.isAseprite(url) {
+                    path = []
+                    incomingAseprite = url
                 }
                 return
             }
@@ -163,7 +168,9 @@ struct ProjectListView: View {
         .modifier(NewCanvasFlow(showingChooser: $showingNewCanvas, showingPhoto: $showingPhoto,
                                 showingPlayground: $showingPlayground, showingAcademy: $showingAcademy,
                                 incomingLevel: $incomingLevel,
-                                onBlank: createAndOpen, onOpen: openNew, onStartLesson: startLesson))
+                                onBlank: createAndOpen, onOpen: openNew, onStartLesson: startLesson,
+                                incomingAseprite: $incomingAseprite, onImport: importSprites))
+        .sheet(item: $beadPattern) { BeadPatternView(project: $0) }
         .proUpgradeSheet($upgrade)
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
         .alert("Rename sprite", isPresented: Binding(get: { renamingID != nil }, set: { if !$0 { renamingID = nil } })) {
@@ -406,6 +413,7 @@ struct ProjectListView: View {
             }
         } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
         Button { exporting = project } label: { Label("Export", systemImage: "square.and.arrow.up") }
+        Button { beadPattern = project } label: { Label("Bead or cross-stitch pattern…", systemImage: "circle.grid.3x3") }
         Button { sharing = project } label: { Label("Share to Community…", systemImage: "globe") }
         Button(role: .destructive) { deletingID = project.id } label: { Label("Delete", systemImage: "trash") }
     }
@@ -462,6 +470,18 @@ struct ProjectListView: View {
         store.save(project)
         filter = project.frames.count > 1 ? .moving : .stills
         path = [project.id]
+    }
+
+    /// Adds sprites brought in from a file (an Aseprite import) and opens the first.
+    private func importSprites(_ sprites: [SpriteProject]) {
+        for p in sprites.reversed() { store.save(p) }
+        if let first = sprites.first {
+            filter = first.frames.count > 1 ? .moving : .stills
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(450))
+                path = [first.id]
+            }
+        }
     }
 
     /// A new sprite named after today's idea.
