@@ -6,9 +6,7 @@ enum ExportFormat: String, CaseIterable, Identifiable {
     case gif, spriteSheet, frames, video
     var id: String { rawValue }
 
-    /// GIF and video are part of Pro.
-    var needsPro: Bool { self == .gif || self == .video }
-    /// Video is 1080 × 1080, or 2160 × 2160 with 4K, so it has no scale choice.
+    /// Video has fixed sizes (1080 × 1080, 1080 × 1920, or 2160 × 2160 with 4K), so no scale choice.
     var hasScale: Bool { self != .video }
 }
 
@@ -20,11 +18,15 @@ struct ExportOptions {
     /// 4K instead of `scale` (Pro): the largest whole-number scale with the long side up to 3840
     /// px for images and GIFs, and 2160 × 2160 for video. Not offered for sprite sheets.
     var fourK = false
-    /// Adds the "Made with Pixel Deck" footer to PNG frames (free version).
+    /// Adds the "Made with Pixel Deck" mark to PNG frames, GIFs and videos (free version).
     var watermark = false
+    /// Video: square, 9:16, or the 9:16 timelapse of the drawing.
+    var videoShape: VideoShape = .square
+    /// Video: finish on the "Pixel Deck · Available on the App Store" card.
+    var endCard = true
 
     /// Formats that offer 4K.
-    var offersFourK: Bool { format == .gif || format == .frames || format == .video }
+    var offersFourK: Bool { format == .gif || format == .frames || (format == .video && videoShape == .square) }
 }
 
 enum ExportError: LocalizedError {
@@ -44,10 +46,17 @@ struct ExportSource {
     let name: String
     let fps: Int
     let grids: [PixelGrid]
-    /// Seconds per frame, with the sprite's playback easing.
+    /// Seconds per frame, with the sprite's playback easing and holds.
     let durations: [Double]
+    /// The frames in the order they play (ping-pong goes there and back), for GIFs and videos.
+    let playGrids: [PixelGrid]
+    let playDurations: [Double]
+    /// False when the animation plays once and stops.
+    let repeats: Bool
     let width: Int
     let height: Int
+    /// The timelapse of the drawing, if there is one (set by the export screen).
+    var timelapse: [PixelGrid] = []
 
     init(_ project: SpriteProject) {
         // Hidden layers aren't exported, so crop to what's visible.
@@ -56,6 +65,11 @@ struct ExportSource {
         fps = project.fps
         grids = project.grids(croppedTo: rect)
         durations = project.frameDurations
+        let sequence = project.playbackSequence
+        let all = grids
+        playGrids = sequence.frames.map { all[$0] }
+        playDurations = sequence.durations
+        repeats = sequence.repeats
         width = rect.width
         height = rect.height
     }
@@ -103,10 +117,24 @@ enum SpriteExporter {
             let s = scale(src, options)
             return (src.width * s, src.height * s)
         case .video:
-            let side = options.fourK ? VideoExporter.fourKSide : VideoExporter.side
-            return (side, side)
+            let spec = videoSpec(options)
+            return (spec.width, spec.height)
         }
     }
+
+    /// The frame for a video with these options.
+    static func videoSpec(_ o: ExportOptions) -> VideoSpec {
+        var spec = o.videoShape == .square ? VideoSpec.square(fourK: o.fourK) : VideoSpec.vertical
+        spec.watermark = o.watermark
+        spec.endCard = o.endCard
+        // A timelapse plays through once; an animation that plays once isn't repeated either.
+        spec.loop = o.videoShape != .timelapse
+        return spec
+    }
+
+    /// Timelapse playback speed, and how long the finished art is held.
+    static let timelapseFPS = 15.0
+    static let timelapseHold = 1.5
 
     /// Scales whose output fits the memory limits (ignoring Pro, which the UI handles).
     static func feasibleScales(_ src: ExportSource, options: ExportOptions) -> [Int] {
@@ -151,7 +179,8 @@ enum SpriteExporter {
 
         case .gif:
             let url = dir.appendingPathComponent("\(base).gif")
-            try writeGIF(grids: src.grids, scale: scale, durations: src.durations, to: url)
+            try writeGIF(grids: src.playGrids, scale: scale, durations: src.playDurations, repeats: src.repeats,
+                         watermark: options.watermark, to: url)
             return [url]
 
         case .frames:
@@ -170,9 +199,18 @@ enum SpriteExporter {
             }
 
         case .video:
+            var spec = videoSpec(options)
+            if options.videoShape == .timelapse {
+                guard !src.timelapse.isEmpty else { throw ExportError.empty }
+                let url = dir.appendingPathComponent("\(base)_timelapse.mp4")
+                var durations = Array(repeating: 1 / timelapseFPS, count: src.timelapse.count)
+                durations[durations.count - 1] = timelapseHold       // linger on the finished art
+                try VideoExporter.write(grids: src.timelapse, durations: durations, spec: spec, to: url)
+                return [url]
+            }
             let url = dir.appendingPathComponent("\(base).mp4")
-            try VideoExporter.write(grids: src.grids, durations: src.durations,
-                                    side: options.fourK ? VideoExporter.fourKSide : VideoExporter.side, to: url)
+            if !src.repeats { spec.loop = false }
+            try VideoExporter.write(grids: src.playGrids, durations: src.playDurations, spec: spec, to: url)
             return [url]
         }
     }
@@ -201,10 +239,10 @@ enum SpriteExporter {
     }
 
     /// Each frame gets its own delay, so eased timing survives in the GIF.
-    static func writeGIF(grids: [PixelGrid], scale: Int, durations: [Double], to url: URL) throws {
+    static func writeGIF(grids: [PixelGrid], scale: Int, durations: [Double], repeats: Bool = true, watermark: Bool = false, to url: URL) throws {
         guard let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.gif.identifier as CFString, grids.count, nil)
         else { throw ExportError.couldNotWrite(url.lastPathComponent) }
-        let loop: [String: Any] = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFLoopCount as String: 0]]
+        let loop: [String: Any] = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFLoopCount as String: repeats ? 0 : 1]]
         CGImageDestinationSetProperties(dest, loop as CFDictionary)
         for (i, grid) in grids.enumerated() {
             let delay = max(PlaybackTiming.minimumDuration, i < durations.count ? durations[i] : 0.125)
@@ -213,7 +251,8 @@ enum SpriteExporter {
                 kCGImagePropertyGIFUnclampedDelayTime as String: delay,
             ]]
             try autoreleasepool {
-                guard let image = PixelRenderer.cgImage(grid, scale: scale) else { throw ExportError.couldNotWrite(url.lastPathComponent) }
+                guard let art = PixelRenderer.cgImage(grid, scale: scale),
+                      let image = watermark ? Watermark.apply(to: art) : art else { throw ExportError.couldNotWrite(url.lastPathComponent) }
                 CGImageDestinationAddImage(dest, image, frameProps as CFDictionary)
             }
         }

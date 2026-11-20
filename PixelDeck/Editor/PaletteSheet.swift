@@ -15,15 +15,28 @@ struct PaletteSheet: View {
     @State private var importing = false
     @State private var importMessage: String?
     @State private var upgrade: ProFeature?
+    @State private var tab: ColourTab = .palette
 
     var body: some View {
         VStack(spacing: 0) {
             SheetHeader(title: "Colours", onClose: { dismiss() })
+            ChoiceRow(options: ColourTab.allCases, selection: $tab) { Text($0.title) }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    current
-                    mine
-                    presets
+                    switch tab {
+                    case .palette:
+                        current
+                        MoreColorsSection(model: model)
+                        ColorCountHint(model: model)
+                        mine
+                        presets
+                    case .ramps:
+                        RampPanel(model: model)
+                    case .photo:
+                        PhotoPalettePanel(model: model)
+                    }
                 }
                 .padding(16)
             }

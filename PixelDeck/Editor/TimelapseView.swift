@@ -116,7 +116,7 @@ struct TimelapseView: View {
                     HStack(spacing: 10) {
                         if working { ProgressView().tint(Theme.onAccent) } else { PixelIcon.download.view(size: 18, lineWidth: 2.5) }
                         Text("Save video").font(AppFont.pixel(15))
-                        if !purchases.access.allowsAnimatedExport { ProBadge() }
+                        if !purchases.access.allowsTimelapseVideo { ProBadge() }
                     }
                     .frame(maxWidth: .infinity, minHeight: 52)
                 }
@@ -136,7 +136,7 @@ struct TimelapseView: View {
     }
 
     private func makeVideo(share: Bool) {
-        guard purchases.access.allowsAnimatedExport else { upgrade = .gifExport; return }
+        guard purchases.access.allowsTimelapseVideo else { upgrade = .timing; return }
         working = true
         message = nil
         let grids = frames

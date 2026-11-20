@@ -34,6 +34,10 @@ struct EditorView: View {
     @State var traceImage: UIImage?
     @State var showingTrace = false
     @State var showingPalettes = false
+    /// The v2 panels (presets, onion skin and timing, adjust colours).
+    @State var panels = StudioPanelState()
+    /// When playback last started, for animations that play once and stop.
+    @State var playStarted = Date()
     @State var sharingToCommunity = false
     /// This sprite's timelapse, recorded as you draw (saved every few edits and on leaving).
     @State var timelapse = Timelapse()
@@ -102,6 +106,9 @@ struct EditorView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: layout)
+        .environment(panels)
+        .modifier(StudioPanelSheets(model: model, panels: panels))
+        .onChange(of: model.playCount) { _, _ in playStarted = Date() }
         .environment(\.tourTarget, tourTarget)
         .overlay(alignment: .top) {
             if let step = tourStep {
@@ -231,9 +238,11 @@ struct EditorView: View {
 
     /// While playing, the canvas shows each frame in turn at the sprite's frame rate.
     var canvas: some View {
-        let durations = model.frameDurations
-        return TimelineView(.animation(minimumInterval: PlaybackClock.tick(durations), paused: !model.isPlaying)) { ctx in
-            let frame: Int? = model.isPlaying ? PlaybackClock.index(ctx.date, durations: durations) : nil
+        // Holds, ping-pong and "play once" all come from the sprite's playback sequence.
+        let sequence = model.playbackSequence
+        return TimelineView(.animation(minimumInterval: PlaybackClock.tick(sequence.durations), paused: !model.isPlaying)) { ctx in
+            let elapsed = sequence.repeats ? ctx.date.timeIntervalSinceReferenceDate : ctx.date.timeIntervalSince(playStarted)
+            let frame: Int? = model.isPlaying ? sequence.frame(at: elapsed) : nil
             PixelCanvas(state: withTourGuide(model.canvasState(playingFrame: frame)), model: model, fit: fit,
                         drawingEnabled: !swipeAnywhere && !model.isPlaying,
                         pencilOnly: pencilOnly,
@@ -287,6 +296,9 @@ struct EditorView: View {
             }
             .pickerStyle(.menu)
             Button { showingTrace = true } label: { Label("Tracing image…", systemImage: "photo") }
+            Button { panels.onionTiming = true } label: { Label("Onion skin and timing…", systemImage: "timer") }
+            Button { panels.presets = true } label: { Label("Animate with a preset…", systemImage: "wand.and.stars") }
+            Button { panels.adjust = true } label: { Label("Adjust colours…", systemImage: "slider.horizontal.3") }
             TransformMenu(model: model, frame: nil)
             Button {
                 saveTimelapse()
@@ -394,6 +406,21 @@ struct EditorView: View {
             .buttonStyle(TileButtonStyle(active: model.shapeFilled))
             .disabled(model.shapeKind == .line)
             .accessibilityLabel(model.shapeFilled ? Text("Filled shapes") : Text("Outline shapes"))
+            // Outline thickness: tap to step through 1 to 4 pixels.
+            Button {
+                model.shapeThickness = model.shapeThickness >= ShapeRaster.thicknessRange.upperBound ? 1 : model.shapeThickness + 1
+            } label: {
+                VStack(spacing: 3) {
+                    Rectangle().frame(width: 18, height: CGFloat(model.shapeThickness) * 2)
+                    Text(verbatim: "\(model.shapeThickness)px").font(AppFont.pixel(9))
+                }
+                .frame(width: 40, height: 36)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(TileButtonStyle(active: model.shapeThickness > 1))
+            .disabled(model.shapeFilled && model.shapeKind != .line)
+            .accessibilityLabel(Text("Outline thickness, \(model.shapeThickness) pixels"))
+            .accessibilityHint("Changes how thick shape outlines and lines are drawn")
             Button { model.lockProportions.toggle() } label: {
                 Text(verbatim: "1:1")
                     .font(AppFont.pixel(11))
@@ -410,33 +437,44 @@ struct EditorView: View {
         .padding(.horizontal, 12)
     }
 
-    /// Brush options while drawing or erasing: size, round tip, dither and top-bottom symmetry.
+    /// Brush options while drawing or erasing: size, round tip, pixel-perfect, the shading
+    /// assistant, dither and top-bottom symmetry. The shading panel sits above it when shading.
     var brushStrip: some View {
-        HStack(spacing: 6) {
-            ForEach(1...EditorModel.maxBrushSize, id: \.self) { n in
-                let on = model.brushSize == n
-                Button { model.brushSize = n } label: {
-                    Rectangle()
-                        .frame(width: CGFloat(3 + n * 3), height: CGFloat(3 + n * 3))
-                        .clipShape(RoundedRectangle(cornerRadius: model.brushRound && n >= 3 ? CGFloat(n) : 0))
-                        .frame(width: 36, height: 36)
-                        .contentShape(Rectangle())
+        VStack(spacing: 8) {
+            if model.tool == .pencil && model.shadeMode != nil { ShadingPanel(model: model) }
+            OptionStrip {
+                ForEach(1...EditorModel.maxBrushSize, id: \.self) { n in
+                    let on = model.brushSize == n
+                    Button { model.brushSize = n } label: {
+                        Rectangle()
+                            .frame(width: CGFloat(3 + n * 3), height: CGFloat(3 + n * 3))
+                            .clipShape(RoundedRectangle(cornerRadius: model.brushRound && n >= 3 ? CGFloat(n) : 0))
+                            .frame(width: 36, height: 36)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(TileButtonStyle(active: on))
+                    .accessibilityLabel(Text("Brush size \(n)"))
+                    .accessibilityAddTraits(on ? .isSelected : [])
                 }
-                .buttonStyle(TileButtonStyle(active: on))
-                .accessibilityLabel(Text("Brush size \(n)"))
-                .accessibilityAddTraits(on ? .isSelected : [])
+                Theme.line.frame(width: 2, height: 28)
+                stripToggle("Round", on: model.brushRound) { model.brushRound.toggle() }
+                    .accessibilityLabel("Round brush")
+                StripChip(title: Text("Pixel-perfect"), on: model.pixelPerfect) { model.pixelPerfect.toggle() }
+                    .accessibilityHint("Cleans doubled pixels and L-shaped corners as you draw, so curves stay one pixel wide. Works with the smallest brush.")
+                if model.tool == .pencil {
+                    StripChip(title: Text("Shade"), on: model.shadeMode != nil) {
+                        model.shadeMode = model.shadeMode == nil ? .shade : nil
+                    }
+                    .accessibilityLabel("Shading assistant")
+                    .accessibilityHint("The brush shades or highlights what you've drawn, following your light")
+                }
+                stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes) { model.dither.toggle() }
+                    .accessibilityLabel("Dither brush")
+                stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes) { model.mirrorVertical.toggle() }
+                    .accessibilityLabel("Top-bottom symmetry")
+                    .accessibilityHint("With Mirror on too, it's four-way")
             }
-            Theme.line.frame(width: 2, height: 28)
-            stripToggle("Round", on: model.brushRound) { model.brushRound.toggle() }
-                .accessibilityLabel("Round brush")
-            stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes) { model.dither.toggle() }
-                .accessibilityLabel("Dither brush")
-            stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes) { model.mirrorVertical.toggle() }
-                .accessibilityLabel("Top-bottom symmetry")
-                .accessibilityHint("With Mirror on too, it's four-way")
         }
-        .padding(6)
-        .background(Theme.chip)
         .padding(.bottom, 3)
         .padding(.horizontal, 12)
     }
@@ -471,55 +509,9 @@ struct EditorView: View {
         }
     }
 
-    /// Selection actions, shown only while the Select tool is in use.
+    /// Selection tools and actions, shown only while the Select tool is in use.
     var selectionStrip: some View {
-        HStack(spacing: 8) {
-            if model.floating != nil {
-                Button { showingTween = true } label: {
-                    HStack(spacing: 6) {
-                        PixelIcon.tween.view(size: 16)
-                        Text("Tween").font(AppFont.pixel(12))
-                    }
-                    .padding(.horizontal, 12)
-                    .frame(height: 36)
-                }
-                .buttonStyle(PrimaryButtonStyle(depth: 3))
-                .disabled(!model.canTween)
-
-                Button { model.deleteSelection() } label: {
-                    PixelIcon.trash.view(size: 18).frame(width: 36, height: 36)
-                }
-                .buttonStyle(TileButtonStyle())
-                .accessibilityLabel("Delete selection")
-
-                Button { model.commitSelection() } label: {
-                    Text("Drop").font(AppFont.pixel(12)).padding(.horizontal, 12).frame(height: 36)
-                }
-                .buttonStyle(TileButtonStyle())
-            } else if model.marquee != nil {
-                Text("Drag inside to move")
-                    .font(AppFont.body(13, .medium, relativeTo: .footnote))
-                    .foregroundStyle(Theme.text)
-                Button { model.deleteSelection() } label: {
-                    PixelIcon.trash.view(size: 18).frame(width: 36, height: 36)
-                }
-                .buttonStyle(TileButtonStyle())
-                .accessibilityLabel("Delete selected pixels")
-                Button { model.commitSelection() } label: {
-                    Text("Deselect").font(AppFont.pixel(12)).padding(.horizontal, 12).frame(height: 36)
-                }
-                .buttonStyle(TileButtonStyle())
-            } else {
-                Text("Drag over pixels to select them")
-                    .font(AppFont.body(13, .medium, relativeTo: .footnote))
-                    .foregroundStyle(Theme.text)
-                    .padding(.horizontal, 6)
-                    .frame(height: 36)
-            }
-        }
-        .padding(6)
-        .background(Theme.chip)
-        .padding(.bottom, 3)
+        SelectionStrip(model: model, onTween: { showingTween = true })
     }
 
     // MARK: Actions

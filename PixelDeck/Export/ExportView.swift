@@ -19,6 +19,9 @@ struct ExportView: View {
     @State private var errorMessage: String?
     @State private var working = false
     @State private var savedToast = false
+    /// Copy "Made with #PixelDeck" and the link when sharing a video, ready to paste as the caption.
+    @AppStorage("shareCaption") private var shareCaption = true
+    @State private var captionToast = false
 
     init(project: SpriteProject) {
         self.project = project
@@ -45,9 +48,10 @@ struct ExportView: View {
                         .foregroundStyle(Theme.muted)
                         .padding(.top, -6)
                     if options.format.hasScale { scaleSection }
-                    if options.format == .video { videoResolution }
+                    if options.format == .video { videoOptions }
+                    if options.format == .video && options.videoShape == .square { videoResolution }
                     formatSection
-                    if options.format == .frames && access.addsWatermark { watermarkNote }
+                    if options.format != .spriteSheet && access.addsWatermark { watermarkNote }
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -58,7 +62,9 @@ struct ExportView: View {
         .padding(.bottom, 20)
         .readableWidth(640)
         .screenBackground()
-        .overlay(alignment: .top) { if savedToast { toast } }
+        .overlay(alignment: .top) { if savedToast { toast } else if captionToast { captionNotice } }
+        .task { source.timelapse = TimelapseStore.load(for: project.id).playbackFrames() }
+        .onChange(of: options.videoShape) { _, _ in clampScale() }
         .onAppear(perform: chooseStartingFormat)
         // Purchases are checked at launch; don't move a Pro user off GIF before that finishes.
         .onChange(of: purchases.entitlementsLoaded) { _, _ in chooseStartingFormat() }
@@ -97,7 +103,7 @@ struct ExportView: View {
     private var preview: some View {
         ZStack(alignment: .topLeading) {
             Checkerboard(cell: 20)
-            TweenPreview(frames: source.grids, fps: project.fps, durations: source.durations)
+            TweenPreview(frames: source.playGrids, fps: project.fps, durations: source.playDurations)
                 .padding(24)
             Text("Loop preview")
                 .font(AppFont.pixel(11))
@@ -198,10 +204,67 @@ struct ExportView: View {
         }
     }
 
-    /// Free PNG exports carry the footer; say so, with the way to remove it.
+    /// Share-ready video: the shape, the end card and the caption.
+    private var videoOptions: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            SectionLabel(text: "Video for")
+            HStack(spacing: 6) {
+                ForEach(VideoShape.allCases) { shape in
+                    let on = options.videoShape == shape
+                    let locked = shape == .timelapse && !access.allowsTimelapseVideo
+                    let missing = shape == .timelapse && source.timelapse.isEmpty
+                    Button {
+                        if locked { upgrade = .timing } else { options.videoShape = shape }
+                    } label: {
+                        Text(shape.title)
+                            .font(AppFont.body(14, .medium, relativeTo: .subheadline))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 4)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .overlay(alignment: .topTrailing) { if locked { ProBadge().padding(3) } }
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(TileButtonStyle(active: on, fill: Theme.surface))
+                    .disabled(missing)
+                    .accessibilityAddTraits(on ? .isSelected : [])
+                }
+            }
+            optionRow(title: "End card", detail: "Finishes on \"Pixel Deck · Available on the App Store\" for 1.5 s",
+                      isOn: $options.endCard)
+            optionRow(title: "Caption", detail: "Copies \"Made with #PixelDeck\" and the link, ready to paste when you post",
+                      isOn: $shareCaption)
+        }
+    }
+
+    private func optionRow(title: LocalizedStringKey, detail: LocalizedStringKey, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).font(AppFont.body(15, .bold, relativeTo: .body)).foregroundStyle(Theme.cream)
+                Text(detail).font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+            }
+        }
+        .tint(Theme.accent)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Theme.surface)
+        .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
+    }
+
+    private var captionNotice: some View {
+        Text("Caption copied. Paste it when you post.")
+            .font(AppFont.pixel(12))
+            .foregroundStyle(Theme.onAccent2)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Theme.accent2)
+            .padding(.top, 70)
+            .transition(.move(edge: .top).combined(with: .opacity))
+    }
+
+    /// Free exports carry the mark; say so, with the way to remove it.
     private var watermarkNote: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
-            Text("Free PNG exports include a small \"Made with Pixel Deck\" footer below the art.")
+            Text("Free exports include a small \"Made with Pixel Deck\" mark below the art. Pro removes it.")
                 .font(AppFont.body(13, relativeTo: .footnote))
                 .foregroundStyle(Theme.muted)
             Spacer(minLength: 4)
@@ -217,7 +280,7 @@ struct ExportView: View {
             ForEach(ExportFormat.allCases) { f in
                 let on = f == options.format
                 Button {
-                    if f.needsPro && !access.allowsAnimatedExport { upgrade = .gifExport } else { options.format = f }
+                    options.format = f
                 } label: {
                     HStack(spacing: 12) {
                         Rectangle()
@@ -230,7 +293,6 @@ struct ExportView: View {
                             Text(f.detail).font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
                         }
                         Spacer()
-                        if f.needsPro && !access.allowsAnimatedExport { ProBadge() }
                         Text(verbatim: f.fileExtension).font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
                     }
                     .padding(.horizontal, 14)
@@ -261,7 +323,45 @@ struct ExportView: View {
         }
     }
 
+    @ViewBuilder
     private var actions: some View {
+        if options.format == .video {
+            // Sharing comes first for video: that's where Reels and TikTok are.
+            VStack(spacing: 8) {
+                Button(action: share) {
+                    ZStack {
+                        if working {
+                            ProgressView().tint(Theme.onAccent)
+                        } else {
+                            HStack(spacing: 10) {
+                                PixelIcon.share.view(size: 20, lineWidth: 2.5)
+                                Text("Share to Instagram or TikTok").font(AppFont.pixel(14)).lineLimit(1).minimumScaleFactor(0.7)
+                            }
+                            .padding(.horizontal, 8)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 56)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(PrimaryButtonStyle())
+                Button(action: save) {
+                    HStack(spacing: 10) {
+                        PixelIcon.download.view(size: 18)
+                        Text("Save video").font(AppFont.pixel(14))
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(TileButtonStyle(fill: Theme.surface))
+                .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
+            }
+            .disabled(working)
+        } else {
+            saveAndShare
+        }
+    }
+
+    private var saveAndShare: some View {
         HStack(spacing: 8) {
             Button(action: save) {
                 ZStack {
@@ -304,12 +404,13 @@ struct ExportView: View {
     // MARK: Actions
 
     private func chooseStartingFormat() {
-        // GIF is the design's default, but it's part of Pro.
-        if purchases.entitlementsLoaded, options.format.needsPro, !access.allowsAnimatedExport { options.format = .spriteSheet }
         clampScale()
     }
 
     private func clampScale() {
+        if options.videoShape == .timelapse && (source.timelapse.isEmpty || !access.allowsTimelapseVideo) {
+            options.videoShape = .square
+        }
         if options.fourK && (!options.offersFourK || !access.allowsFourK || !SpriteExporter.fourKFeasible(source, options: options)) {
             options.fourK = false
         }
@@ -326,7 +427,7 @@ struct ExportView: View {
         working = true
         let src = source
         var opts = options
-        opts.watermark = access.addsWatermark && opts.format == .frames
+        opts.watermark = access.addsWatermark && opts.format != .spriteSheet
         DispatchQueue.global(qos: .userInitiated).async {
             let result = Result { try SpriteExporter.export(src, options: opts) }
             DispatchQueue.main.async {
@@ -344,7 +445,7 @@ struct ExportView: View {
     private func dragProvider() -> NSItemProvider {
         var opts = options
         if opts.format == .frames { opts.format = .spriteSheet }
-        if opts.format.needsPro && !access.allowsAnimatedExport { opts.format = .spriteSheet }
+        opts.watermark = access.addsWatermark && opts.format != .spriteSheet
         let src = source
         let type: UTType = switch opts.format {
         case .gif: .gif
@@ -384,7 +485,18 @@ struct ExportView: View {
     }
 
     private func share() {
-        makeFiles { shareItems = ShareItems(urls: $0) }
+        let caption = options.format == .video && shareCaption
+        makeFiles { urls in
+            if caption {
+                // Instagram and TikTok don't accept a caption from the share sheet, so it waits
+                // on the clipboard.
+                UIPasteboard.general.string = String(localized: "Made with #PixelDeck \(AppConfig.shareURL.absoluteString)",
+                                                     comment: "Caption copied when sharing a video; the placeholder is a web link")
+                withAnimation { captionToast = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { withAnimation { captionToast = false } }
+            }
+            shareItems = ShareItems(urls: urls)
+        }
     }
 
     /// Ask for a rating only after a few completed exports, at most once per app version. The

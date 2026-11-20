@@ -35,6 +35,10 @@ struct ProjectListView: View {
     @State private var selecting = false
     @State private var selected: Set<UUID> = []
     @State private var confirmingBulkDelete = false
+    /// "New canvas": the chooser, and the photo flow it can lead to.
+    @State private var showingNewCanvas = false
+    @State private var showingPhoto = false
+    @State private var upgrade: ProFeature?
 
     enum GalleryFilter: Hashable { case moving, stills }
 
@@ -47,7 +51,7 @@ struct ProjectListView: View {
     /// Live previews run only while the gallery is actually on screen — not under the Studio,
     /// the welcome screens or export, and not in the background.
     private var galleryVisible: Bool {
-        path.isEmpty && !showingWelcome && exporting == nil && !showingSettings && scenePhase == .active
+        path.isEmpty && !showingWelcome && exporting == nil && !showingSettings && !showingPhoto && scenePhase == .active
     }
 
     private var filtered: [SpriteProject] {
@@ -134,6 +138,9 @@ struct ProjectListView: View {
             showingCommunity = true
         }
         .sheet(item: $sharing) { ShareToCommunityView(project: $0) }
+        .modifier(NewCanvasFlow(showingChooser: $showingNewCanvas, showingPhoto: $showingPhoto,
+                                onBlank: createAndOpen, onOpen: openNew))
+        .proUpgradeSheet($upgrade)
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
         .alert("Rename sprite", isPresented: Binding(get: { renamingID != nil }, set: { if !$0 { renamingID = nil } })) {
             TextField("Name", text: $renameText)
@@ -245,7 +252,7 @@ struct ProjectListView: View {
     }
 
     private var newCanvasTile: some View {
-        Button(action: createAndOpen) {
+        Button { showingNewCanvas = true } label: {
             VStack(spacing: 10) {
                 PixelIcon.plus.view(size: 24, lineWidth: 3)
                     .foregroundStyle(Theme.onAccent2)
@@ -271,7 +278,7 @@ struct ProjectListView: View {
             barItem(.gallery, "Gallery", color: Theme.accent) {}
                 .accessibilityAddTraits(.isSelected)
             // Same look as the New canvas tile (yellow +), since it does the same thing.
-            Button(action: createAndOpen) {
+            Button { showingNewCanvas = true } label: {
                 PixelIcon.plus.view(size: 24, lineWidth: 3)
                     .foregroundStyle(Theme.onAccent2)
                     .frame(width: 56, height: 56)
@@ -421,6 +428,13 @@ struct ProjectListView: View {
         .padding(.bottom, 12)
     }
 
+    /// Saves a sprite made elsewhere (from a photo, for example) and opens it in the Studio.
+    private func openNew(_ project: SpriteProject) {
+        store.save(project)
+        filter = project.frames.count > 1 ? .moving : .stills
+        path = [project.id]
+    }
+
     private func createAndOpen() {
         let project = store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it"))
         path = [project.id]
@@ -545,7 +559,7 @@ private struct ProjectTile: View {
     @ViewBuilder
     private var preview: some View {
         if project.frames.count > 1 && !reduceMotion && animating {
-            FrameLoop(frames: project.frames, durations: project.frameDurations)
+            FrameLoop(frames: project.playbackFrames, durations: project.playbackSequence.durations)
         } else {
             PixelImage(frame: project.frames[0], checker: false)
         }

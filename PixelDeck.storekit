@@ -1,39 +1,48 @@
 {
-  "identifier" : "6F2B6C1A",
-  "nonRenewingSubscriptions" : [
-
-  ],
-  "products" : [
+  "identifier": "6F2B6C1A",
+  "nonRenewingSubscriptions": [],
+  "products": [
     {
-      "displayPrice" : "2.99",
-      "familyShareable" : true,
-      "internalID" : "6740000001",
-      "localizations" : [
+      "displayPrice": "2.99",
+      "familyShareable": true,
+      "internalID": "6740000001",
+      "localizations": [
         {
-          "description" : "Bigger art, more frames, GIF and video export, 16× exports, eased playback timing.",
-          "displayName" : "Pixel Deck Pro",
-          "locale" : "en_US"
+          "description": "Bigger art, more frames, no watermark, 4K, photo to pixel art, every preset and lesson.",
+          "displayName": "Pixel Deck Pro",
+          "locale": "en_US"
         }
       ],
-      "productID" : "karthikvasudevan.pixeldeck.pro",
-      "referenceName" : "Pixel Deck Pro",
-      "type" : "NonConsumable"
+      "productID": "karthikvasudevan.pixeldeck.pro",
+      "referenceName": "Pixel Deck Pro",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "0.00",
+      "familyShareable": false,
+      "internalID": "6740000002",
+      "localizations": [
+        {
+          "description": "Every Pro feature for 7 days. Ends by itself; nothing is charged.",
+          "displayName": "7-day Pro trial",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "karthikvasudevan.pixeldeck.trial",
+      "referenceName": "Pixel Deck Pro 7-day trial",
+      "type": "NonConsumable"
     }
   ],
-  "settings" : {
-    "_applicationInternalID" : "6740000000",
-    "_failTransactionsEnabled" : false,
-    "_locale" : "en_US",
-    "_storefront" : "USA",
-    "_storeKitErrors" : [
-
-    ]
+  "settings": {
+    "_applicationInternalID": "6740000000",
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
   },
-  "subscriptionGroups" : [
-
-  ],
-  "version" : {
-    "major" : 4,
-    "minor" : 0
+  "subscriptionGroups": [],
+  "version": {
+    "major": 4,
+    "minor": 0
   }
 }

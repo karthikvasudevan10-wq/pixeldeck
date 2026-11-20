@@ -57,3 +57,8 @@ extension SpriteProject {
         return PlaybackSequence(frames: order, durations: order.map { d[$0] }, repeats: loopMode != .once)
     }
 }
+
+extension SpriteProject {
+    /// The frames in the order they play (see `playbackSequence`).
+    var playbackFrames: [Frame] { playbackSequence.frames.map { frames[$0] } }
+}

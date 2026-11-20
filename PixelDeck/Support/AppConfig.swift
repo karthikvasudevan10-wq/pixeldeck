@@ -6,6 +6,18 @@ enum AppConfig {
     /// and the product in PixelDeck.storekit (used for testing in Xcode).
     static let proProductID = "karthikvasudevan.pixeldeck.pro"
 
+    /// The free 7-day Pro trial: a second non-consumable in-app purchase, priced Free, with
+    /// exactly this ID (see AppStore/SUBMISSION_CHECKLIST.md). Until it exists in App Store
+    /// Connect, the paywall simply doesn't offer a trial.
+    static let trialProductID = "karthikvasudevan.pixeldeck.trial"
+    static let trialDays = 7
+
+    /// The App Store page, for captions on shared videos. Fill in the numeric Apple ID from
+    /// App Store Connect (App Information › Apple ID), e.g. "https://apps.apple.com/app/id1234567890".
+    /// Until then, captions link to the website.
+    static let appStoreURL: URL? = nil
+    static var shareURL: URL { appStoreURL ?? websiteURL }
+
     /// The website (Website/), published to GitHub Pages by .github/workflows/pixeldeck-pages.yml.
     static let websiteURL = URL(string: "https://karthikvasudevan10-wq.github.io/pixeldeck/")!
 

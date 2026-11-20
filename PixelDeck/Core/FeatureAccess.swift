@@ -7,10 +7,8 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case unlimitedFrames
     /// Eased playback timing (frames held for different lengths of time).
     case timing
-    /// GIF and MP4 video.
-    case gifExport
     case largeExport
-    /// Free PNG exports carry a small "Made with Pixel Deck" footer.
+    /// Free exports (PNG, GIF and video) carry a small "Made with Pixel Deck" mark.
     case noWatermark
     /// Dither brush, and top-bottom and four-way symmetry.
     case artistBrushes
@@ -73,8 +71,10 @@ struct FeatureAccess: Equatable, Sendable {
     var maxExportScale: Int { isPro ? 16 : FeatureAccess.freeMaxExportScale }
     /// 4K exports (long side about 3840 px; 2160 × 2160 video).
     var allowsFourK: Bool { isPro }
-    /// Free PNG exports get the "Made with Pixel Deck" footer.
+    /// Free exports get the "Made with Pixel Deck" mark.
     var addsWatermark: Bool { !isPro }
+    /// Saving a timelapse as a video.
+    var allowsTimelapseVideo: Bool { isPro }
     var allowsArtistBrushes: Bool { isPro }
     var allowsPaletteImport: Bool { isPro }
     var allowsPhotoToPixel: Bool { isPro }

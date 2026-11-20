@@ -131,7 +131,7 @@ extension EditorView {
                             .padding(32)
                     }
                 case .playback:
-                    FrameLoop(frames: model.project.frames, durations: model.frameDurations).padding(24)
+                    FrameLoop(frames: model.project.playbackFrames, durations: model.playbackSequence.durations).padding(24)
                 case .reference:
                     ReferencePanel(image: $reference, model: model)
                 }
@@ -435,7 +435,7 @@ struct EaselStage: View {
         let frames = model.project.frames
         Group {
             if frames.count > 1 && !reduceMotion {
-                FrameLoop(frames: frames, durations: model.frameDurations)
+                FrameLoop(frames: model.project.playbackFrames, durations: model.playbackSequence.durations)
             } else {
                 PixelImage(frame: frames[model.currentIndex], checker: false)
             }

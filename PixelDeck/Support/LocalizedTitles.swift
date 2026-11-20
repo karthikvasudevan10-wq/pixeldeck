@@ -115,12 +115,14 @@ extension ProFeature {
         switch self {
         case .largeCanvas: "Grow your art to \(FeatureAccess.proMaxArtSide) × \(FeatureAccess.proMaxArtSide)"
         case .unlimitedFrames: "Up to \(FeatureAccess.absoluteFrameLimit) frames per sprite"
-        case .gifExport: "Animated GIF & video export"
         case .largeExport: "Export up to 16× and 4K"
-        case .noWatermark: "No watermark"
+        case .noWatermark: "No watermark on GIFs, videos and images"
         case .artistBrushes: "Dither brush & 4-way symmetry"
         case .paletteImport: "Import palettes"
-        case .timing: "Eased playback timing"
+        case .timing: "Eased timing and timelapse video"
+        case .photoToPixel: "Photo to pixel art"
+        case .animationPresets: "Every animation preset"
+        case .adjustAllFrames: "Recolour every frame at once"
         }
     }
 
@@ -128,12 +130,14 @@ extension ProFeature {
         switch self {
         case .largeCanvas: "The canvas is infinite for everyone. Free art can grow to \(FeatureAccess.freeMaxArtSide) × \(FeatureAccess.freeMaxArtSide) pixels; Pro gives it \(FeatureAccess.proAreaMultiple) times the room, for detailed scenes and tilesets."
         case .unlimitedFrames: "Free sprites can have up to \(FeatureAccess.freeFrameLimit) frames. Very large sprites have a lower limit to protect your device's memory."
-        case .gifExport: "Share looping GIFs and MP4 videos for Reels, Shorts and TikTok."
         case .largeExport: "Crisp, large images and 4K videos for stores, social posts and print."
-        case .noWatermark: "Free PNG exports carry a small \"Made with Pixel Deck\" footer. Pro exports are just your art."
+        case .noWatermark: "Free exports carry a small \"Made with Pixel Deck\" mark. Pro exports are just your art."
         case .artistBrushes: "Shade with a checkerboard dither brush, and draw with top-bottom or four-way symmetry."
         case .paletteImport: "Bring in palettes from Lospec and other apps: .hex, .gpl, .txt and palette images."
-        case .timing: "Let animations speed up and slow down — ease in, ease out or both — in playback, GIFs, videos and sprite sheets."
+        case .timing: "Let animations speed up and slow down, in playback, GIFs, videos and sprite sheets. And save the timelapse of your drawing as a video."
+        case .photoToPixel: "Turn any photo into pixel art in its own colours, your palette or a retro look, ready to tidy and animate."
+        case .animationPresets: "Bounce and Blink are free. Pro adds Float, Shake, Colour cycle and Squash, drawn for you as real frames."
+        case .adjustAllFrames: "Change brightness, contrast, hue and saturation across a whole animation in one go."
         }
     }
 }

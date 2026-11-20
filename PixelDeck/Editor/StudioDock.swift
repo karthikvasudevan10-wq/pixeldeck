@@ -18,6 +18,7 @@ struct StudioDock: View {
         VStack(spacing: 10) {
             FrameRow(model: model)
             PaletteRow(model: model, onEdit: onEditSwatch, onPalettes: onPalettes)
+            ExtraColorsRow(model: model)
             ToolRow(model: model)
             ActionRow(model: model, onGallery: onGallery, onExport: onExport, onTrace: onTrace)
         }
@@ -88,12 +89,28 @@ struct FrameRow: View {
                 .frame(width: thumb.width, height: thumb.height)
                 .background(Theme.ink)
                 .overlay(Rectangle().strokeBorder(current ? Theme.accent : (index == model.currentIndex - 1 ? Theme.muted : Theme.line), lineWidth: 2))
+                .overlay(alignment: .topTrailing) {
+                    // Frames held for more than one beat say so.
+                    if frame.hold > 1 {
+                        Text(verbatim: "×\(frame.hold)")
+                            .font(AppFont.pixel(8))
+                            .foregroundStyle(Theme.onAccent2)
+                            .padding(.horizontal, 2)
+                            .background(Theme.accent2)
+                    }
+                }
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .tourHighlight(.frame(index))
         .contextMenu {
             Button { model.duplicateFrame(at: index) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+            Picker(selection: Binding(get: { frame.hold }, set: { model.setHold($0, at: index) })) {
+                ForEach(1...Frame.maxHold, id: \.self) { n in Text(verbatim: "×\(n)").tag(n) }
+            } label: {
+                Label("Hold this frame", systemImage: "timer")
+            }
+            .pickerStyle(.menu)
             TransformMenu(model: model, frame: index)
             Button { model.copyFrameToClipboard(at: index) } label: { Label("Copy", systemImage: "doc.on.doc") }
             Button { model.pasteClipboard(at: index, asNewFrame: false) } label: {
@@ -111,6 +128,42 @@ struct FrameRow: View {
             Button(role: .destructive) { model.deleteFrame(at: index) } label: { Label("Delete", systemImage: "trash") }
         }
         .accessibilityLabel(current ? Text("Frame \(index + 1), selected") : Text("Frame \(index + 1)"))
+    }
+}
+
+/// The colours beyond the ten swatches (ramps, photo colours, adjusted colours), as a thin
+/// scrolling row under the palette. Hidden until there are some.
+struct ExtraColorsRow: View {
+    let model: EditorModel
+
+    var body: some View {
+        if !model.project.extraColors.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(Array(model.project.extraColors.enumerated()), id: \.offset) { _, c in
+                        let selected = c == model.color && model.tool != .eraser
+                        Rectangle()
+                            .fill(c.color)
+                            .frame(width: 26, height: 22)
+                            .overlay(Rectangle().strokeBorder(selected ? Theme.text : Theme.line, lineWidth: selected ? 2 : 1))
+                            .contentShape(Rectangle())
+                            .onTapGesture { model.pickColor(c) }
+                            .contextMenu {
+                                Button(role: .destructive) { model.removeExtraColor(c) } label: {
+                                    Label("Remove from my colours", systemImage: "trash")
+                                }
+                            }
+                            .accessibilityElement()
+                            .accessibilityLabel(Text("Colour \(c.hexString)"))
+                            .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+                            .accessibilityAction { model.pickColor(c) }
+                    }
+                }
+                .padding(.horizontal, 4)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("More colours")
+        }
     }
 }
 
@@ -408,6 +461,7 @@ extension ShapeKind {
 struct OnionMenu: View {
     let model: EditorModel
     var onTrace: () -> Void
+    @Environment(StudioPanelState.self) private var panels: StudioPanelState?
 
     var body: some View {
         Picker(selection: Binding(get: { model.onionOpacity }, set: { model.onionOpacity = $0 })) {
@@ -416,6 +470,9 @@ struct OnionMenu: View {
             Label("Onion skin strength", systemImage: "square.2.layers.3d")
         }
         .pickerStyle(.menu)
+        if let panels {
+            Button { panels.onionTiming = true } label: { Label("Onion skin and timing…", systemImage: "timer") }
+        }
         Button(action: onTrace) { Label("Tracing image…", systemImage: "photo") }
     }
 }

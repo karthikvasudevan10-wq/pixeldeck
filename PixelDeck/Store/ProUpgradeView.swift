@@ -31,7 +31,7 @@ struct ProUpgradeView: View {
                             .background(Color(uiColor: Theme.dynamic(0x3A321C, 0xF4ECD6)))
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Pixel Deck Pro").font(AppFont.pixel(26)).foregroundStyle(Theme.cream)
-                            Text("One purchase. No subscription.")
+                            Text("One purchase · every device")
                                 .font(AppFont.body(15, relativeTo: .subheadline))
                                 .foregroundStyle(Theme.muted)
                         }
@@ -39,7 +39,7 @@ struct ProUpgradeView: View {
                     VStack(spacing: 8) {
                         ForEach(orderedFeatures) { row($0) }
                     }
-                    Text("Free forever: every tool, mirror, onion skin, motion tweening, the infinite canvas up to 64 × 64 and PNG / sprite sheet export up to 4×.")
+                    Text("Free forever: every tool, pixel-perfect strokes, the shading assistant, layers, onion skin, tweening, Bounce and Blink, the infinite canvas up to 64 × 64, and watermarked GIF, video and PNG export up to 4×.")
                         .font(AppFont.body(13, relativeTo: .footnote))
                         .foregroundStyle(Theme.muted)
                 }
@@ -49,7 +49,10 @@ struct ProUpgradeView: View {
             purchaseArea
         }
         .screenBackground()
+        // Buying, or starting the trial, closes the paywall. (Someone already in the trial who
+        // opens it to buy keeps it open until they do.)
         .onChange(of: purchases.isPro) { _, pro in if pro { dismiss() } }
+        .onChange(of: purchases.ownsPro) { _, owned in if owned { dismiss() } }
         .sheet(isPresented: $showingPrivacy) {
             NavigationStack {
                 PrivacyPolicyView()
@@ -91,9 +94,26 @@ struct ProUpgradeView: View {
 
     private var purchaseArea: some View {
         VStack(spacing: 12) {
-            if purchases.isPro {
+            if purchases.ownsPro {
                 Text("Pro is unlocked. Thank you!").font(AppFont.pixel(14)).foregroundStyle(Theme.accent2)
             } else if let product = purchases.product {
+                if purchases.trialActive {
+                    Text("Your free trial has \(purchases.trialDaysLeft) days left", comment: "Pro trial status; plural")
+                        .font(AppFont.pixel(13)).foregroundStyle(Theme.accent2)
+                } else if purchases.canStartTrial {
+                    Button {
+                        Task { await purchases.startTrial() }
+                    } label: {
+                        Text("Try Pro free for \(AppConfig.trialDays) days", comment: "Button that starts the free Pro trial; plural")
+                            .font(AppFont.pixel(15))
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(TileButtonStyle(fill: Theme.tool))
+                    .overlay(Rectangle().strokeBorder(Theme.accent2, lineWidth: 2))
+                    .disabled(purchases.isPurchasing)
+                    .accessibilityHint("The trial ends by itself. Nothing is charged.")
+                }
                 Button {
                     Task { await purchases.purchase() }
                 } label: {
@@ -109,9 +129,12 @@ struct ProUpgradeView: View {
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(purchases.isPurchasing)
-                Text("One-time purchase of \(product.displayPrice). Family Sharing supported.")
+                (purchases.canStartTrial
+                    ? Text("The trial ends by itself. Nothing is charged. Pro is a one-time purchase of \(product.displayPrice).")
+                    : Text("One-time purchase of \(product.displayPrice). Family Sharing supported."))
                     .font(AppFont.body(12, relativeTo: .caption))
                     .foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.center)
             } else if purchases.loadFailed {
                 VStack(spacing: 6) {
                     Text("The App Store isn't reachable right now.")
@@ -144,12 +167,14 @@ extension ProFeature {
         switch self {
         case .largeCanvas: .select
         case .unlimitedFrames: .gallery
-        case .gifExport: .play
         case .largeExport: .export
         case .noWatermark: .check
         case .artistBrushes: .pencil
         case .paletteImport: .swatches
         case .timing: .tween
+        case .photoToPixel: .picker
+        case .animationPresets: .play
+        case .adjustAllFrames: .swatches
         }
     }
 }

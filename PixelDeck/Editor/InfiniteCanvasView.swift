@@ -327,7 +327,9 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
             imageLayer.contents = PixelRenderer.cgImage(new.grid)
         }
         if old?.onionVersion != new.onionVersion {
-            onionLayer.contents = new.onion.flatMap { PixelRenderer.cgImage(OnionSkin.tint($0)) }
+            // Earlier frames in pink and later ones in blue, fading with distance, in one image.
+            onionLayer.contents = OnionSkin.composite(before: new.onionBefore, after: new.onionAfter)
+                .flatMap { PixelRenderer.cgImage($0) }
         }
         onionLayer.opacity = Float(new.onionOpacity)
         traceLayer.opacity = Float(new.trace?.opacity ?? 0)
@@ -451,8 +453,28 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
             mirrorLayer.path = nil
         }
 
-        if let r = st.selection {
-            let path = CGPath(rect: viewRect(r), transform: nil)
+        if let trail = st.lasso, !trail.isEmpty {
+            // The lasso being drawn: a line through the middle of each pixel it has crossed.
+            let p = CGMutablePath()
+            p.addLines(between: trail.map { viewPoint(Double($0.x) + 0.5, Double($0.y) + 0.5) })
+            selectionLayer.fillColor = nil
+            selectionLayer.path = p
+            selectionUnderLayer.path = p
+        } else if let r = st.selection {
+            let path: CGPath
+            if let mask = st.selectionMask {
+                // Lasso and wand selections: the outline of exactly the selected pixels.
+                let p = CGMutablePath()
+                for (a, b) in mask.outline() {
+                    p.move(to: viewPoint(Double(a.x), Double(a.y)))
+                    p.addLine(to: viewPoint(Double(b.x), Double(b.y)))
+                }
+                selectionLayer.fillColor = nil
+                path = p
+            } else {
+                selectionLayer.fillColor = Theme.uiCream.resolvedColor(with: traitCollection).withAlphaComponent(0.06).cgColor
+                path = CGPath(rect: viewRect(r), transform: nil)
+            }
             selectionLayer.path = path
             selectionUnderLayer.path = path
             if selectionLayer.animation(forKey: "ants") == nil {
