@@ -3,6 +3,20 @@
 What's already done in the code, and what only you can do. Start with the launch plan; the
 sections below it have the details.
 
+## Version 2 (the `v2` branch)
+
+Everything for v2 is in [`Notes/v2-build-notes.md`](../Notes/v2-build-notes.md): what was built, how far it has been checked, and the steps only you can do. In short:
+
+- [ ] Build the `v2` branch in Xcode for iPhone, then for **My Mac (Mac Catalyst)**, and send back any errors (the screens were written without Xcode).
+- [ ] **Free trial**: add a second non-consumable in-app purchase, `karthikvasudevan.pixeldeck.trial`, priced Free. Without it the paywall doesn't offer a trial.
+- [ ] **Mac**: App Store Connect › Add Platform › macOS, with Mac screenshots.
+- [ ] **CloudKit**: after posting one remix and one level from a development build, add the index **`remixOf`: Queryable** on `Post`, then deploy the schema to Production.
+- [ ] **Privacy answers**: the camera is now used (a photo you take to pixelate stays on the device). Data collection is still "no".
+- [ ] Put the app's Apple ID into `AppConfig.appStoreURL`, and set `AppConfig.allowReportingOwnPosts` back to `false`.
+- [ ] Re-answer the age rating questionnaire if asked: nothing in v2 changes the answers (Community is still off under 13; Playground levels are shared through Community with the same reporting and blocking).
+
+Review notes to add for v2: GIF and video export are free with a "Made with Pixel Deck" mark; Pro removes it. The trial is a free non-consumable product that unlocks Pro for 7 days and ends by itself. On the Mac, Settings › AI assistants starts a server that listens on this Mac only (off by default); it lets the user's own AI assistant call the app's drawing tools, and sends nothing to us.
+
 ## Launch plan (in order)
 
 Identifiers already set in the code:

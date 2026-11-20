@@ -82,6 +82,26 @@ Hi, I'm Karthik, and I love pixel art: how a handful of squares can feel so aliv
 • Community is now off for anyone under 13
 • A clearer onion skin, saved palettes, multi-select delete and 4K export (Pro)
 
+**What's New** (version 2.0, draft: the `v2` branch):
+
+Pixel Deck 2 makes complex art easy, and turns your pixels into play.
+
+• Pixel-perfect strokes: wobbly corners are cleaned as you draw
+• A shading assistant: choose where the light is, then brush on shade and highlight
+• Colour ramps, a palette from any photo, and colour adjustments
+• One-tap animations: bounce, blink, float, shake and more, drawn for you as real frames
+• Photo to pixel art (Pro)
+• Lasso and magic wand, with rotate, scale and flip
+• Onion skin over several frames, frame holds and ping-pong loops
+• Pixel Playground: build a level with tiles and make your sprite the hero
+• Pixel Academy: short lessons that end with a real animation
+• Retro modes, stamps, an idea of the day, and printable bead patterns
+• Square and 9:16 videos for Reels and TikTok. GIF and video are now free
+• Now on the Mac, with the same purchase
+• Try Pro free for 7 days
+
+(Don't name other companies' products in App Store text: say "Reels and TikTok" only if you're happy to, or "social video" to be safe. Leave out Aseprite's name in the listing; "open and save desktop sprite files (Pro)" is fine.)
+
 **Category**: Graphics & Design (primary), Entertainment (secondary)
 
 **Copyright**: `2026 Karthik Vasudevan`

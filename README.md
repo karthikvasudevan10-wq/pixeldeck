@@ -1,6 +1,16 @@
 # Pixel Deck
 
-App to doodle pixel art, make it move and have fun: a native SwiftUI pixel-art and sprite-animation app for iPhone and iPad.
+App to doodle pixel art, make it move and have fun: a native SwiftUI pixel-art and sprite-animation app for iPhone, iPad and Mac.
+
+> **This is the `v2` branch.** It adds the v2 features and the Mac app on top of version 1.1 (which is on `main`). What was built, how far it has been checked, and what to do next is in [`Notes/v2-build-notes.md`](Notes/v2-build-notes.md). The engine is unit-tested; the screens have not been compiled yet, so expect some build errors the first time.
+
+## New in v2
+
+- **Make complex art easy**: pixel-perfect strokes, a shading assistant (pick where the light is; Shade and Highlight step along a hue-shifted ramp), colour ramps and a palette from any photo, one-tap animation presets (bounce, blink, float, shake, colour cycle, squash), photo to pixel art, lasso and magic wand with rotate, scale and flip, shape outline thickness, onion skin showing several frames before and after, per-frame holds and ping-pong loops, colour adjustments (brightness, contrast, hue, saturation), and share-ready square or 9:16 video with an end card.
+- **From pixels to play**: retro canvases (1-bit, handheld, ink, 8-colour), tiles and a scene builder, Pixel Playground (your sprite as the hero of a level you build and share), Pixel Academy lessons, Idea of the day, and remix families with credit in Community.
+- **Beyond the canvas**: motion guides (walk, run, jump, idle), a stamps library, printable bead and cross-stitch patterns, Aseprite file import and export, and on the Mac, drawing with AI assistants through MCP.
+- **On more devices**: a Mac app (Mac Catalyst) with a menu bar, and a desk layout on iPad and Mac with a tool rail, an inspector and a timeline.
+- **Pro**: a free 7-day trial. GIF and video export are now free with a watermark; Pro removes it.
 
 ## Features
 
@@ -167,7 +177,8 @@ PixelDeck/
   PixelDeckApp.swift      App entry point
   Core/                   Platform-independent model and logic (unit-tested)
   Editor/                 Studio: infinite UIKit canvas, swipe container, dock, tween
-  Library/                Gallery
+  Library/                Gallery, New canvas, Photo to pixel art, Pixel Academy, Aseprite import
+  Play/                   Tiles and scenes, Pixel Playground
   Community/              Community: CloudKit public sharing (feed, post, share, report/block)
   Export/                 PNG/GIF/MP4/JSON export, Photos saving and the share sheet
   Store/                  In-app purchase (StoreKit 2) and paywall
