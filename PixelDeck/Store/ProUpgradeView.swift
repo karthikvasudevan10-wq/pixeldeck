@@ -177,6 +177,8 @@ extension ProFeature {
         case .adjustAllFrames: .swatches
         case .academy: .check
         case .playground: .play
+        case .motionGuides: .tween
+        case .aseprite: .download
         }
     }
 }

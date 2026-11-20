@@ -125,6 +125,8 @@ extension ProFeature {
         case .adjustAllFrames: "Recolour every frame at once"
         case .academy: "Every Pixel Academy lesson"
         case .playground: "Bigger Playground levels, enemies, sound"
+        case .motionGuides: "Motion guides"
+        case .aseprite: "Aseprite files"
         }
     }
 
@@ -141,6 +143,8 @@ extension ProFeature {
         case .animationPresets: "Bounce and Blink are free. Pro adds Float, Shake, Colour cycle and Squash, drawn for you as real frames."
         case .adjustAllFrames: "Change brightness, contrast, hue and saturation across a whole animation in one go."
         case .academy: "The first two lessons are free. Pro adds squash and stretch, a looping campfire, a spinning coin and an explosion."
+        case .motionGuides: "Stick-figure poses for walk, run, jump and idle, one per frame, to draw your own character over. They never export."
+        case .aseprite: "Open .aseprite files with their layers, frames, timing and tags, and save sprites back for the desktop."
         case .playground: "Free levels are \(TileScene.freeColumns) × \(TileScene.freeRows) tiles. Pro levels can be four times as long, with enemies to dodge and a chiptune soundtrack."
         }
     }

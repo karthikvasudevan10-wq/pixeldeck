@@ -119,6 +119,8 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
     private let mirrorLayer = CAShapeLayer()
     /// The guided tour's dotted squares to fill in: under the art, so painting covers them.
     private let guideLayer = CAShapeLayer()
+    /// A motion guide's neighbouring poses, fainter and still.
+    private let ghostGuideLayer = CAShapeLayer()
     private let pathLayer = CAShapeLayer()
     private let selectionUnderLayer = CAShapeLayer()
     private let selectionLayer = CAShapeLayer()
@@ -160,6 +162,8 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         traceLayer.isHidden = true
         guideLayer.actions = ["path": NSNull(), "hidden": NSNull()]
         layer.insertSublayer(guideLayer, below: imageLayer)
+        ghostGuideLayer.actions = ["path": NSNull(), "hidden": NSNull()]
+        layer.insertSublayer(ghostGuideLayer, below: guideLayer)
         gridLayer.fillColor = nil
         gridLayer.lineWidth = 1
         layer.addSublayer(gridLayer)
@@ -346,6 +350,7 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         imageLayer.frame = art
         onionLayer.frame = art
         layoutGuide(st.guide)
+        layoutGhostGuide(st.guideGhost)
         if let t = st.trace, traceImage != nil {
             let r = t.rect
             let o = viewPoint(r.x, r.y)
@@ -358,6 +363,24 @@ final class InfiniteCanvasView: UIView, UIGestureRecognizerDelegate, UIPencilInt
         layoutGrid(show: st.showGrid)
         layoutOverlays(st)
         CATransaction.commit()
+    }
+
+    /// The poses before and after a motion guide's: smaller, fainter squares.
+    private func layoutGhostGuide(_ points: [PixelPoint]?) {
+        guard let points, !points.isEmpty else {
+            ghostGuideLayer.isHidden = true
+            return
+        }
+        ghostGuideLayer.isHidden = false
+        ghostGuideLayer.frame = bounds
+        let path = CGMutablePath()
+        let dot = max(2, s * 0.22)
+        for p in points {
+            let c = viewPoint(Double(p.x) + 0.5, Double(p.y) + 0.5)
+            path.addRect(CGRect(x: c.x - dot / 2, y: c.y - dot / 2, width: dot, height: dot))
+        }
+        ghostGuideLayer.path = path
+        ghostGuideLayer.fillColor = Theme.uiAccent2.resolvedColor(with: traitCollection).withAlphaComponent(0.35).cgColor
     }
 
     /// A small square in the middle of each guide pixel, pulsing gently so it's noticed.

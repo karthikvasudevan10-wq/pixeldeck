@@ -24,6 +24,10 @@ enum ProFeature: String, CaseIterable, Identifiable, Sendable {
     case academy
     /// Bigger Playground levels, enemies and sound.
     case playground
+    /// Pose guides for walk, run, jump and idle.
+    case motionGuides
+    /// Opening and saving Aseprite files.
+    case aseprite
 
     var id: String { rawValue }
 
@@ -87,4 +91,6 @@ struct FeatureAccess: Equatable, Sendable {
     func allows(_ lesson: Lesson) -> Bool { isPro || lesson.isFree }
     /// Levels bigger than 24 × 12, enemies and sound.
     var allowsPlaygroundExtras: Bool { isPro }
+    var allowsMotionGuides: Bool { isPro }
+    var allowsAseprite: Bool { isPro }
 }

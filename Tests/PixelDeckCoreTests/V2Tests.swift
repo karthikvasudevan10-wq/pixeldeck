@@ -940,3 +940,216 @@ final class StampTests: XCTestCase {
         XCTAssertNil(m.floating)
     }
 }
+
+final class ZlibTests: XCTestCase {
+    func testInflatesDynamicAndFixedBlocks() {
+        let compressed: [UInt8] = [120, 218, 213, 146, 61, 118, 24, 49, 8, 132, 175, 194, 93, 28, 23, 126, 73, 225, 210, 45, 3, 20, 122, 80, 168, 228, 248, 249, 148, 91, 68, 197, 46, 172, 196, 104, 126, 214, 116, 67, 97, 110, 169, 113, 197, 57, 175, 59, 74, 234, 72, 101, 94, 73, 166, 60, 50, 207, 180, 14, 158, 225, 28, 55, 118, 203, 171, 237, 216, 230, 50, 29, 166, 200, 156, 162, 173, 240, 57, 244, 117, 212, 97, 105, 172, 170, 92, 0, 11, 4, 89, 70, 246, 166, 221, 54, 95, 11, 80, 228, 41, 221, 91, 17, 123, 129, 58, 204, 28, 107, 174, 142, 144, 90, 94, 76, 192, 232, 128, 147, 38, 155, 138, 214, 182, 93, 150, 87, 92, 121, 248, 194, 10, 28, 128, 32, 87, 124, 168, 11, 31, 43, 106, 175, 229, 250, 16, 26, 203, 98, 220, 7, 12, 243, 201, 128, 220, 88, 188, 142, 23, 114, 4, 20, 10, 64, 169, 4, 197, 22, 153, 114, 54, 204, 171, 224, 25, 22, 209, 126, 233, 2, 125, 113, 247, 70, 188, 3, 104, 19, 7, 250, 33, 193, 1, 249, 58, 14, 138, 231, 40, 159, 24, 60, 220, 206, 57, 131, 151, 51, 144, 229, 174, 55, 226, 76, 244, 140, 189, 226, 153, 224, 179, 230, 177, 86, 83, 3, 221, 101, 135, 145, 73, 140, 2, 241, 226, 86, 235, 132, 55, 102, 80, 146, 139, 86, 126, 159, 29, 132, 54, 215, 206, 11, 230, 165, 179, 224, 92, 140, 202, 9, 199, 158, 36, 31, 124, 109, 226, 4, 173, 254, 165, 103, 104, 72, 39, 148, 40, 54, 125, 153, 58, 89, 18, 238, 48, 32, 146, 142, 28, 135, 67, 227, 227, 227, 134, 111, 184, 163, 245, 142, 211, 101, 247, 209, 122, 110, 135, 238, 99, 15, 210, 251, 121, 250, 78, 3, 243, 253, 245, 243, 249, 231, 215, 231, 199, 239, 255, 168, 248, 11, 32, 121, 6, 185]
+        let out = Zlib.inflate(compressed)
+        XCTAssertEqual(out?.count, 780)
+        XCTAssertEqual(Zlib.adler32(out ?? []), 544802489)
+        let fixed: [UInt8] = [120, 1, 203, 72, 205, 201, 201, 87, 200, 64, 34, 11, 50, 43, 82, 115, 20, 82, 82, 147, 179, 1, 152, 153, 10, 118]
+        XCTAssertEqual(Zlib.inflate(fixed).map { String(decoding: $0, as: UTF8.self) }, "hello hello hello pixel deck")
+    }
+
+    func testStoredStreamsRoundTrip() {
+        let small: [UInt8] = [1, 2, 3, 250, 0]
+        XCTAssertEqual(Zlib.inflate(Zlib.store(small)), small)
+        XCTAssertEqual(Zlib.inflate(Zlib.store([])), [])
+        let big = (0..<150_000).map { UInt8(truncatingIfNeeded: $0 &* 7) }
+        XCTAssertEqual(Zlib.inflate(Zlib.store(big)), big, "more than one stored block")
+    }
+
+    func testDamagedDataFailsInsteadOfCrashing() {
+        XCTAssertNil(Zlib.inflate([]))
+        XCTAssertNil(Zlib.inflate([0x78, 0x9C, 0xFF, 0xFF, 0xFF]))
+        XCTAssertNil(Zlib.inflate([1, 2, 3, 4]))
+        var cut = Zlib.store([1, 2, 3, 4, 5])
+        cut.removeLast(6)
+        XCTAssertNil(Zlib.inflate(cut))
+    }
+}
+
+final class AsepriteTests: XCTestCase {
+    private func sample() -> SpriteProject {
+        let m = makeModel()
+        m.pixelPerfect = false
+        m.pickColor(RGBA(hex: 0xFF5C8A))
+        tap(m, 0.5, 0.5)
+        tap(m, 3.5, 2.5)
+        m.addLayer(named: "Eyes")
+        m.pickColor(.black)
+        tap(m, 1.5, 1.5)
+        m.addKeyframe()
+        m.pickColor(RGBA(hex: 0x3A86FF))
+        tap(m, 2.5, 0.5)
+        m.setHold(2, at: 1)
+        m.setFPS(10)
+        return m.project
+    }
+
+    func testRoundTripKeepsLayersFramesAndTiming() throws {
+        let project = sample()
+        let file = try Aseprite.parse(Aseprite.encode(project))
+        XCTAssertEqual(file.width, 4)
+        XCTAssertEqual(file.height, 3)
+        XCTAssertEqual(file.layerNames, ["Layer 1", "Eyes"])
+        XCTAssertEqual(file.frames.count, 2)
+        XCTAssertEqual(file.durations, [100, 200])
+        let back = try XCTUnwrap(Aseprite.projects(from: file, name: "Back").first)
+        XCTAssertEqual(back.layers.map(\.name), ["Layer 1", "Eyes"])
+        XCTAssertEqual(back.fps, 10)
+        XCTAssertEqual(back.frames.map(\.hold), [1, 2])
+        let area = try XCTUnwrap(project.contentBounds)
+        XCTAssertEqual(back.grids(croppedTo: back.bounds), project.grids(croppedTo: area), "every pixel survives")
+        XCTAssertEqual(back.frames[0].layers[1].pixels.filter { !$0.isClear }, [.black])
+    }
+
+    func testTagsBecomeSeparateSprites() throws {
+        var file = try Aseprite.parse(Aseprite.encode(sample()))
+        file.tags = [AsepriteFile.Tag(name: "idle", from: 0, to: 0), AsepriteFile.Tag(name: "run", from: 0, to: 1)]
+        let sprites = Aseprite.projects(from: file, name: "Knight")
+        XCTAssertEqual(sprites.map(\.name), ["Knight idle", "Knight run"])
+        XCTAssertEqual(sprites.map(\.frames.count), [1, 2])
+        XCTAssertEqual(Aseprite.projects(from: file, name: "Knight", splitTags: false).count, 1)
+        let flat = try XCTUnwrap(Aseprite.projects(from: file, name: "Knight", splitTags: false, keepLayers: false).first)
+        XCTAssertEqual(flat.layers.count, 1)
+        XCTAssertEqual(flat.frames[0].grid, sprites[1].frames[0].grid)
+    }
+
+    func testRejectsOtherFiles() {
+        XCTAssertThrowsError(try Aseprite.parse(Data([1, 2, 3]))) { XCTAssertEqual($0 as? AsepriteError, .notAseprite) }
+        XCTAssertThrowsError(try Aseprite.parse(Data(repeating: 0, count: 200))) { XCTAssertEqual($0 as? AsepriteError, .notAseprite) }
+        var cut = [UInt8](Aseprite.encode(sample()))
+        cut.removeLast(20)
+        XCTAssertThrowsError(try Aseprite.parse(Data(cut)))
+    }
+}
+
+final class CraftAndGuideTests: XCTestCase {
+    func testBeadPatternCountsAndNames() throws {
+        var g = PixelGrid(width: 6, height: 6)
+        for x in 1...3 { g[x, 2] = RGBA(hex: 0x7BE07B) }
+        g[1, 3] = .black
+        let pattern = try XCTUnwrap(BeadPattern(g))
+        XCTAssertEqual(pattern.grid.width, 3)
+        XCTAssertEqual(pattern.grid.height, 2)
+        XCTAssertEqual(pattern.total, 4)
+        XCTAssertEqual(pattern.entries.map(\.count), [3, 1])
+        XCTAssertEqual(pattern.entries.map(\.name), [.lightGreen, .black])
+        XCTAssertEqual(pattern.entries.map(\.symbol), ["A", "B"])
+        XCTAssertEqual(pattern.symbol(for: .black), "B")
+        XCTAssertNil(BeadPattern(PixelGrid(width: 4, height: 4)))
+    }
+
+    func testEverydayColourNames() {
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0xFFFFFF)), .white)
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0xFF0000)), .red)
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0x3A86FF)), .blue)
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0xFFD23F)), .yellow)
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0x2E9E5B)), .green)
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0x5E3B22)), .brown)
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0xFF5C8A)), .pink)
+        XCTAssertEqual(BeadName.name(for: RGBA(hex: 0x808080)), .grey)
+    }
+
+    func testMotionGuidesStandOnTheGroundAndFitTheirHeight() {
+        for guide in MotionGuide.allCases {
+            for height in MotionGuides.heights {
+                var shapes = Set<[PixelPoint]>()
+                for i in 0..<guide.poseCount {
+                    let pts = MotionGuides.points(guide, index: i, height: height)
+                    XCTAssertFalse(pts.isEmpty)
+                    let ys = pts.map(\.y), xs = pts.map(\.x)
+                    XCTAssertLessThanOrEqual(ys.max()!, height / 2, "\(guide) \(i): nothing below the ground")
+                    XCTAssertGreaterThanOrEqual(ys.min()!, -height, "\(guide) \(i): not wildly tall")
+                    XCTAssertLessThanOrEqual(xs.max()! - xs.min()!, height + 4)
+                    shapes.insert(pts.sorted { ($0.y, $0.x) < ($1.y, $1.x) })
+                }
+                XCTAssertGreaterThan(shapes.count, 1, "\(guide): the poses differ")
+            }
+        }
+        XCTAssertEqual(MotionGuides.points(.walk, index: 8, height: 24), MotionGuides.points(.walk, index: 0, height: 24), "poses loop")
+    }
+}
+
+final class AIToolTests: XCTestCase {
+    func testDrawingToolsMakeUndoableSteps() throws {
+        let m = makeModel()
+        XCTAssertTrue(AITools.describe(m).contains("empty"))
+        _ = try AITools.call("rect", ["x1": 0, "y1": 0, "x2": 3, "y2": 3, "color": "#FF5C8A", "filled": true], model: m)
+        XCTAssertEqual(opaqueCount(m.currentGrid), 16)
+        _ = try AITools.call("set_pixels", ["pixels": [[1, 1, "#000000"], [2, 1, "clear"]]], model: m)
+        XCTAssertEqual(m.pixel(P(1, 1)), .black)
+        XCTAssertTrue(m.pixel(P(2, 1)).isClear)
+        _ = try AITools.call("set_pixels", ["x": 5, "y": 0, "rows": ["ab", ".a"], "legend": ["a": "#3A86FF", "b": "#FFFFFF"]], model: m)
+        XCTAssertEqual(m.pixel(P(5, 0)), RGBA(hex: 0x3A86FF))
+        XCTAssertEqual(m.pixel(P(6, 0)), .white)
+        XCTAssertTrue(m.pixel(P(5, 1)).isClear)
+        _ = try AITools.call("line", ["x1": 0, "y1": 6, "x2": 4, "y2": 6, "color": "#000000"], model: m)
+        XCTAssertEqual(m.pixel(P(4, 6)), .black)
+        let text = try AITools.call("read_canvas", [:], model: m)
+        XCTAssertTrue(text.contains("#FF5C8A"))
+        XCTAssertTrue(text.contains("x 0 to 6"))
+        // Four drawing calls, four undo steps.
+        for _ in 0..<4 { _ = try AITools.call("undo", [:], model: m) }
+        XCTAssertTrue(m.currentGrid.isBlank)
+        XCTAssertThrowsError(try AITools.call("undo", [:], model: m))
+    }
+
+    func testFramesLayersAndPalette() throws {
+        let m = makeModel()
+        _ = try AITools.call("add_layer", ["name": "Castle"], model: m)
+        XCTAssertEqual(m.layers.map(\.name), ["Layer 1", "Castle"])
+        _ = try AITools.call("rect", ["x1": 0, "y1": 0, "x2": 1, "y2": 0, "color": "#FFD23F"], model: m)
+        _ = try AITools.call("add_frame", ["copy": true], model: m)
+        XCTAssertEqual(m.frameCount, 2)
+        XCTAssertEqual(m.pixel(P(0, 0), frame: 1), RGBA(hex: 0xFFD23F))
+        _ = try AITools.call("select_frame", ["frame": 1], model: m)
+        XCTAssertEqual(m.currentIndex, 0)
+        _ = try AITools.call("set_palette", ["colors": ["#111111", "#222222"]], model: m)
+        XCTAssertEqual(m.palette[0], RGBA(hex: 0x111111))
+        XCTAssertEqual(m.palette[2], SpriteProject.defaultPalette[2])
+        _ = try AITools.call("fill", ["x": 0, "y": 0, "color": "#3A86FF"], model: m)
+        XCTAssertEqual(m.pixel(P(1, 0)), RGBA(hex: 0x3A86FF))
+        _ = try AITools.call("flip", ["direction": "horizontal"], model: m)
+        _ = try AITools.call("set_speed", ["fps": 12], model: m)
+        XCTAssertEqual(m.project.fps, 12)
+    }
+
+    func testMistakesAreExplainedNotDrawn() {
+        let m = makeModel()
+        XCTAssertThrowsError(try AITools.call("rect", ["x1": 0, "y1": 0, "x2": 200, "y2": 2, "color": "#000000"], model: m)) { e in
+            XCTAssertTrue(((e as? AIToolError)?.message ?? "").contains("64"))
+        }
+        XCTAssertTrue(m.currentGrid.isBlank, "nothing is half drawn")
+        XCTAssertFalse(m.canUndo)
+        XCTAssertThrowsError(try AITools.call("line", ["x1": 0, "y1": 0, "x2": 1, "y2": 1, "color": "pinkish"], model: m))
+        XCTAssertThrowsError(try AITools.call("select_frame", ["frame": 9], model: m))
+        XCTAssertThrowsError(try AITools.call("teleport", [:], model: m))
+        XCTAssertThrowsError(try AITools.call("set_pixels", ["rows": ["z"], "x": 0, "y": 0, "legend": [:] as [String: Any]], model: m))
+    }
+
+    func testEveryToolHasAValidSchema() throws {
+        XCTAssertEqual(Set(AITools.all.map(\.name)).count, AITools.all.count)
+        for tool in AITools.all {
+            let schema = try JSONSerialization.jsonObject(with: Data(tool.schema.utf8)) as? [String: Any]
+            XCTAssertEqual(schema?["type"] as? String, "object", tool.name)
+        }
+    }
+
+    func testMotionGuideNeedsProAndIsNeverArt() {
+        let m = makeModel()
+        var asked: ProFeature?
+        m.onProRequired = { asked = $0 }
+        m.motionGuide = .walk
+        XCTAssertNil(m.motionGuide)
+        XCTAssertEqual(asked, .motionGuides)
+        m.access = .pro
+        m.motionGuide = .walk
+        let st = m.canvasState()
+        XCTAssertEqual(st.guide, MotionGuides.points(.walk, index: 0, height: 24))
+        XCTAssertFalse(st.guideGhost?.isEmpty ?? true)
+        XCTAssertTrue(m.currentGrid.isBlank)
+        XCTAssertNil(m.project.contentBounds)
+    }
+}

@@ -40,15 +40,19 @@ struct CanvasState: Equatable {
     var mirrorVertical: Bool = false
     /// The tracing picture's placement and opacity, if one is shown (never during playback).
     var trace: TraceSettings? = nil
-    /// Squares to fill in (the guided tour's dotted guide), in world pixels.
+    /// Squares to fill in (the guided tour's dotted guide, a lesson's, or a motion guide's pose),
+    /// in world pixels.
     var guide: [PixelPoint]? = nil
+    /// The poses either side of a motion guide's, drawn faintly.
+    var guideGhost: [PixelPoint]? = nil
 
     /// Compares versions rather than pixels: cheap enough to run on every touch.
     static func == (l: CanvasState, r: CanvasState) -> Bool {
         l.gridVersion == r.gridVersion && l.onionVersion == r.onionVersion && l.bounds == r.bounds
             && l.onionOpacity == r.onionOpacity && l.showGrid == r.showGrid && l.selection == r.selection
             && l.motionPath == r.motionPath && l.mirror == r.mirror && l.mirrorVertical == r.mirrorVertical
-            && l.trace == r.trace && l.guide == r.guide && l.selectionMask == r.selectionMask && l.lasso == r.lasso
+            && l.trace == r.trace && l.guide == r.guide && l.guideGhost == r.guideGhost
+            && l.selectionMask == r.selectionMask && l.lasso == r.lasso
     }
 }
 
@@ -141,6 +145,14 @@ final class EditorModel {
     }
     static let maxOnionBefore = 3
     static let maxOnionAfter = 2
+    /// A motion guide (Pro): a stick-figure pose to draw over on each frame. Never part of the art.
+    var motionGuide: MotionGuide? = nil {
+        didSet {
+            if motionGuide != nil && !access.allowsMotionGuides { motionGuide = nil; onProRequired?(.motionGuides) }
+        }
+    }
+    /// How tall the motion guide's figure is, in pixels.
+    var motionGuideHeight = 24
     var shapeKind: ShapeKind = .rectangle
     var shapeFilled = false
     /// Outline thickness for shapes, 1–4 pixels.
@@ -343,13 +355,20 @@ final class EditorModel {
         }
         var mask: SelectionMask?
         if let f = floating { mask = floatingIsMasked ? f.currentMask : nil } else { mask = marqueeMask }
+        var pose: [PixelPoint]?, neighbours: [PixelPoint]?
+        if let g = motionGuide {
+            pose = MotionGuides.points(g, index: currentIndex, height: motionGuideHeight)
+            neighbours = MotionGuides.points(g, index: currentIndex - 1, height: motionGuideHeight)
+                + MotionGuides.points(g, index: currentIndex + 1, height: motionGuideHeight)
+        }
         return CanvasState(bounds: bounds, grid: current.grid, gridVersion: current.version,
                            onion: before.first?.grid, onionVersion: version,
                            onionBefore: before.map(\.grid), onionAfter: after.map(\.grid),
                            onionOpacity: onionOpacity, showGrid: showGrid, selection: selectionRect,
                            selectionMask: mask, lasso: lassoTrail, motionPath: path, mirror: mirror,
                            mirrorVertical: mirrorVertical,
-                           trace: project.trace?.isVisible == true ? project.trace : nil)
+                           trace: project.trace?.isVisible == true ? project.trace : nil,
+                           guide: pose, guideGhost: neighbours)
     }
 
     // MARK: Tool switching (Apple Pencil double-tap / squeeze, keyboard)
@@ -658,7 +677,7 @@ final class EditorModel {
 
     /// Paints individual pixels (brushes, dither, symmetry), growing the canvas as needed and
     /// skipping any that would take the art past the size cap.
-    private func paintPixels(_ pixels: [PixelPoint], color c: RGBA) {
+    func paintPixels(_ pixels: [PixelPoint], color c: RGBA) {
         guard let first = pixels.first else { return }
         let rect = pixels.dropFirst().reduce(PixelRect(x: first.x, y: first.y, width: 1, height: 1)) {
             $0.union(PixelRect(x: $1.x, y: $1.y, width: 1, height: 1))
@@ -684,7 +703,7 @@ final class EditorModel {
         }
     }
 
-    private func fill(at p: PixelPoint) {
+    func fill(at p: PixelPoint) {
         let targets = symmetric(p)
         var changed = false
         var undoPushed = false
