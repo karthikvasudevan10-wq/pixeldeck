@@ -69,6 +69,12 @@ def check(what):
         return True
     tail = sh("tail", "-3", ERRORS)
     print(f"*** CRASH after: {what}\n    {tail}", flush=True)
+    # What the system said about it (a crash report isn't written when the system stops the app).
+    said = sh("log", "show", "--last", "20s", "--style", "compact", "--predicate",
+              'eventMessage CONTAINS[c] "PixelDeck" AND (eventMessage CONTAINS[c] "terminat" OR eventMessage CONTAINS[c] "exception" '
+              'OR eventMessage CONTAINS[c] "entitlement" OR eventMessage CONTAINS[c] "crash" OR eventMessage CONTAINS[c] "killed" OR eventMessage CONTAINS[c] "exited")')
+    for line in said.split("\n")[-12:]:
+        print("    log:", line[:300], flush=True)
     crashes.append(what)
     time.sleep(5)         # the crash report is written a little later
     report()
@@ -111,7 +117,12 @@ def look(what):
     print(sh("python3", os.path.join(HERE, "describe.py"), "look.bmp", "12"), flush=True)
 
 
+ONLY = [p for p in os.environ.get("MONKEY_ONLY", "").split(",") if p]
+
+
 def phase(name):
+    if ONLY and not any(word in name for word in ONLY):
+        return False
     if time.time() - STARTED > LIMIT:
         raise Enough()
     print(f"--- {name}", flush=True)
@@ -223,9 +234,28 @@ def trial():
             time.sleep(0.6)
             stroke("canvas after sidebar row")
             escape()
+
+    # Whole screens opened from the menu bar: click all over each one.
+    for name, mods, title in [("e", ("cmd",), "export screen"), (",", ("cmd",), "settings screen"),
+                              ("n", ("cmd", "opt"), "new canvas screen"), ("k", ("cmd",), "palettes screen"),
+                              ("u", ("cmd", "shift"), "adjust colours screen"), ("s", ("cmd", "shift"), "stamps screen")]:
+        if phase(title):
+            key(name, *mods, what=f"open the {title}")
+            time.sleep(1.2)
+            look(f"showing the {title}")
+            for y in range(120, 800, 56):
+                for x in range(330, 980, 72):
+                    click(x, y, title)
+            escape()
+            stroke(f"canvas after the {title}")
+
+    if phase("community"):
         click(80, 842, "Community")
-        time.sleep(2)
-        click(640, 400, "inside Community")
+        time.sleep(3)
+        check("Community, three seconds after opening")
+        look("showing Community")
+        for x, y in ((640, 400), (400, 300), (900, 300), (640, 700), (200, 120), (1100, 120)):
+            click(x, y, "inside Community")
         escape()
 
 
