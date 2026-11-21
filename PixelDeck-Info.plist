@@ -72,8 +72,8 @@
 			</dict>
 		</dict>
 	</array>
-	<!-- Opened files are copied in, not edited where they are. -->
+	<!-- Files are read where they are (the Mac requires this); Pixel Deck then keeps its own copy. -->
 	<key>LSSupportsOpeningDocumentsInPlace</key>
-	<false/>
+	<true/>
 </dict>
 </plist>
