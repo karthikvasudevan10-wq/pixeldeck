@@ -98,6 +98,19 @@ def escape():
     key("esc", what="escape")
 
 
+def look(what):
+    """With MONKEY_LOOK set: describes the window as text (Tools/ci/describe.py), to see what is showing."""
+    if not os.environ.get("MONKEY_LOOK") or not alive():
+        return
+    out = sh("swift", os.path.join(HERE, "window.swift"), sh("pgrep", "-x", "PixelDeck").split("\n")[0]).split()
+    if len(out) != 5:
+        return
+    subprocess.run(["screencapture", "-x", "-o", "-l" + out[0], "look.png"])
+    subprocess.run(["sips", "-s", "format", "bmp", "look.png", "--out", "look.bmp"], capture_output=True)
+    print(f"--- the window {what}")
+    print(sh("python3", os.path.join(HERE, "describe.py"), "look.bmp", "12"), flush=True)
+
+
 def phase(name):
     if time.time() - STARTED > LIMIT:
         raise Enough()
@@ -144,6 +157,7 @@ def trial():
             click(290, y, f"tool rail {name}")
             stroke(f"canvas with {name}")
         key("z", "cmd", what="undo"); key("z", "cmd", what="undo"); key("z", "cmd", "shift", what="redo")
+        look("after drawing with every tool")
 
     if phase("keys"):
         for name in ["b", "e", "x", "g", "i", "u", "m", "y", "[", "]", "p", "h", "1", "2", "3"]:

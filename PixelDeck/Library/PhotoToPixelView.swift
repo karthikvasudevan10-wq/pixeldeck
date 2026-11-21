@@ -13,7 +13,7 @@ struct PhotoToPixelView: View {
     var onOpen: (SpriteProject) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @State private var photo: UIImage?
     @State private var item: PhotosPickerItem?
     @State private var showingCamera = false
@@ -389,7 +389,7 @@ struct NewCanvasSheet: View {
     /// More ways to start (retro modes, tiles, a Playground level), added by the caller.
     var extras: [NewCanvasOption] = []
     @Environment(\.dismiss) private var dismiss
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -465,7 +465,7 @@ struct NewCanvasFlow: ViewModifier {
     var onImport: ([SpriteProject]) -> Void
     /// A picture dragged in (from Finder on the Mac, or another app on iPad).
     @Binding var dropped: UIImage?
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @State private var showingRetro = false
     @State private var pickingAseprite = false
     @State private var aseprite: AsepriteImport?

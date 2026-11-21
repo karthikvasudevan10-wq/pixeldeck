@@ -68,7 +68,8 @@ jobs:
           swiftc -O Tools/ci/pdinput.swift -o pdinput
           python3 Tools/ci/monkey.py "$APP" "$PWD/pdinput"
         env:
-          MONKEY_MAX_CRASHES: "3"
+          MONKEY_MAX_CRASHES: "10"
+          MONKEY_LOOK: "1"
       - name: Keep the full log
         if: failure()
         uses: actions/upload-artifact@v4

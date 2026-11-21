@@ -141,8 +141,8 @@ enum SceneTool: String, CaseIterable, Identifiable {
 struct SceneEditorView: View {
     @State private var scene: TileScene
     let store: SceneStore
-    @Environment(ProjectStore.self) private var sprites
-    @Environment(PurchaseManager.self) private var purchases
+    private var sprites: ProjectStore { Shared.store }
+    private var purchases: PurchaseManager { Shared.purchases }
     @Environment(\.dismiss) private var dismiss
 
     private enum Mode: String, CaseIterable, Identifiable {

@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(PurchaseManager.self) private var purchases
-    @Environment(CloudSync.self) private var cloud
-    @Environment(CommunityService.self) private var community
+    private var purchases: PurchaseManager { Shared.purchases }
+    private var cloud: CloudSync { Shared.cloud }
+    private var community: CommunityService { Shared.community }
     /// Replays the guided tour (the gallery starts it once Settings has closed).
     var onStartTour: (() -> Void)? = nil
     @State private var showingRules = false

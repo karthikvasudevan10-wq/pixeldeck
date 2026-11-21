@@ -36,7 +36,7 @@ enum LevelFile {
 /// The Play tab: your Playground levels and tile scenes.
 struct PlaygroundHomeView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @State private var store = SceneStore.forApp()
     @State private var editing: TileScene?
     @State private var playing: TileScene?

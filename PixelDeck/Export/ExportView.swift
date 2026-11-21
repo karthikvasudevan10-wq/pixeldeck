@@ -9,7 +9,7 @@ struct ExportView: View {
     let project: SpriteProject
     @Environment(\.dismiss) private var dismiss
     @Environment(\.requestReview) private var requestReview
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @AppStorage("completedExports") private var completedExports = 0
     @AppStorage("reviewRequestedForVersion") private var reviewRequestedForVersion = ""
     @State private var options = ExportOptions()

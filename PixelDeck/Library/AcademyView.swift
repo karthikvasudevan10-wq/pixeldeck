@@ -14,7 +14,7 @@ struct AcademyView: View {
     /// Called with the lesson to start (or carry on with).
     var onStart: (Lesson) -> Void
     @Environment(\.dismiss) private var dismiss
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @AppStorage("lessonID") private var lessonID = ""
     @AppStorage("lessonStep") private var lessonStep = 0
     @AppStorage("lessonProjectID") private var lessonProjectID = ""

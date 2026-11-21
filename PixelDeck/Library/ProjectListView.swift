@@ -3,7 +3,7 @@ import SwiftUI
 /// Home: every sprite as a live, looping tile; "New canvas" first. Moving / Stills splits
 /// animations from single-frame pictures.
 struct ProjectListView: View {
-    @Environment(ProjectStore.self) private var store
+    private var store: ProjectStore { Shared.store }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
@@ -17,7 +17,7 @@ struct ProjectListView: View {
     @AppStorage("tourProjectID") private var tourProjectID = ""
     @AppStorage("tourStep") private var tourStepRaw = 0
     @AppStorage("tourOffered") private var tourOffered = false
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @State private var path: [UUID] = []
     @State private var filter: GalleryFilter = .moving
     @State private var showingWelcome = false
@@ -45,7 +45,7 @@ struct ProjectListView: View {
     @State private var incomingLevel: URL?
     @State private var incomingAseprite: URL?
     @State private var droppedPhoto: UIImage?
-    @Environment(AppRouter.self) private var router: AppRouter?
+    private var router: AppRouter? { Shared.router }
     @State private var beadPattern: SpriteProject?
     @AppStorage("lessonProjectID") private var lessonProjectID = ""
     @AppStorage("lessonID") private var lessonID = ""

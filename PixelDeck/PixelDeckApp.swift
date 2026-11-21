@@ -3,21 +3,17 @@ import UIKit
 
 @main
 struct PixelDeckApp: App {
-    @State private var store: ProjectStore
-    @State private var cloud: CloudSync
-    @State private var purchases = PurchaseManager()
-    @State private var community = CommunityService()
-    @State private var ageGate = AgeGate()
-    @State private var router = AppRouter()
+    // One of each for the whole app (see `Shared`). They are also put in the environment below.
+    private let store = Shared.store
+    private let cloud = Shared.cloud
+    private let purchases = Shared.purchases
+    private let community = Shared.community
+    private let ageGate = Shared.ageGate
+    private let router = Shared.router
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
         AppFont.registerBundledFonts()
-        // Opens where the sprites were last time (iCloud or the device), so the gallery appears at
-        // once; CloudSync then checks the account and moves things if anything changed.
-        let store = ProjectStore(directory: CloudSync.launchDirectory())
-        _store = State(initialValue: store)
-        _cloud = State(initialValue: CloudSync(store: store))
     }
 
     /// On the Mac: keep the window big enough for the desk layout, and hide the title bar.

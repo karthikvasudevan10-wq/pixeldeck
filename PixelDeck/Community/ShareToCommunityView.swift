@@ -5,8 +5,8 @@ struct ShareToCommunityView: View {
     let project: SpriteProject
     /// Set when sharing a Playground level (`project` is then its picture).
     var level: TileScene? = nil
-    @Environment(CommunityService.self) private var community
-    @Environment(AgeGate.self) private var ageGate
+    private var community: CommunityService { Shared.community }
+    private var ageGate: AgeGate { Shared.ageGate }
     @Environment(\.dismiss) private var dismiss
     @AppStorage("communityNickname") private var nickname = ""
     @AppStorage("communityRulesAccepted") private var rulesAccepted = false

@@ -59,7 +59,7 @@ struct AsepriteImportSheet: View {
     /// Called with the sprites to add to the gallery.
     var onImport: ([SpriteProject]) -> Void
     @Environment(\.dismiss) private var dismiss
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @State private var splitTags = true
     @State private var keepLayers = true
     @State private var upgrade: ProFeature?

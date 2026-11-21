@@ -11,7 +11,7 @@ struct PlaygroundPlayView: View {
     var recordRun = false
 
     @Environment(\.dismiss) private var dismiss
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @State private var game: PlaygroundGame
     @State private var input = PlayInput()
     @State private var paused = false

@@ -6,7 +6,7 @@ import StoreKit
 struct ProUpgradeView: View {
     /// The feature the user just tried to use, highlighted at the top.
     var highlight: ProFeature?
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @State private var showingPrivacy = false

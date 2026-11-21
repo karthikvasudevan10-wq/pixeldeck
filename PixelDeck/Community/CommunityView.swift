@@ -5,8 +5,8 @@ import SwiftUI
 struct CommunityView: View {
     /// A post to open straight away (tapped in the Home Screen widget).
     var openPostID: String? = nil
-    @Environment(CommunityService.self) private var community
-    @Environment(AgeGate.self) private var ageGate
+    private var community: CommunityService { Shared.community }
+    private var ageGate: AgeGate { Shared.ageGate }
     @Environment(\.dismiss) private var dismiss
     @State private var selected: CommunityPost?
     @State private var showingRules = false
@@ -159,8 +159,8 @@ struct CommunityTile: View {
 /// One post: big preview, Remix into your gallery, and Report / Block / Delete.
 struct CommunityPostView: View {
     let post: CommunityPost
-    @Environment(CommunityService.self) private var community
-    @Environment(ProjectStore.self) private var store
+    private var community: CommunityService { Shared.community }
+    private var store: ProjectStore { Shared.store }
     @Environment(\.dismiss) private var dismiss
     @State private var confirmingReport = false
     @State private var confirmingBlock = false

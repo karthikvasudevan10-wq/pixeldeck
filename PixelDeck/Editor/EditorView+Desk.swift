@@ -633,7 +633,7 @@ struct DeskInspector: View {
 /// The Mac's sprite list: search, then Moving, Stills, Playground and Pixel Academy, with
 /// Community at the foot. Right-click a sprite to rename, duplicate or delete it.
 struct DeskSidebar: View {
-    @Environment(ProjectStore.self) private var store
+    private var store: ProjectStore { Shared.store }
     let currentID: UUID
     var onOpen: (SpriteProject) -> Void
     var onScene: (TileScene) -> Void

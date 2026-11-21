@@ -3,8 +3,8 @@ import SwiftUI
 /// The Studio: an endless canvas filling the screen above a dock of controls. On wide spaces
 /// (an unfolded iPhone Duo, iPad, landscape) the dock becomes a side panel.
 struct EditorView: View {
-    @Environment(ProjectStore.self) var store
-    @Environment(PurchaseManager.self) var purchases
+    var store: ProjectStore { Shared.store }
+    var purchases: PurchaseManager { Shared.purchases }
     @Environment(\.dismiss) var dismiss
     @State var model: EditorModel
     @State var fit = FitCommand()
@@ -86,7 +86,7 @@ struct EditorView: View {
     @State var dropTargeted = false
     @State var editingScene: TileScene?
     @State var deskNote: String?
-    @Environment(AppRouter.self) var router: AppRouter?
+    var router: AppRouter? { Shared.router }
 
     init(project: SpriteProject) {
         _model = State(initialValue: EditorModel(project: project))

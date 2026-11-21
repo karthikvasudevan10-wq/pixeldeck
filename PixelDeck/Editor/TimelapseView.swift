@@ -40,7 +40,7 @@ struct TimelapseView: View {
     let name: String
     let timelapse: Timelapse
     @Environment(\.dismiss) private var dismiss
-    @Environment(PurchaseManager.self) private var purchases
+    private var purchases: PurchaseManager { Shared.purchases }
     @State private var frames: [PixelGrid] = []
     @State private var index = 0
     @State private var playing = true
