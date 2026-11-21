@@ -70,11 +70,10 @@ def check(what):
     tail = sh("tail", "-3", ERRORS)
     print(f"*** CRASH after: {what}\n    {tail}", flush=True)
     # What the system said about it (a crash report isn't written when the system stops the app).
-    said = sh("log", "show", "--last", "20s", "--style", "compact", "--predicate",
-              'eventMessage CONTAINS[c] "PixelDeck" AND (eventMessage CONTAINS[c] "terminat" OR eventMessage CONTAINS[c] "exception" '
-              'OR eventMessage CONTAINS[c] "entitlement" OR eventMessage CONTAINS[c] "crash" OR eventMessage CONTAINS[c] "killed" OR eventMessage CONTAINS[c] "exited")')
-    for line in said.split("\n")[-12:]:
-        print("    log:", line[:300], flush=True)
+    said = sh("log", "show", "--last", "15s", "--style", "compact", "--predicate",
+              'process == "PixelDeck" AND (messageType == error OR messageType == fault)')
+    for line in said.split("\n")[-14:]:
+        print("    log:", line[:280], flush=True)
     crashes.append(what)
     time.sleep(5)         # the crash report is written a little later
     report()
