@@ -56,10 +56,14 @@ jobs:
       # against the design (Tools/ci/mac_shots.sh). The picture itself is kept with the run for a week.
       - name: Mac window check
         if: matrix.name == 'Mac'
-        run: Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
+        run: |
+          ls /Applications | grep -i xcode | tr '\n' ' '; echo; sw_vers
+          # The Night theme (dark appearance), as most people run it.
+          defaults write -g AppleInterfaceStyle Dark
+          Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
         env:
-          MODES: "0"
-          REGIONS: "2:0:0:1000:76 8:0:0:1000:700"
+          MODES: "0 3"
+          REGIONS: "2:0:0:1000:60"
       - name: Keep the Mac pictures
         if: always() && matrix.name == 'Mac'
         uses: actions/upload-artifact@v4
