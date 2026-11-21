@@ -24,6 +24,14 @@ KEYS = {"a": 0, "s": 1, "d": 2, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9, 
         "m": 46, ",": 43, "space": 49, "esc": 53, "left": 123, "right": 124, "return": 36, "delete": 51}
 window = None       # x, y, width, height on screen
 crashes = []
+reported = set()    # crash reports already summarised
+signatures = set()
+STARTED = time.time()
+LIMIT = 16 * 60     # seconds: stop trying after this, so the summary is always printed
+
+
+class Enough(Exception):
+    pass
 
 
 def sh(*cmd):
@@ -45,8 +53,9 @@ def launch():
     subprocess.run(["pkill", "-x", "PixelDeck"], capture_output=True)
     time.sleep(1)
     subprocess.run(["open", "-n", "--stderr", ERRORS, APP, "--args"] + ARGS)
-    time.sleep(9)
-    window = find_window()
+    time.sleep(8)
+    # The window opens in the same place every time: look for it once.
+    window = window or find_window()
 
 
 def to_screen(x, y):
@@ -58,9 +67,13 @@ def check(what):
     time.sleep(0.25)
     if alive():
         return True
-    tail = sh("tail", "-4", ERRORS)
+    tail = sh("tail", "-3", ERRORS)
     print(f"*** CRASH after: {what}\n    {tail}", flush=True)
     crashes.append(what)
+    time.sleep(5)         # the crash report is written a little later
+    report()
+    if len(crashes) >= 14 or time.time() - STARTED > LIMIT:
+        raise Enough()
     launch()
     return False
 
@@ -86,6 +99,8 @@ def escape():
 
 
 def phase(name):
+    if time.time() - STARTED > LIMIT:
+        raise Enough()
     print(f"--- {name}", flush=True)
     launch()
     if window is None:
@@ -108,6 +123,20 @@ def stroke(what):
 
 def main():
     print(sh(INPUT, "access"))
+    try:
+        trial()
+    except Enough:
+        print("=== stopping early: enough crashes, or out of time")
+    subprocess.run(["pkill", "-x", "PixelDeck"], capture_output=True)
+    print(f"=== {len(crashes)} crash(es) while trying the app")
+    for what in crashes:
+        print("   ", what)
+    time.sleep(8)
+    report()
+    sys.exit(1 if crashes else 0)
+
+
+def trial():
 
     if phase("draw with every tool"):
         stroke("pencil at launch")
@@ -185,18 +214,16 @@ def main():
         click(640, 400, "inside Community")
         escape()
 
-    subprocess.run(["pkill", "-x", "PixelDeck"], capture_output=True)
-    print(f"=== {len(crashes)} crash(es) while trying the app")
-    time.sleep(12)        # crash reports are written a little later
-    report()
-    sys.exit(1 if crashes else 0)
 
 
 def report():
-    seen = set()
+    """Summarises crash reports that haven't been shown yet (each kind of crash once)."""
+    seen = signatures
     paths = sorted(glob.glob(os.path.expanduser("~/Library/Logs/DiagnosticReports/PixelDeck*.ips")))
-    print(f"=== {len(paths)} crash report(s)")
     for path in paths:
+        if path in reported:
+            continue
+        reported.add(path)
         try:
             text = open(path).read()
             body = json.loads(text[text.index("\n") + 1:])
@@ -212,13 +239,14 @@ def report():
         ours = next((f for f in frames if f.startswith("PixelDeck")), frames[0] if frames else "")
         signature = (json.dumps(body.get("asi", {}))[:200], ours)
         if signature in seen:
+            print(f"    (same crash as before: {ours[:110]})", flush=True)
             continue
         seen.add(signature)
         print(f"----- {os.path.basename(path)}")
         print("exception:", json.dumps(body.get("exception", {})))
         print("message:", json.dumps(body.get("asi", {}))[:900])
         demangled = subprocess.run(["xcrun", "swift-demangle", "--simplified"], input="\n".join(frames), capture_output=True, text=True).stdout
-        print(demangled or "\n".join(frames))
+        print(demangled or "\n".join(frames), flush=True)
 
 
 if __name__ == "__main__":
