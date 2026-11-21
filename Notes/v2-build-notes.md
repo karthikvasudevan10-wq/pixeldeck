@@ -23,9 +23,18 @@ The design is in [`Design/v2`](../Design/v2); feature numbers match
   check opens the Mac app and uses it by itself for about twenty minutes (`Tools/ci/monkey.py`):
   it draws with every tool, presses every shortcut, clicks every button in the options bar, the
   inspector, the timeline and the toolbar, opens every sprite in the list, and clicks all over
-  Export, Settings, New canvas, Palettes, Adjust colours and Stamps. Anything that stops the app
-  is reported with its error. The last full run found nothing. It cannot try Community (the
-  build machine's copy isn't signed for iCloud), sound recording, the camera or purchases.
+  Export, Settings, New canvas, Palettes, Adjust colours and Stamps, and over the Photo,
+  Playground and Pixel Academy screens (which debug builds open by themselves when started with
+  `-monkeyOpen photo` and so on). Anything that stops the app is reported with its error. The
+  last full run found nothing. It cannot try Community (the build machine's copy isn't signed
+  for iCloud), choosing a real picture in the Finder window, sound recording or purchases.
+- **Full screen on the Mac.** In full screen the Mac slides its menu bar and title bar down over
+  the top of the window when the pointer goes there. The Studio's toolbar and every whole-window
+  screen (Photo, Export, Community, Playground, Academy, welcome) sit below that strip
+  (`Support/FullScreenWatcher.swift`), so their Back and Close buttons can always be reached.
+- **Pictures on the Mac** come from the Finder's own window ("Choose a picture"), which lists the
+  Photos library too. The separate Photos window and the system camera screen are not used on
+  the Mac: they could open with no way to close them.
 - **The crash it found.** Before 21 November the Mac app stopped on the first pencil stroke, and
   on opening Export, Share or the Pro screen ("No Observable object of type PurchaseManager
   found"): screens opened from the Studio did not receive the objects in SwiftUI's environment.
