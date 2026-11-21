@@ -57,6 +57,16 @@ jobs:
       - name: Mac window check
         if: matrix.name == 'Mac' && contains(github.event.head_commit.message, '[window-check]')
         run: Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
+      # Only when the commit message says [monkey]: tries the Mac app by itself (clicks tools, draws,
+      # opens panels and menus) and reports anything that crashes (Tools/ci/monkey.py).
+      - name: Try the Mac app
+        if: matrix.name == 'Mac' && contains(github.event.head_commit.message, '[monkey]')
+        timeout-minutes: 25
+        run: |
+          APP="$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
+          codesign --force --deep --sign - "$APP" > /dev/null 2>&1 || true
+          swiftc -O Tools/ci/pdinput.swift -o pdinput
+          python3 Tools/ci/monkey.py "$APP" "$PWD/pdinput"
       - name: Keep the full log
         if: failure()
         uses: actions/upload-artifact@v4
