@@ -177,7 +177,10 @@ struct SceneEditorView: View {
 
     private var access: FeatureAccess { purchases.access }
 
-    var body: some View {
+    // On the Mac in full screen, clear of the title bar the Mac slides down (see `MacTitleBarInset`).
+    var body: some View { screen.clearOfMacTitleBar() }
+
+    private var screen: some View {
         GeometryReader { geo in
             let wide = geo.size.width > 820
             VStack(spacing: 0) {

@@ -17,6 +17,7 @@ struct PhotoToPixelView: View {
     @State private var photo: UIImage?
     @State private var item: PhotosPickerItem?
     @State private var showingCamera = false
+    @State private var pickingFile = false
     @State private var step = 1
     // Framing: zoom and offset of the photo inside the square.
     @State private var zoom: CGFloat = 1
@@ -36,7 +37,10 @@ struct PhotoToPixelView: View {
     /// The framed part is rendered at this size before converting: plenty for a 96-pixel result.
     private static let workingSide = 384
 
-    var body: some View {
+    // On the Mac in full screen, clear of the title bar the Mac slides down (see `MacTitleBarInset`).
+    var body: some View { screen.clearOfMacTitleBar() }
+
+    private var screen: some View {
         VStack(spacing: 0) {
             header
             if step == 1 { choose } else { adjust }
@@ -52,6 +56,13 @@ struct PhotoToPixelView: View {
             }
         }
         .onChange(of: options) { _, _ in convert() }
+        .fileImporter(isPresented: $pickingFile, allowedContentTypes: [.image], allowsMultipleSelection: false) { result in
+            guard case .success(let urls) = result, let url = urls.first else { return }
+            // A file chosen in Finder can only be read between these two calls.
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            if let data = try? Data(contentsOf: url), let image = UIImage(data: data) { use(image) }
+        }
         .fullScreenCover(isPresented: $showingCamera) {
             CameraPicker { image in
                 showingCamera = false
@@ -127,7 +138,15 @@ struct PhotoToPixelView: View {
                 .padding(.horizontal, 24)
 
             HStack(spacing: 8) {
-                if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                if EditorView.isMac {
+                    // On the Mac pictures are usually files: choose one in Finder. (The system
+                    // camera screen isn't offered here: on a Mac it opens with no way to close it.)
+                    Button { pickingFile = true } label: {
+                        Text("Choose a file").font(AppFont.pixel(12)).frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
+                    }
+                    .buttonStyle(TileButtonStyle(fill: Theme.surface))
+                    .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
+                } else if UIImagePickerController.isSourceTypeAvailable(.camera) {
                     Button { showingCamera = true } label: {
                         Text("Take a photo").font(AppFont.pixel(12)).frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
                     }
@@ -135,7 +154,7 @@ struct PhotoToPixelView: View {
                     .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
                 }
                 PhotosPicker(selection: $item, matching: .images) {
-                    (photo == nil ? Text("Choose a photo") : Text("Other photo"))
+                    (EditorView.isMac ? Text("From Photos") : photo == nil ? Text("Choose a photo") : Text("Other photo"))
                         .font(AppFont.pixel(12))
                         .foregroundStyle(Theme.text)
                         .frame(maxWidth: .infinity, minHeight: 48)

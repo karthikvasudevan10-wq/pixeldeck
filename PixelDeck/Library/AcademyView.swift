@@ -20,7 +20,10 @@ struct AcademyView: View {
     @AppStorage("lessonProjectID") private var lessonProjectID = ""
     @State private var upgrade: ProFeature?
 
-    var body: some View {
+    // On the Mac in full screen, clear of the title bar the Mac slides down (see `MacTitleBarInset`).
+    var body: some View { screen.clearOfMacTitleBar() }
+
+    private var screen: some View {
         VStack(spacing: 0) {
             HStack(spacing: 8) {
                 Button { dismiss() } label: {

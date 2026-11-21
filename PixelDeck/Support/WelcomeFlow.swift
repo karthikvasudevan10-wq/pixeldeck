@@ -7,7 +7,10 @@ struct WelcomeFlow: View {
     var onFinish: () -> Void
     @State private var showingGestures = false
 
-    var body: some View {
+    // On the Mac in full screen, clear of the title bar the Mac slides down (see `MacTitleBarInset`).
+    var body: some View { screen.clearOfMacTitleBar() }
+
+    private var screen: some View {
         Group {
             if showingGestures || startOnGestures {
                 GesturesView(onDone: onFinish)

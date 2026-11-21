@@ -37,7 +37,10 @@ struct ExportView: View {
         return "\(s.width) × \(s.height) px"
     }
 
-    var body: some View {
+    // On the Mac in full screen, clear of the title bar the Mac slides down (see `MacTitleBarInset`).
+    var body: some View { screen.clearOfMacTitleBar() }
+
+    private var screen: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
             ScrollView {

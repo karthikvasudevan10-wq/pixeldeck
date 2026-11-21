@@ -43,7 +43,10 @@ struct PlaygroundPlayView: View {
         _game = State(initialValue: PlaygroundGame(scene: scene, heroWidth: Int(heroDraw.width) - 2, heroHeight: Int(heroDraw.height)))
     }
 
-    var body: some View {
+    // On the Mac in full screen, clear of the title bar the Mac slides down (see `MacTitleBarInset`).
+    var body: some View { screen.clearOfMacTitleBar() }
+
+    private var screen: some View {
         VStack(spacing: 0) {
             hud
             stage

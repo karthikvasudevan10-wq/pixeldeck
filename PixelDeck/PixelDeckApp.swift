@@ -33,6 +33,7 @@ struct PixelDeckApp: App {
     var body: some Scene {
         WindowGroup {
             ProjectListView()
+                .clearOfMacTitleBar()
                 .environment(store)
                 .environment(purchases)
                 .environment(cloud)

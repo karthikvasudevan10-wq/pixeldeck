@@ -48,11 +48,14 @@ def find_window():
     return [int(v) for v in parts[1:5]] if len(parts) == 5 else None
 
 
+extra = []          # more arguments for the app, for the phase being run
+
+
 def launch():
     global window
     subprocess.run(["pkill", "-x", "PixelDeck"], capture_output=True)
     time.sleep(1)
-    subprocess.run(["open", "-n", "--stderr", ERRORS, APP, "--args"] + ARGS)
+    subprocess.run(["open", "-n", "--stderr", ERRORS, APP, "--args"] + ARGS + extra)
     time.sleep(8)
     # The window opens in the same place every time: look for it once.
     window = window or find_window()
@@ -119,9 +122,12 @@ def look(what):
 ONLY = [p for p in os.environ.get("MONKEY_ONLY", "").split(",") if p]
 
 
-def phase(name):
+def phase(name, *arguments):
+    """Starts the app afresh for a phase (with more arguments for the app, if given)."""
+    global extra
     if ONLY and not any(word in name for word in ONLY):
         return False
+    extra = list(arguments)
     if time.time() - STARTED > LIMIT:
         raise Enough()
     print(f"--- {name}", flush=True)
@@ -247,6 +253,20 @@ def trial():
                     click(x, y, title)
             escape()
             stroke(f"canvas after the {title}")
+
+    # Whole-window screens the app opens by itself when asked to (debug builds: -monkeyOpen).
+    for what in ("photo", "playground", "academy"):
+        if phase(f"opened {what} screen", "-monkeyOpen", what):
+            time.sleep(3)
+            look(f"showing the {what} screen")
+            for y in range(70, 830, 48):
+                for x in range(40, 1250, 86):
+                    click(x, y, f"{what} screen")
+                if what == "playground":
+                    for name in ("right", "right", "space", "left", "space"):
+                        key(name, what="playing")
+            drag(560, 380, 700, 470, f"{what} screen")
+            escape()
 
     # Community needs iCloud, which the build machine's unsigned copy of the app doesn't have:
     # CloudKit stops the app there ("Significant issue"). Only tried when asked for by name.

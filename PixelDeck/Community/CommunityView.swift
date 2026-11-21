@@ -11,7 +11,10 @@ struct CommunityView: View {
     @State private var selected: CommunityPost?
     @State private var showingRules = false
 
-    var body: some View {
+    // On the Mac in full screen, clear of the title bar the Mac slides down (see `MacTitleBarInset`).
+    var body: some View { screen.clearOfMacTitleBar() }
+
+    private var screen: some View {
         VStack(spacing: 0) {
             SheetHeader(title: "Community", onClose: { dismiss() })
             HStack(spacing: 8) {

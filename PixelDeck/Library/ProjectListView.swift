@@ -602,7 +602,35 @@ struct ProjectListView: View {
             showingWelcome = true
         }
         openStudioOnMac()
+        #if DEBUG
+        monkeyOpen()
+        #endif
     }
+
+    #if DEBUG
+    /// For the automatic tester (Tools/ci/monkey.py): started with `-monkeyOpen photo` (or
+    /// playground, academy, community, settings, newCanvas), the app opens that screen straight away.
+    private func monkeyOpen() {
+        guard let what = UserDefaults.standard.string(forKey: "monkeyOpen") else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            switch what {
+            case "photo":
+                let picture = UIGraphicsImageRenderer(size: CGSize(width: 640, height: 420)).image { ctx in
+                    UIColor.systemTeal.setFill(); ctx.fill(CGRect(x: 0, y: 0, width: 640, height: 420))
+                    UIColor.systemYellow.setFill(); ctx.cgContext.fillEllipse(in: CGRect(x: 180, y: 70, width: 280, height: 280))
+                    UIColor.systemPink.setFill(); ctx.fill(CGRect(x: 280, y: 250, width: 80, height: 40))
+                }
+                answer(.photo(picture))
+            case "playground": answer(.playground)
+            case "academy": answer(.academy)
+            case "community": answer(.community)
+            case "settings": answer(.settings)
+            case "newCanvas": answer(.newCanvas)
+            default: break
+            }
+        }
+    }
+    #endif
 }
 
 /// A gallery tile: the animation looping live (frame 0 with Reduce Motion), its frame rate, name,

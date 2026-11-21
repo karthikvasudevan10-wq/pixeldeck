@@ -43,3 +43,27 @@ struct FullScreenWatcher: UIViewRepresentable {
         }
     }
 }
+
+/// On the Mac in full screen, moves a whole-window screen down by the height of the title bar,
+/// so the strip the Mac slides down over the top of the window (menu bar and title bar, when the
+/// pointer goes there) never covers the screen's own Back or Close button.
+struct MacTitleBarInset: ViewModifier {
+    @State private var fullScreen = false
+
+    func body(content: Content) -> some View {
+        #if targetEnvironment(macCatalyst)
+        content
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if fullScreen { Color.clear.frame(height: EditorView.macTitleBarHeight) }
+            }
+            .background { FullScreenWatcher(isFullScreen: $fullScreen) }
+        #else
+        content
+        #endif
+    }
+}
+
+extension View {
+    /// See `MacTitleBarInset`. For screens that fill the window (full-screen covers and the gallery).
+    func clearOfMacTitleBar() -> some View { modifier(MacTitleBarInset()) }
+}
