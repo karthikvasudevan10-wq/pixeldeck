@@ -248,7 +248,9 @@ def trial():
             escape()
             stroke(f"canvas after the {title}")
 
-    if phase("community"):
+    # Community needs iCloud, which the build machine's unsigned copy of the app doesn't have:
+    # CloudKit stops the app there ("Significant issue"). Only tried when asked for by name.
+    if "community" in ONLY and phase("community"):
         click(80, 842, "Community")
         time.sleep(3)
         check("Community, three seconds after opening")

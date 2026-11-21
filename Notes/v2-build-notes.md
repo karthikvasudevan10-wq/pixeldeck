@@ -19,6 +19,18 @@ The design is in [`Design/v2`](../Design/v2); feature numbers match
   app and describe its window (put `[window-check]` in a commit message). That confirmed the
   toolbar, the narrow tool rail, the options bar and the full-screen layout are where they
   should be. Colours, text and the feel of it still need a person.
+- **The Mac app is tried automatically.** Put `[monkey]` in a commit message and the build
+  check opens the Mac app and uses it by itself for about twenty minutes (`Tools/ci/monkey.py`):
+  it draws with every tool, presses every shortcut, clicks every button in the options bar, the
+  inspector, the timeline and the toolbar, opens every sprite in the list, and clicks all over
+  Export, Settings, New canvas, Palettes, Adjust colours and Stamps. Anything that stops the app
+  is reported with its error. The last full run found nothing. It cannot try Community (the
+  build machine's copy isn't signed for iCloud), sound recording, the camera or purchases.
+- **The crash it found.** Before 21 November the Mac app stopped on the first pencil stroke, and
+  on opening Export, Share or the Pro screen ("No Observable object of type PurchaseManager
+  found"): screens opened from the Studio did not receive the objects in SwiftUI's environment.
+  The store, purchases, Community, the age check, iCloud sync and the router now live in
+  `Support/Shared.swift` and every screen reads them from there.
 - **Nothing has been tried by hand on a device**: gestures, the game's feel, sound, video
   export and printing all need trying.
 - **Aseprite files** were tested by saving a sprite and reading it back, following Aseprite's
