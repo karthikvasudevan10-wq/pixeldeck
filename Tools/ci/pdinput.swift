@@ -4,7 +4,7 @@
 //   pdinput access                      prints whether this process may send events
 //   pdinput click X Y                   click at a point of the screen
 //   pdinput drag X1 Y1 X2 Y2            press, move and release
-//   pdinput key CODE [cmd] [shift] [opt]  press a key by its virtual key code
+//   pdinput key CODE [cmd] [shift] [opt] [ctrl]  press a key by its virtual key code
 import CoreGraphics
 import Foundation
 
@@ -40,6 +40,7 @@ case "key":
     if args.contains("cmd") { flags.insert(.maskCommand) }
     if args.contains("shift") { flags.insert(.maskShift) }
     if args.contains("opt") { flags.insert(.maskAlternate) }
+    if args.contains("ctrl") { flags.insert(.maskControl) }
     let code = CGKeyCode(UInt16(args[1]) ?? 0)
     for down in [true, false] {
         let event = CGEvent(keyboardEventSource: source, virtualKey: code, keyDown: down)

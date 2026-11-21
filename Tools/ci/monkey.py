@@ -19,7 +19,7 @@ APP, INPUT = sys.argv[1], sys.argv[2]
 HERE = os.path.dirname(os.path.abspath(__file__))
 ERRORS = os.path.abspath("monkey-stderr.txt")
 ARGS = ["-hasSeenOnboarding", "YES", "-tourOffered", "YES", "-tourCompleted", "YES"]
-KEYS = {"a": 0, "s": 1, "d": 2, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9, "b": 11, "e": 14, "y": 16,
+KEYS = {"a": 0, "s": 1, "d": 2, "f": 3, "h": 4, "g": 5, "z": 6, "x": 7, "c": 8, "v": 9, "b": 11, "e": 14, "y": 16,
         "1": 18, "2": 19, "3": 20, "o": 31, "u": 32, "[": 33, "i": 34, "p": 35, "]": 30, "k": 40, "n": 45,
         "m": 46, ",": 43, "space": 49, "esc": 53, "left": 123, "right": 124, "return": 36, "delete": 51}
 window = None       # x, y, width, height on screen
@@ -62,7 +62,7 @@ def launch():
 
 
 def to_screen(x, y):
-    scale = window[2] / 1281.0
+    scale = 0.77        # the Mac shows the app's points at 77%
     return str(round(window[0] + x * scale, 1)), str(round(window[1] + y * scale, 1))
 
 
@@ -271,6 +271,27 @@ def trial():
             for x in range(1250, 30, -86):
                 click(x, 70, f"top of the {what} screen")
             escape()
+
+    # Choosing a picture: does the Finder's window open, and does it close again?
+    if "picture" in ONLY and phase("picture window", "-monkeyOpen", "photoEmpty"):
+        global window
+        for mode in ("in a normal window", "in full screen"):
+            if mode == "in full screen":
+                key("f", "cmd", "ctrl", what="full screen")
+                time.sleep(4)
+                window = find_window()
+                print("window now:", window)
+            # The Choose a picture button is 122 points above the foot of the window, in the middle.
+            width, height = window[2] / 0.77, window[3] / 0.77
+            print(f"--- {mode}: before\n" + sh("swift", os.path.join(HERE, "windows.swift")), flush=True)
+            click(width / 2, height - 122, "Choose a picture")
+            time.sleep(3)
+            print(f"--- {mode}: after clicking Choose a picture\n" + sh("swift", os.path.join(HERE, "windows.swift")), flush=True)
+            key("esc", what="escape from the picture window")
+            time.sleep(2)
+            print(f"--- {mode}: after Escape\n" + sh("swift", os.path.join(HERE, "windows.swift")), flush=True)
+            click(width / 2, height - 60, "Next (should do nothing without a picture)")
+            print("app still running:", alive(), flush=True)
 
     # Community needs iCloud, which the build machine's unsigned copy of the app doesn't have:
     # CloudKit stops the app there ("Significant issue"). Only tried when asked for by name.

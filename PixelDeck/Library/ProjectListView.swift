@@ -621,6 +621,7 @@ struct ProjectListView: View {
                     UIColor.systemPink.setFill(); ctx.fill(CGRect(x: 280, y: 250, width: 80, height: 40))
                 }
                 answer(.photo(picture))
+            case "photoEmpty": showingPhoto = true
             case "playground": answer(.playground)
             case "academy": answer(.academy)
             case "community": answer(.community)
