@@ -40,7 +40,7 @@ struct PixelDeckApp: App {
                 .task { AIBridge.shared.startIfEnabled() }
                 // Night (dark) and Paper (light) follow the system appearance.
                 .tint(Theme.accent)
-                .onAppear(perform: Self.setMinimumWindowSize)
+                .onAppear { Self.setMinimumWindowSize() }
         }
         .defaultSize(width: 1280, height: 820)
         .commands {

@@ -134,23 +134,29 @@ final class LocalServer {
             guard let self else { return }
             var pending = buffer
             if let data { pending.append(data) }
+            let ending = finished || error != nil || pending.count > LocalServer.maxRequestBytes
+            var answered = false
             while let (request, used) = HTTPRequest.parse(pending) {
                 pending = Data(pending.dropFirst(used))
-                self.respond(to: request, on: connection)
+                // A client that closes its side after sending still gets its answer first.
+                self.respond(to: request, on: connection, thenClose: ending && error == nil)
+                answered = true
             }
-            if finished || error != nil || pending.count > LocalServer.maxRequestBytes {
-                connection.cancel()
+            if ending {
+                if !answered || error != nil { connection.cancel() }
                 return
             }
             self.receive(on: connection, buffer: pending)
         }
     }
 
-    private func respond(to request: HTTPRequest, on connection: NWConnection) {
+    private func respond(to request: HTTPRequest, on connection: NWConnection, thenClose: Bool) {
         let handler = self.handler
         Task { @MainActor in
             let response = handler?(request) ?? .plain(503)
-            connection.send(content: response.data, completion: .contentProcessed { _ in })
+            connection.send(content: response.data, completion: .contentProcessed { _ in
+                if thenClose { connection.cancel() }
+            })
         }
     }
 }
@@ -200,7 +206,7 @@ final class AIBridge {
     @ObservationIgnored private var layered = Set<String>()
     @ObservationIgnored private var counter = 0
     /// A private key in the server's address, so only apps the person set up can find it.
-    @ObservationIgnored let token: String
+    let token: String
 
     static let preferredPort: UInt16 = 47_860
     static let bannerSeconds = 6.0
@@ -325,8 +331,8 @@ final class AIBridge {
                 if !approved.contains(name), !pending.contains(name) { pending.append(name) }
                 replies.append(Self.result(id: id, [
                     "protocolVersion": (params["protocolVersion"] as? String) ?? "2025-03-26",
-                    "capabilities": ["tools": ["listChanged": false]],
-                    "serverInfo": ["name": "pixeldeck", "title": "Pixel Deck", "version": AppConfig.version],
+                    "capabilities": ["tools": ["listChanged": false]] as [String: Any],
+                    "serverInfo": ["name": "pixeldeck", "title": "Pixel Deck", "version": AppConfig.version] as [String: Any],
                     "instructions": "You are drawing pixel art in Pixel Deck, an app on the user's Mac. Call read_canvas first. Work in small steps and read the canvas back to check them: pixel art is small, so every pixel shows. Keep to a few colours. Your drawing goes on its own layer; the user can undo any step.",
                 ]))
             case "ping":
@@ -351,7 +357,7 @@ final class AIBridge {
     }
 
     private static func error(id: Any, code: Int, message: String) -> [String: Any] {
-        ["jsonrpc": "2.0", "id": id, "error": ["code": code, "message": message]]
+        ["jsonrpc": "2.0", "id": id, "error": ["code": code, "message": message] as [String: Any]]
     }
 
     private static func tidy(_ name: String) -> String {
@@ -364,10 +370,11 @@ final class AIBridge {
             ["name": tool.name, "description": tool.summary,
              "inputSchema": (try? JSONSerialization.jsonObject(with: Data(tool.schema.utf8))) ?? ["type": "object"]]
         }
+        let noArguments: [String: Any] = ["type": "object", "properties": [String: Any]()]
         tools.append(["name": "new_canvas", "description": "Start a new, empty sprite in the Studio (the current one is saved).",
-                      "inputSchema": ["type": "object", "properties": [String: Any]()]])
+                      "inputSchema": noArguments])
         tools.append(["name": "export", "description": "Get the current frame as a PNG image, enlarged so it's easy to see.",
-                      "inputSchema": ["type": "object", "properties": [String: Any]()]])
+                      "inputSchema": noArguments])
         return tools
     }
 
