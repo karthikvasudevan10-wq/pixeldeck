@@ -49,32 +49,22 @@ jobs:
           grep -E "PixelDeck[^ ]*\.swift:[0-9]+:[0-9]+: warning:" build.log | sed "s|$PWD/||" | sort -u | head -150
           echo "===== ERRORS ====="
           grep -E "error:|\*\* BUILD|The following build commands failed" build.log | sed "s|$PWD/||" | sort -u | head -250
+          grep -A14 -E "Undefined symbols|^ld: " build.log | sed "s|$PWD/||" | head -60
           echo "===== END (xcodebuild exit $status) ====="
           exit $status
-      # Opens the Mac app on GitHub's Mac and takes a picture of it, to check the layout against the design.
-      - name: Screenshots
+      # Opens the Mac app on GitHub's Mac and describes its window in this log, to check the layout
+      # against the design (Tools/ci/mac_shots.sh). The picture itself is kept with the run for a week.
+      - name: Mac window check
         if: matrix.name == 'Mac'
-        run: |
-          APP="$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
-          codesign --force --deep --sign - "$APP" || true
-          mkdir shots
-          for mode in 0 1 2 3; do
-            open -n --stderr "$PWD/shots/diag-$mode.txt" "$APP" --args -hasSeenOnboarding YES -tourOffered YES -tourCompleted YES -pdTitlebar $mode
-            sleep 14
-            screencapture -x "shots/full-$mode.png" || echo "screencapture failed"
-            sips -Z 1800 -s format jpeg -s formatOptions 60 "shots/full-$mode.png" --out "shots/mac-$mode.jpg" > /dev/null || true
-            rm -f "shots/full-$mode.png"
-            pkill -x PixelDeck || echo "app was not running (mode $mode)"
-            sleep 2
-          done
-          grep -h "PD-DIAG\|scene \|uiwindow\|nswindow" shots/diag-*.txt || true
-          ls -la shots
-          ls ~/Library/Logs/DiagnosticReports 2>/dev/null | tail -5 || true
-      - name: Keep the screenshots
+        run: Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
+        env:
+          MODES: "0 1 2 3"
+          REGIONS: "4:0:0:1280:112 10:0:0:1280:830"
+      - name: Keep the Mac pictures
         if: always() && matrix.name == 'Mac'
         uses: actions/upload-artifact@v4
         with:
-          name: mac-screenshots
+          name: mac-window
           path: shots
           retention-days: 7
       - name: Keep the full log

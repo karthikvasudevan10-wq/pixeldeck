@@ -50,7 +50,7 @@ struct PixelDeckApp: App {
         func report(_ label: String) {
             var out = "PD-DIAG mode=\(mode) \(label)\n"
             for s in scenes() {
-                out += "  scene titlebar=\(s.titlebar != nil) toolbar=\(String(describing: s.titlebar?.toolbar)) titleVis=\(s.titlebar?.titleVisibility.rawValue ?? -1) style=\(s.titlebar?.toolbarStyle.rawValue ?? -1)\n"
+                out += "  scene titlebar=\(s.titlebar != nil) toolbar=\(s.titlebar?.toolbar != nil) titleVis=\(s.titlebar?.titleVisibility.rawValue ?? -1) style=\(s.titlebar?.toolbarStyle.rawValue ?? -1)\n"
                 for w in s.windows { out += "    uiwindow frame=\(w.frame) safe=\(w.safeAreaInsets) root=\(type(of: w.rootViewController as Any))\n" }
             }
             for w in nsWindows() {
