@@ -8,6 +8,7 @@ struct PixelDeckApp: App {
     @State private var purchases = PurchaseManager()
     @State private var community = CommunityService()
     @State private var ageGate = AgeGate()
+    @State private var router = AppRouter()
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
@@ -19,11 +20,16 @@ struct PixelDeckApp: App {
         _cloud = State(initialValue: CloudSync(store: store))
     }
 
-    /// On the Mac, keep the window big enough for the desk layout.
+    /// On the Mac: keep the window big enough for the desk layout, and hide the title bar.
     private static func setMinimumWindowSize() {
         #if targetEnvironment(macCatalyst)
         for scene in UIApplication.shared.connectedScenes {
-            (scene as? UIWindowScene)?.sizeRestrictions?.minimumSize = CGSize(width: 980, height: 640)
+            guard let window = scene as? UIWindowScene else { continue }
+            window.sizeRestrictions?.minimumSize = CGSize(width: 1080, height: 680)
+            // As designed: no separate title bar. The Studio's own toolbar shares the top row
+            // with the close, minimise and zoom buttons.
+            window.titlebar?.titleVisibility = .hidden
+            window.titlebar?.toolbar = nil
         }
         #endif
     }
@@ -36,6 +42,7 @@ struct PixelDeckApp: App {
                 .environment(cloud)
                 .environment(community)
                 .environment(ageGate)
+                .environment(router)
                 .task { cloud.start() }
                 .task { AIBridge.shared.startIfEnabled() }
                 // Night (dark) and Paper (light) follow the system appearance.
@@ -46,7 +53,7 @@ struct PixelDeckApp: App {
         .commands {
             // The Mac menu bar. (On iPhone and iPad the Studio's own shortcuts are used.)
             #if targetEnvironment(macCatalyst)
-            StudioCommands()
+            StudioCommands(router: router)
             #endif
         }
         .onChange(of: scenePhase) { _, phase in

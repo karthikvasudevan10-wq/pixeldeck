@@ -37,20 +37,25 @@ struct FrameRow: View {
     @Environment(StudioPanelState.self) private var panels: StudioPanelState?
     var thumb = CGSize(width: 40, height: 52)
     var playSize: CGFloat = 52
+    /// The Mac timeline has Play in the toolbar instead, and numbers its frames.
+    var showsPlay = true
+    var numbered = false
 
     var body: some View {
         HStack(spacing: 8) {
-            Button {
-                model.isPlaying.toggle()
-            } label: {
-                (model.isPlaying ? PixelIcon.pause : .play).view(size: 18)
-                    .frame(width: playSize, height: playSize)
-                    .contentShape(Rectangle())
+            if showsPlay {
+                Button {
+                    model.isPlaying.toggle()
+                } label: {
+                    (model.isPlaying ? PixelIcon.pause : .play).view(size: 18)
+                        .frame(width: playSize, height: playSize)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(PrimaryButtonStyle(depth: 4))
+                .disabled(model.frameCount < 2 && !model.isPlaying)
+                .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
+                .tourHighlight(.play)
             }
-            .buttonStyle(PrimaryButtonStyle(depth: 4))
-            .disabled(model.frameCount < 2 && !model.isPlaying)
-            .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
-            .tourHighlight(.play)
 
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -75,7 +80,7 @@ struct FrameRow: View {
                 }
             }
         }
-        .frame(height: max(playSize, thumb.height))
+        .frame(height: showsPlay ? max(playSize, thumb.height) : thumb.height)
         .padding(.bottom, 4)          // room for the play button's pressed-in shadow
     }
 
@@ -90,6 +95,11 @@ struct FrameRow: View {
                 .frame(width: thumb.width, height: thumb.height)
                 .background(Theme.ink)
                 .overlay(Rectangle().strokeBorder(current ? Theme.accent : (index == model.currentIndex - 1 ? Theme.muted : Theme.line), lineWidth: 2))
+                .overlay(alignment: .topLeading) {
+                    if numbered {
+                        Text(verbatim: "\(index + 1)").font(AppFont.pixel(8)).foregroundStyle(Theme.muted).padding(3)
+                    }
+                }
                 .overlay(alignment: .bottomLeading) {
                     // A frame with a sound on it.
                     if model.hasSound(onFrame: index) {

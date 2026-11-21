@@ -464,7 +464,7 @@ struct NewCanvasFlow: ViewModifier {
     @Binding var incomingAseprite: URL?
     var onImport: ([SpriteProject]) -> Void
     /// A picture dragged in (from Finder on the Mac, or another app on iPad).
-    @State private var dropped: UIImage?
+    @Binding var dropped: UIImage?
     @Environment(PurchaseManager.self) private var purchases
     @State private var showingRetro = false
     @State private var pickingAseprite = false

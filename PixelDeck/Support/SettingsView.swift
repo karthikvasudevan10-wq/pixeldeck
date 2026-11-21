@@ -13,6 +13,77 @@ struct SettingsView: View {
     @State private var showingUpgrade = false
     @State private var showingSwipes = false
     @AppStorage("pencilOnly") private var pencilOnly = false
+    /// On the Mac, Settings has tabs (as designed); elsewhere it's one scrolling list.
+    @State private var tab: SettingsTab = .general
+
+    enum SettingsTab: String, CaseIterable, Identifiable {
+        case general, pencil, icloud, community, ai, pro
+        var id: String { rawValue }
+
+        var title: LocalizedStringKey {
+            switch self {
+            case .general: "General"
+            case .pencil: "Pencil"
+            case .icloud: "iCloud"
+            case .community: "Community"
+            case .ai: "AI"
+            case .pro: "Pro"
+            }
+        }
+
+        /// The window's title while this tab is showing.
+        var heading: LocalizedStringKey {
+            switch self {
+            case .general: "Settings"
+            case .pencil: "Pencil"
+            case .icloud: "iCloud"
+            case .community: "Community"
+            case .ai: "AI assistants"
+            case .pro: "Pixel Deck Pro"
+            }
+        }
+
+        var systemImage: String {
+            switch self {
+            case .general: "slider.horizontal.3"
+            case .pencil: "pencil"
+            case .icloud: "globe"
+            case .community: "heart"
+            case .ai: "sparkles"
+            case .pro: "checkmark"
+            }
+        }
+    }
+
+    private static let isMac = ProcessInfo.processInfo.isMacCatalystApp
+
+    private func shows(_ t: SettingsTab) -> Bool { !Self.isMac || tab == t }
+
+    /// The Mac's row of tabs: an icon over a name, the chosen one on a darker tile.
+    private var tabBar: some View {
+        HStack(spacing: 6) {
+            ForEach(SettingsTab.allCases) { t in
+                let on = t == tab
+                Button { tab = t } label: {
+                    VStack(spacing: 6) {
+                        Image(systemName: t.systemImage)
+                            .font(.system(size: 18, weight: .semibold))
+                            .foregroundStyle(t == .ai && on ? Theme.accent2 : (on ? Theme.cream : Theme.muted))
+                        Text(t.title).font(AppFont.body(13, .medium, relativeTo: .footnote)).foregroundStyle(on ? Theme.cream : Theme.text)
+                    }
+                    .frame(minWidth: 70, minHeight: 60)
+                    .padding(.horizontal, 6)
+                    .background(on ? Theme.tool : .clear)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 2) }
+    }
 
     private var cloudStatus: LocalizedStringKey {
         switch cloud.status {
@@ -27,10 +98,11 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                SheetHeader(title: "Settings", onClose: { dismiss() })
+                SheetHeader(title: Self.isMac ? tab.heading : "Settings", onClose: { dismiss() })
+                if Self.isMac { tabBar }
                 ScrollView {
                     VStack(alignment: .leading, spacing: 22) {
-                        group("Pixel Deck Pro") {
+                        group("Pixel Deck Pro", in: .pro) {
                             if purchases.isPro {
                                 row(icon: .check, title: "Pro is unlocked. Thank you!", tint: Theme.accent2) {}
                                     .disabled(true)
@@ -40,7 +112,7 @@ struct SettingsView: View {
                             row(icon: .undo, title: "Restore purchases") { Task { await purchases.restore() } }
                         }
 
-                        group("Drawing") {
+                        group("Drawing", in: .pencil) {
                             Toggle(isOn: $pencilOnly) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Draw with Apple Pencil only")
@@ -58,7 +130,7 @@ struct SettingsView: View {
                             .background(Theme.surface)
                         }
 
-                        group("iCloud") {
+                        group("iCloud", in: .icloud) {
                             Toggle(isOn: Binding(get: { cloud.enabled }, set: { cloud.enabled = $0 })) {
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text("Sync with iCloud")
@@ -77,7 +149,7 @@ struct SettingsView: View {
                         }
 
                         if community.isConfigured {
-                            group("Community") {
+                            group("Community", in: .community) {
                                 row(icon: .community, title: "Community rules") { showingRules = true }
                                 row(icon: .eyeOff, title: community.blockedAuthors.isEmpty
                                     ? LocalizedStringKey("No one blocked")
@@ -97,10 +169,10 @@ struct SettingsView: View {
 
                         // AI assistants draw through a local server, which only the Mac app runs.
                         if ProcessInfo.processInfo.isMacCatalystApp {
-                            group("AI assistants") { AISettingsSection() }
+                            group("AI assistants", in: .ai) { AISettingsSection() }
                         }
 
-                        group("Help") {
+                        group("Help", in: .general) {
                             if let onStartTour {
                                 row(icon: .play, title: "Take the guided tour", tint: Theme.accent2, action: onStartTour)
                             }
@@ -113,7 +185,7 @@ struct SettingsView: View {
                             }
                         }
 
-                        group("About") {
+                        group("About", in: .general) {
                             NavigationLink { PrivacyPolicyView() } label: { rowLabel(icon: .more, title: "Privacy policy") }
                                 .buttonStyle(.plain)
                             row(icon: .export, title: "Terms of use") { openURL(AppConfig.termsOfUseURL) }
@@ -146,10 +218,14 @@ struct SettingsView: View {
         }
     }
 
-    private func group<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            SectionLabel(text: title)
-            content()
+    /// A titled group of rows. On the Mac it only shows under its tab.
+    @ViewBuilder
+    private func group<Content: View>(_ title: LocalizedStringKey, in tab: SettingsTab, @ViewBuilder content: () -> Content) -> some View {
+        if shows(tab) {
+            VStack(alignment: .leading, spacing: 6) {
+                SectionLabel(text: title)
+                content()
+            }
         }
     }
 

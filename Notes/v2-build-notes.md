@@ -42,16 +42,41 @@ Also: a **free 7-day Pro trial** on the paywall (needs one step in App Store Con
 
 ### The Mac app and the desk layout (18)
 
+Rebuilt on 21 Nov 2026 to follow the design screens in `Design/v2/screens/09-mac` and
+`08-ipad` (the first version took shortcuts: it opened on the gallery and used its own top bar).
+
 - The Mac app is the same app built with **Mac Catalyst**, so sprites, palettes, Community and the
   Pro purchase are shared (same bundle ID, so it's a universal purchase).
-- On iPad (landscape) and Mac the Studio uses a **desk layout**: a top bar, the tool rail on the
-  left, an inspector on the right (Layers / Colours / Animate), and a timeline along the bottom.
-  A sprite list can slide in on the far left (shown by default on the Mac).
-- The Mac has a **menu bar** with every shortcut: File, Edit, Sprite, Frame, Layer, Select, View.
-- Drop a picture from Finder onto the gallery to turn it into pixel art.
-- Different from the design: the gallery is still the first screen on the Mac (the design opens
-  straight into the Studio with a sidebar), and the top bar is the app's own rather than a native
-  Mac toolbar. Both are safe starting points that can be refined once it runs.
+- **The Mac opens straight into the Studio**, with no separate gallery screen:
+  - **Toolbar** in the window's top row, beside the close buttons: sidebar, the sprite's name
+    (with "Edited" once it has changes; click it for the sprite's menu), undo, redo, play,
+    layers, zoom %, share to Community, export, inspector.
+  - **Sidebar**: Search, then Moving, Stills, Playground and Pixel Academy, with Community at
+    the foot. The sprite on screen is filled pink. Right-click a sprite to rename, duplicate or
+    delete it.
+  - **Tool rail** floating over the top-left of the canvas.
+  - **Inspector**: Layers (with Add and Merge down), Palette with the ramp of the current colour
+    ("Ramp from Blue · hue shift +18°"), and Animation presets, in one column. The tabs jump to a
+    section. While an AI assistant is connected, the third tab becomes **AI** and lists what it
+    did, step by step.
+  - **Timeline** under the canvas: the shortcut hints, the Onion, loop and fps chips, and
+    numbered frames.
+  - **Drop target**: drag a photo, an .aseprite file or a palette (.gpl, .hex) onto the canvas.
+  - **Settings** has the designed tabs: General, Pencil, iCloud, Community, AI, Pro.
+  - **Menu bar** worded as in the design (File, Edit, Sprite, Frame, Layer, Select, View), with
+    Pixel Deck › Settings… and File › New from a photo, retro mode, tiles…
+- **iPad (landscape)**: top bar (gallery, name, frame counter, undo, redo, zoom, share, export),
+  the tool rail with brush sizes down the left, the same inspector on the right, and the
+  timeline with Play under the canvas.
+- Still to check on a real Mac, because it can't be run here:
+  - whether the toolbar lines up with the window's close buttons (the title bar is hidden and
+    the toolbar is drawn in its place);
+  - that ⌫ (Delete frame, as in the design) and the single-letter shortcuts don't fire while
+    typing a name;
+  - the zoom figure: it shows true zoom (100% is one screen point per art pixel), so typical
+    values are 800% to 3200% rather than the design's 400%.
+- New sprites on the Mac come from File › New canvas (⌘N) or the swipe from the left edge; the
+  design has no "new" button in the window.
 
 ### v2.1 · From pixels to play
 

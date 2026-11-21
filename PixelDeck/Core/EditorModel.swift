@@ -229,6 +229,9 @@ final class EditorModel {
 
     /// Last reported canvas viewport. Not observed: it changes on every scroll.
     @ObservationIgnored var viewport: Viewport?
+    /// How many screen points one art pixel takes, for the zoom read-out (it changes only when
+    /// the zoom does, so it's fine to observe).
+    var zoom = Viewport.initial.pixelSize
 
     /// What the user has unlocked. Set by the app from the purchase state.
     var access: FeatureAccess = .free

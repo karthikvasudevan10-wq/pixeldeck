@@ -131,12 +131,14 @@ struct MotionGuideMenu: View {
 /// Studio that's on screen, and a banner shows while they do.
 struct AIStudioLink: ViewModifier {
     let model: EditorModel
+    /// False in the desk layout, which shows the banner over its canvas instead.
+    var showsBanner = true
     var onNewCanvas: () -> Void
 
     func body(content: Content) -> some View {
         content
             .overlay(alignment: .top) {
-                if ProcessInfo.processInfo.isMacCatalystApp { AIBanner() }
+                if showsBanner && ProcessInfo.processInfo.isMacCatalystApp { AIBanner() }
             }
             .onAppear {
                 AIBridge.shared.model = model

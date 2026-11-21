@@ -66,7 +66,10 @@ struct PixelCanvas: UIViewRepresentable {
         func canvasTouchMoved(to p: Vec2) { model.touchMoved(to: p) }
         func canvasTouchEnded() { model.touchEnded() }
         func canvasTouchCancelled() { model.touchCancelled() }
-        func canvasViewportChanged(_ viewport: Viewport) { model.viewport = viewport }
+        func canvasViewportChanged(_ viewport: Viewport) {
+            model.viewport = viewport
+            if model.zoom != viewport.pixelSize { model.zoom = viewport.pixelSize }
+        }
         func canvasFitRect() -> PixelRect { model.contentBounds ?? PixelRect(x: -8, y: -8, width: 16, height: 16) }
         func canvasPencilDetected() { onPencilDetected() }
         func canvasPencilAction(_ action: PencilAction) { onPencilAction(action) }

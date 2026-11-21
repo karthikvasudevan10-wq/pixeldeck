@@ -44,6 +44,8 @@ struct ProjectListView: View {
     @State private var showingAcademy = false
     @State private var incomingLevel: URL?
     @State private var incomingAseprite: URL?
+    @State private var droppedPhoto: UIImage?
+    @Environment(AppRouter.self) private var router: AppRouter?
     @State private var beadPattern: SpriteProject?
     @AppStorage("lessonProjectID") private var lessonProjectID = ""
     @AppStorage("lessonID") private var lessonID = ""
@@ -150,17 +152,17 @@ struct ProjectListView: View {
             // A level someone sent, opened from Files or Messages.
             if url.isFileURL {
                 if url.pathExtension.lowercased() == LevelFile.fileExtension {
-                    path = []
+                    if !EditorView.isMac { path = [] }
                     incomingLevel = url
                     showingPlayground = true
                 } else if AsepriteFiles.isAseprite(url) {
-                    path = []
+                    if !EditorView.isMac { path = [] }
                     incomingAseprite = url
                 }
                 return
             }
             guard url.scheme == "pixeldeck", url.host == "community" else { return }
-            path = []
+            if !EditorView.isMac { path = [] }
             communityPostID = url.pathComponents.dropFirst().first
             showingCommunity = true
         }
@@ -169,7 +171,12 @@ struct ProjectListView: View {
                                 showingPlayground: $showingPlayground, showingAcademy: $showingAcademy,
                                 incomingLevel: $incomingLevel,
                                 onBlank: createAndOpen, onOpen: openNew, onStartLesson: startLesson,
-                                incomingAseprite: $incomingAseprite, onImport: importSprites))
+                                incomingAseprite: $incomingAseprite, onImport: importSprites, dropped: $droppedPhoto))
+        .onChange(of: router?.request) { _, request in
+            guard let request else { return }
+            router?.request = nil
+            answer(request)
+        }
         .sheet(item: $beadPattern) { BeadPatternView(project: $0) }
         .proUpgradeSheet($upgrade)
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
@@ -472,6 +479,33 @@ struct ProjectListView: View {
         path = [project.id]
     }
 
+    /// Something the Studio asked for (from its sidebar, the Mac menu bar or a dropped file).
+    private func answer(_ request: AppRouter.Request) {
+        switch request {
+        case .newCanvas: showingNewCanvas = true
+        case .settings: showingSettings = true
+        case .academy: showingAcademy = true
+        case .playground: showingPlayground = true
+        case .community: showingCommunity = true
+        case .lesson(let id):
+            guard let lesson = Academy.lesson(id: id) else { return }
+            if purchases.access.allows(lesson) { startLesson(lesson) } else { upgrade = .academy }
+        case .photo(let image):
+            droppedPhoto = image
+            showingPhoto = true
+        case .aseprite(let url):
+            incomingAseprite = url
+        }
+    }
+
+    /// On the Mac the Studio is the main window: open the latest sprite straight away.
+    private func openStudioOnMac() {
+        guard EditorView.isMac, path.isEmpty, !showingWelcome else { return }
+        let project = store.projects.first
+            ?? store.create(baseName: String(localized: "Sprite", comment: "Default name for a new sprite; a number is added after it"))
+        path = [project.id]
+    }
+
     /// Adds sprites brought in from a file (an Aseprite import) and opens the first.
     private func importSprites(_ sprites: [SpriteProject]) {
         for p in sprites.reversed() { store.save(p) }
@@ -567,6 +601,7 @@ struct ProjectListView: View {
             hasSeenOnboarding = true
             showingWelcome = true
         }
+        openStudioOnMac()
     }
 }
 

@@ -79,6 +79,12 @@ struct EditorView: View {
     @State var inspectorTab: InspectorTab = .layers
     @State var showingCommunity = false
     @State var showingPlayground = false
+    /// Desk layout: a file is being dragged over the canvas; a level opened from the sidebar; a
+    /// short note after a drop.
+    @State var dropTargeted = false
+    @State var editingScene: TileScene?
+    @State var deskNote: String?
+    @Environment(AppRouter.self) var router: AppRouter?
 
     init(project: SpriteProject) {
         _model = State(initialValue: EditorModel(project: project))
@@ -202,7 +208,7 @@ struct EditorView: View {
         .focusedSceneValue(\.studio, studioActions)
         .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
         .fullScreenCover(isPresented: $showingPlayground) { PlaygroundHomeView() }
-        .modifier(AIStudioLink(model: model, onNewCanvas: newCanvas))
+        .modifier(AIStudioLink(model: model, showsBanner: layout != .desk, onNewCanvas: newCanvas))
         .overlay(alignment: .top) {
             if pencilNotice {
                 Text("Apple Pencil draws. Fingers now move and zoom the canvas.")
@@ -297,81 +303,87 @@ struct EditorView: View {
         String(format: "%02d/%02d", model.currentIndex + 1, model.frameCount)
     }
 
+    /// Everything in the sprite's menu (the name chip on iPhone, the title in the desk layout).
+    @ViewBuilder
+    var spriteMenuItems: some View {
+        Button {
+            renameText = model.project.name
+            showingRename = true
+        } label: { Label("Rename", systemImage: "pencil") }
+        Button { canvas(.fit) } label: { Label("Fit art to screen", systemImage: "arrow.down.right.and.arrow.up.left") }
+        TimingPicker(model: model)
+        Toggle(isOn: Binding(get: { model.showGrid }, set: { model.showGrid = $0 })) {
+            Label("Pixel grid", systemImage: "grid")
+        }
+        if pencilDetected {
+            Toggle(isOn: $pencilOnly) {
+                Label("Draw with Apple Pencil only", systemImage: "applepencil")
+            }
+        }
+        if StudioLayout.supportsEasel(size) {
+            Toggle(isOn: $easelMode) {
+                Label("Easel mode", systemImage: "rectangle.split.1x2")
+            }
+        }
+        if layout == .easel {
+            Button { openExport() } label: { Label("Export", systemImage: "square.and.arrow.up") }
+            Button { dismiss() } label: { Label("Back to gallery", systemImage: "square.grid.2x2") }
+        }
+        Toggle(isOn: $swipeAnywhere) {
+            Label("Swipe anywhere", systemImage: "hand.draw")
+        }
+        Picker(selection: Binding(get: { model.onionOpacity }, set: { model.onionOpacity = $0 })) {
+            ForEach([0.2, 0.38, 0.6], id: \.self) { v in Text(v, format: .percent).tag(v) }
+        } label: {
+            Label("Onion skin strength", systemImage: "square.2.layers.3d")
+        }
+        .pickerStyle(.menu)
+        Button { showingTrace = true } label: { Label("Tracing image…", systemImage: "photo") }
+        Button { panels.onionTiming = true } label: { Label("Onion skin and timing…", systemImage: "timer") }
+        Button { panels.presets = true } label: { Label("Animate with a preset…", systemImage: "wand.and.stars") }
+        Button { panels.sound = true } label: { Label("Sound on this frame…", systemImage: "speaker.wave.2") }
+        Button { panels.adjust = true } label: { Label("Adjust colours…", systemImage: "slider.horizontal.3") }
+        Button { panels.stamps = true } label: { Label("Stamps…", systemImage: "seal") }
+        MotionGuideMenu(model: model)
+        Button {
+            model.commitSelection()
+            panels.beads = true
+        } label: { Label("Bead or cross-stitch pattern…", systemImage: "circle.grid.3x3") }
+        TransformMenu(model: model, frame: nil)
+        Button {
+            saveTimelapse()
+            showingTimelapse = true
+        } label: { Label("Timelapse", systemImage: "play.rectangle") }
+        Button { showingPalettes = true } label: { Label("Colours & palettes…", systemImage: "paintpalette") }
+        Button {
+            model.commitSelection()
+            sharingToCommunity = true
+        } label: { Label("Share to Community…", systemImage: "globe") }
+        Divider()
+        Button { model.duplicateFrame(at: model.currentIndex) } label: { Label("Duplicate frame", systemImage: "plus.square.on.square") }
+        Button { model.copyFrameToClipboard(at: model.currentIndex) } label: { Label("Copy frame", systemImage: "doc.on.doc") }
+        Button { model.pasteClipboard(at: model.currentIndex, asNewFrame: false) } label: {
+            Label("Paste over this frame", systemImage: "doc.on.clipboard")
+        }
+        .disabled(FrameClipboard.shared.clip == nil)
+        Button { model.pasteClipboard(at: model.currentIndex, asNewFrame: true) } label: {
+            Label("Paste as new frame", systemImage: "plus.rectangle.on.rectangle")
+        }
+        .disabled(FrameClipboard.shared.clip == nil)
+        Button(role: .destructive) { model.clearCurrentFrame() } label: {
+            if model.layers.count > 1 {
+                Label("Clear layer in this frame", systemImage: "xmark.square")
+            } else {
+                Label("Clear frame", systemImage: "xmark.square")
+            }
+        }
+        Button(role: .destructive) { model.deleteFrame(at: model.currentIndex) } label: { Label("Delete frame", systemImage: "trash") }
+    }
+
     /// Project name and frame counter. Tap for the sprite's menu.
     var chip: some View {
         Menu {
-            Button {
-                renameText = model.project.name
-                showingRename = true
-            } label: { Label("Rename", systemImage: "pencil") }
-            Button { canvas(.fit) } label: { Label("Fit art to screen", systemImage: "arrow.down.right.and.arrow.up.left") }
-            TimingPicker(model: model)
-            Toggle(isOn: Binding(get: { model.showGrid }, set: { model.showGrid = $0 })) {
-                Label("Pixel grid", systemImage: "grid")
-            }
-            if pencilDetected {
-                Toggle(isOn: $pencilOnly) {
-                    Label("Draw with Apple Pencil only", systemImage: "applepencil")
-                }
-            }
-            if StudioLayout.supportsEasel(size) {
-                Toggle(isOn: $easelMode) {
-                    Label("Easel mode", systemImage: "rectangle.split.1x2")
-                }
-            }
-            if layout == .easel {
-                Button { openExport() } label: { Label("Export", systemImage: "square.and.arrow.up") }
-                Button { dismiss() } label: { Label("Back to gallery", systemImage: "square.grid.2x2") }
-            }
-            Toggle(isOn: $swipeAnywhere) {
-                Label("Swipe anywhere", systemImage: "hand.draw")
-            }
-            Picker(selection: Binding(get: { model.onionOpacity }, set: { model.onionOpacity = $0 })) {
-                ForEach([0.2, 0.38, 0.6], id: \.self) { v in Text(v, format: .percent).tag(v) }
-            } label: {
-                Label("Onion skin strength", systemImage: "square.2.layers.3d")
-            }
-            .pickerStyle(.menu)
-            Button { showingTrace = true } label: { Label("Tracing image…", systemImage: "photo") }
-            Button { panels.onionTiming = true } label: { Label("Onion skin and timing…", systemImage: "timer") }
-            Button { panels.presets = true } label: { Label("Animate with a preset…", systemImage: "wand.and.stars") }
-            Button { panels.sound = true } label: { Label("Sound on this frame…", systemImage: "speaker.wave.2") }
-            Button { panels.adjust = true } label: { Label("Adjust colours…", systemImage: "slider.horizontal.3") }
-            Button { panels.stamps = true } label: { Label("Stamps…", systemImage: "seal") }
-            MotionGuideMenu(model: model)
-            Button {
-                model.commitSelection()
-                panels.beads = true
-            } label: { Label("Bead or cross-stitch pattern…", systemImage: "circle.grid.3x3") }
-            TransformMenu(model: model, frame: nil)
-            Button {
-                saveTimelapse()
-                showingTimelapse = true
-            } label: { Label("Timelapse", systemImage: "play.rectangle") }
-            Button { showingPalettes = true } label: { Label("Colours & palettes…", systemImage: "paintpalette") }
-            Button {
-                model.commitSelection()
-                sharingToCommunity = true
-            } label: { Label("Share to Community…", systemImage: "globe") }
-            Divider()
-            Button { model.duplicateFrame(at: model.currentIndex) } label: { Label("Duplicate frame", systemImage: "plus.square.on.square") }
-            Button { model.copyFrameToClipboard(at: model.currentIndex) } label: { Label("Copy frame", systemImage: "doc.on.doc") }
-            Button { model.pasteClipboard(at: model.currentIndex, asNewFrame: false) } label: {
-                Label("Paste over this frame", systemImage: "doc.on.clipboard")
-            }
-            .disabled(FrameClipboard.shared.clip == nil)
-            Button { model.pasteClipboard(at: model.currentIndex, asNewFrame: true) } label: {
-                Label("Paste as new frame", systemImage: "plus.rectangle.on.rectangle")
-            }
-            .disabled(FrameClipboard.shared.clip == nil)
-            Button(role: .destructive) { model.clearCurrentFrame() } label: {
-                if model.layers.count > 1 {
-                    Label("Clear layer in this frame", systemImage: "xmark.square")
-                } else {
-                    Label("Clear frame", systemImage: "xmark.square")
-                }
-            }
-            Button(role: .destructive) { model.deleteFrame(at: model.currentIndex) } label: { Label("Delete frame", systemImage: "trash") }
+            spriteMenuItems
         } label: {
             HStack(spacing: 8) {
                 Text(model.project.name)

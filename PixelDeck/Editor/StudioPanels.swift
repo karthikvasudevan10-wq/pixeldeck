@@ -5,6 +5,8 @@ import SwiftUI
 @Observable
 final class StudioPanelState {
     var presets = false
+    /// The preset the Animate sheet opens on (set by the inspector's preset tiles).
+    var presetChoice: AnimationPreset = .bounce
     var onionTiming = false
     var adjust = false
     var stamps = false
@@ -19,7 +21,7 @@ struct StudioPanelSheets: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .sheet(isPresented: $panels.presets) { PresetSheet(model: model) }
+            .sheet(isPresented: $panels.presets) { PresetSheet(model: model, initial: panels.presetChoice) }
             .sheet(isPresented: $panels.onionTiming) { OnionTimingSheet(model: model) }
             .sheet(isPresented: $panels.adjust) { AdjustColorsSheet(model: model) }
             .sheet(isPresented: $panels.stamps) { StampsSheet(model: model) }
@@ -283,10 +285,15 @@ struct SelectionStrip: View {
 struct PresetSheet: View {
     let model: EditorModel
     @Environment(\.dismiss) private var dismiss
-    @State private var preset: AnimationPreset = .bounce
+    @State private var preset: AnimationPreset
     @State private var frames = AnimationPreset.defaultFrames
     @State private var amount = Double(AnimationPreset.defaultAmount)
     @State private var upgrade: ProFeature?
+
+    init(model: EditorModel, initial: AnimationPreset = .bounce) {
+        self.model = model
+        _preset = State(initialValue: initial)
+    }
 
     private var preview: [PixelGrid] { model.presetPreview(preset, frames: frames, amount: Int(amount)) }
     private var locked: Bool { !model.access.allows(preset) }

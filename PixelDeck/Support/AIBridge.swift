@@ -172,6 +172,8 @@ final class AIBridge {
         let number: Int
         let client: String
         let tool: String
+        /// The call as the assistant made it, e.g. `rect(6,14 → 33,31)`.
+        let call: String
         let note: String
         let failed: Bool
     }
@@ -186,6 +188,9 @@ final class AIBridge {
     /// Assistant apps allowed to draw, and ones waiting to be allowed.
     private(set) var approved: [String]
     private(set) var pending: [String] = []
+    /// When each app was allowed, and when it last drew.
+    private(set) var approvedAt: [String: Date] = [:]
+    private(set) var lastUsed: [String: Date] = [:]
     /// The port the server is listening on, once it's running.
     private(set) var port: UInt16?
     private(set) var serverFailed = false
@@ -214,6 +219,8 @@ final class AIBridge {
     private init() {
         let defaults = UserDefaults.standard
         approved = defaults.stringArray(forKey: "aiApprovedClients") ?? []
+        let dates = (defaults.dictionary(forKey: "aiApprovedDates") as? [String: Double]) ?? [:]
+        approvedAt = dates.mapValues { Date(timeIntervalSince1970: $0) }
         if let saved = defaults.string(forKey: "aiToken"), saved.count >= 16 {
             token = saved
         } else {
@@ -260,7 +267,13 @@ final class AIBridge {
     func approve(_ client: String) {
         pending.removeAll { $0 == client }
         if !approved.contains(client) { approved.append(client) }
+        approvedAt[client] = Date()
+        save()
+    }
+
+    private func save() {
         UserDefaults.standard.set(approved, forKey: "aiApprovedClients")
+        UserDefaults.standard.set(approvedAt.mapValues(\.timeIntervalSince1970), forKey: "aiApprovedDates")
     }
 
     func decline(_ client: String) {
@@ -269,7 +282,8 @@ final class AIBridge {
 
     func remove(_ client: String) {
         approved.removeAll { $0 == client }
-        UserDefaults.standard.set(approved, forKey: "aiApprovedClients")
+        approvedAt[client] = nil
+        save()
     }
 
     /// The banner's Stop: the assistant is told to stop, and can't draw for the next two minutes.
@@ -382,8 +396,9 @@ final class AIBridge {
 
     private func callTool(_ name: String, _ arguments: [String: Any], client: String, session: String) -> (content: [[String: Any]], failed: Bool) {
         func text(_ s: String) -> [String: Any] { ["type": "text", "text": s] }
+        let call = Self.signature(name, arguments)
         func refuse(_ s: String) -> (content: [[String: Any]], failed: Bool) {
-            note(client: client, tool: name, note: s, failed: true)
+            note(client: client, tool: name, call: call, note: s, failed: true)
             return ([text(s)], true)
         }
         guard approved.contains(client) else {
@@ -396,12 +411,12 @@ final class AIBridge {
         if name == "new_canvas" {
             guard let startNewCanvas else { return refuse("Open the Studio in Pixel Deck first (tap any sprite, or New canvas).") }
             startNewCanvas()
-            note(client: client, tool: name, note: "A new canvas", failed: false)
+            note(client: client, tool: name, call: call, note: "A new canvas", failed: false)
             return ([text("Started a new, empty canvas.")], false)
         }
         guard let model else { return refuse("Open the Studio in Pixel Deck first (tap any sprite, or New canvas).") }
         if name == "export" {
-            note(client: client, tool: name, note: "Looked at the result", failed: false)
+            note(client: client, tool: name, call: call, note: "Looked at the result", failed: false)
             guard let image = Self.picture(of: model) else { return ([text("The canvas is empty.")], false) }
             return ([text("The current frame."), image], false)
         }
@@ -414,7 +429,7 @@ final class AIBridge {
         if name == "add_layer" || name == "select_layer" { layered.insert(key) }
         do {
             let reply = try AITools.call(name, arguments, model: model)
-            note(client: client, tool: name, note: name == "read_canvas" ? "Looked at the canvas" : reply, failed: false)
+            note(client: client, tool: name, call: call, note: name == "read_canvas" ? "Looked at the canvas" : reply, failed: false)
             var content = [text(reply)]
             if name == "read_canvas", let image = Self.picture(of: model) { content.append(image) }
             return (content, false)
@@ -425,9 +440,29 @@ final class AIBridge {
         }
     }
 
-    private func note(client: String, tool: String, note: String, failed: Bool) {
+    /// A short, readable form of a tool call for the steps list.
+    private static func signature(_ name: String, _ a: [String: Any]) -> String {
+        func n(_ key: String) -> String { AITools.int(a[key]).map(String.init) ?? "?" }
+        switch name {
+        case "line", "rect", "ellipse": return "\(name)(\(n("x1")),\(n("y1")) → \(n("x2")),\(n("y2")))"
+        case "fill": return "fill(\(n("x")),\(n("y")))"
+        case "set_pixels":
+            let count = (a["pixels"] as? [Any])?.count ?? (a["rows"] as? [String])?.reduce(0) { $0 + $1.filter { $0 != "." }.count } ?? 0
+            return "set_pixels(\(count))"
+        case "add_layer": return "add_layer(\"\((a["name"] as? String) ?? "")\")"
+        case "select_frame": return "select_frame(\(n("frame")))"
+        case "select_layer": return "select_layer(\(n("layer")))"
+        case "set_palette": return "set_palette(…)"
+        case "flip", "rotate": return "\(name)(\((a["direction"] as? String) ?? ""))"
+        case "set_speed": return "set_speed(\(n("fps")))"
+        default: return "\(name)()"
+        }
+    }
+
+    private func note(client: String, tool: String, call: String, note: String, failed: Bool) {
         counter += 1
-        let step = Step(number: counter, client: client, tool: tool, note: String(note.prefix(80)), failed: failed)
+        lastUsed[client] = Date()
+        let step = Step(number: counter, client: client, tool: tool, call: call, note: String(note.prefix(80)), failed: failed)
         current = step
         steps.append(step)
         if steps.count > 40 { steps.removeFirst(steps.count - 40) }
@@ -444,154 +479,265 @@ final class AIBridge {
     }
 }
 
+/// A four-pointed spark, the mark for AI assistants.
+struct SparkShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let c = CGPoint(x: rect.midX, y: rect.midY)
+        let r = min(rect.width, rect.height) / 2, k = r * 0.28
+        p.move(to: CGPoint(x: c.x, y: c.y - r))
+        p.addLine(to: CGPoint(x: c.x + k, y: c.y - k))
+        p.addLine(to: CGPoint(x: c.x + r, y: c.y))
+        p.addLine(to: CGPoint(x: c.x + k, y: c.y + k))
+        p.addLine(to: CGPoint(x: c.x, y: c.y + r))
+        p.addLine(to: CGPoint(x: c.x - k, y: c.y + k))
+        p.addLine(to: CGPoint(x: c.x - r, y: c.y))
+        p.addLine(to: CGPoint(x: c.x - k, y: c.y - k))
+        p.closeSubpath()
+        return p
+    }
+}
+
 /// Shown over the Studio while an assistant draws, or when one is waiting to be allowed.
 struct AIBanner: View {
     @State private var bridge = AIBridge.shared
+    /// The layer being drawn on, for "on Castle · step 14".
+    var layerName: String = ""
 
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { timeline in
             VStack(spacing: 6) {
                 ForEach(bridge.pending, id: \.self) { client in
-                    HStack(spacing: 10) {
+                    HStack(spacing: 12) {
+                        SparkShape().fill(Theme.accent2).frame(width: 18, height: 18)
                         Text("\(client) wants to draw in Pixel Deck", comment: "An AI assistant asking to connect; the placeholder is its name")
-                            .font(AppFont.body(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.onAccent2)
+                            .font(AppFont.body(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.cream)
                         Spacer(minLength: 4)
-                        Button("Allow") { bridge.approve(client) }
-                            .font(AppFont.pixel(12)).foregroundStyle(Theme.onAccent2)
-                            .padding(.horizontal, 10).frame(height: 32).background(Theme.surface.opacity(0.25))
-                        Button("Not now") { bridge.decline(client) }
-                            .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.onAccent2)
+                        Button { bridge.approve(client) } label: {
+                            Text("Allow").font(AppFont.pixel(12)).foregroundStyle(Theme.onAccent)
+                                .padding(.horizontal, 14).frame(height: 34).background(Theme.accent)
+                        }
+                        Button { bridge.decline(client) } label: {
+                            Text("Not now").font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                        }
                     }
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 44)
-                    .background(Theme.accent2)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 50)
+                    .background(Theme.ink)
+                    .overlay(Rectangle().strokeBorder(Theme.accent2, lineWidth: 2))
                 }
                 if bridge.isDrawing(at: timeline.date), let step = bridge.current {
-                    HStack(spacing: 10) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("\(step.client) is drawing", comment: "An AI assistant is drawing; the placeholder is its name")
-                                .font(AppFont.body(14, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.onAccent)
-                            Text(verbatim: "\(step.tool) · \(step.number)")
-                                .font(AppFont.pixel(10)).foregroundStyle(Theme.onAccent.opacity(0.8))
-                        }
+                    HStack(spacing: 12) {
+                        SparkShape().fill(Theme.accent2).frame(width: 18, height: 18)
+                        Text("\(step.client) is drawing", comment: "An AI assistant is drawing; the placeholder is its name")
+                            .font(AppFont.body(15, .bold, relativeTo: .subheadline)).foregroundStyle(Theme.cream)
+                        (layerName.isEmpty
+                            ? Text("step \(step.number)", comment: "Which step an AI assistant is on")
+                            : Text("on \(layerName) · step \(step.number)", comment: "The layer an AI assistant is drawing on, and which step it is on"))
+                            .font(AppFont.body(14, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+                            .lineLimit(1)
                         Spacer(minLength: 4)
-                        Button("Stop") { bridge.stop() }
-                            .font(AppFont.pixel(12)).foregroundStyle(Theme.accent)
-                            .padding(.horizontal, 12).frame(height: 32).background(Theme.ink)
+                        Button { bridge.stop() } label: {
+                            HStack(spacing: 6) {
+                                Rectangle().frame(width: 8, height: 8)
+                                Text("Stop").font(AppFont.pixel(12))
+                            }
+                            .foregroundStyle(Theme.onAccent)
+                            .padding(.horizontal, 14).frame(height: 34).background(Theme.accent)
+                        }
                     }
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 44)
-                    .background(Theme.accent)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 50)
+                    .background(Theme.ink)
+                    .overlay(Rectangle().strokeBorder(Theme.accent2, lineWidth: 2))
                 }
             }
-            .frame(maxWidth: 460)
-            .padding(.top, 8)
+            .frame(maxWidth: 480)
+            .padding(.top, 16)
             .buttonStyle(.plain)
         }
     }
 }
 
-/// Settings › AI assistants (Mac).
-struct AISettingsSection: View {
+/// The inspector's AI tab: who is connected, and what it did, step by step.
+struct AIInspectorPanel: View {
     @State private var bridge = AIBridge.shared
-    @State private var copied: String?
+
+    private var client: String? { bridge.current?.client ?? bridge.steps.last?.client ?? bridge.approved.last }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
+            if let client {
+                HStack(spacing: 10) {
+                    SparkShape().fill(Theme.accent2).frame(width: 18, height: 18).frame(width: 36, height: 36).background(Theme.tool)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: client).font(AppFont.body(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.cream)
+                        (bridge.approved.contains(client) ? Text("Connected over MCP · approved") : Text("Connected over MCP · waiting for you"))
+                            .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                    }
+                }
+            } else {
+                Text("No assistant has connected yet. Copy the setup from Settings › AI, then ask your assistant to draw.")
+                    .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !bridge.steps.isEmpty {
+                Text("What it did").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+                VStack(spacing: 0) {
+                    ForEach(bridge.steps.suffix(12)) { step in
+                        let latest = step.id == bridge.current?.id
+                        HStack(alignment: .top, spacing: 10) {
+                            Text(verbatim: "\(step.number)").font(AppFont.pixel(9)).foregroundStyle(Theme.muted).frame(width: 22, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(verbatim: step.call)
+                                    .font(.system(size: 13, design: .monospaced))
+                                    .foregroundStyle(step.failed ? Theme.accent : latest ? Theme.accent2 : Theme.text)
+                                    .lineLimit(1)
+                                Text(verbatim: step.note).font(AppFont.body(12, relativeTo: .caption)).foregroundStyle(Theme.muted).lineLimit(2)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.vertical, 6)
+                        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
+                    }
+                }
+            }
+            Text("Each step is one undo. Nothing leaves your Mac except through your own assistant.")
+                .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+/// Settings › AI (Mac).
+struct AISettingsSection: View {
+    @State private var bridge = AIBridge.shared
+    @State private var copied = false
+
+    private static var toolNames: [String] { ["new_canvas"] + AITools.all.map(\.name) + ["export"] }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
             Toggle(isOn: Binding(get: { bridge.enabled }, set: { bridge.enabled = $0 })) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Let AI assistants draw in Pixel Deck")
-                        .font(AppFont.body(15, .medium, relativeTo: .body)).foregroundStyle(Theme.text)
-                    Text("Off until you turn it on. Assistants on this Mac that support MCP can use the same tools you do, so their drawings are real layers and frames you can edit and undo. It uses your own assistant; no art goes to any Pixel Deck server.")
-                        .font(AppFont.body(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
+                        .font(AppFont.body(18, .bold, relativeTo: .headline)).foregroundStyle(Theme.cream)
+                    Text("Off until you turn it on. Assistants on this Mac that support MCP can use the same tools you do, so their drawings are real layers and frames you can edit and undo. It uses your own assistant subscription; no art goes to any Pixel Deck server.")
+                        .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .tint(Theme.accent)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Theme.surface)
 
-            if bridge.enabled {
-                Group {
-                    if let port = bridge.port {
-                        Text("Server: on this Mac only · port \(String(port)) · running", comment: "AI server status; the placeholder is a port number")
-                    } else if bridge.serverFailed {
-                        Text("The server couldn't start. Turn this off and on again.")
-                    } else {
-                        Text("Starting…")
-                    }
-                }
-                .font(AppFont.body(12, relativeTo: .caption))
-                .foregroundStyle(Theme.muted)
-                .padding(.horizontal, 14)
-
-                if let code = bridge.claudeCodeSetup {
-                    copyRow("Copy setup for Claude Code", detail: "Paste it into Terminal once", value: code)
-                }
-                if let desktop = bridge.claudeDesktopSetup {
-                    copyRow("Copy setup for the Claude app", detail: "Paste it into the app's developer settings file (it needs Node.js)", value: desktop)
-                }
-                if let address = bridge.address {
-                    copyRow("Copy the server address", detail: "For any other assistant that connects to an MCP server by URL", value: address)
-                }
-
-                ForEach(bridge.pending, id: \.self) { client in
-                    appRow(client, status: Text("Asked to connect · waiting for you")) {
-                        Button("Allow") { bridge.approve(client) }.foregroundStyle(Theme.accent2)
-                    }
-                }
-                ForEach(bridge.approved, id: \.self) { client in
-                    appRow(client, status: Text("Allowed to draw")) {
-                        Button("Remove") { bridge.remove(client) }.foregroundStyle(Theme.accent)
-                    }
-                }
-                if bridge.isStopped {
-                    Button("You pressed Stop. Let assistants draw again") { bridge.allowAgain() }
-                        .font(AppFont.body(14, .medium, relativeTo: .subheadline))
-                        .foregroundStyle(Theme.accent2)
-                        .padding(.horizontal, 14)
-                }
-                Text("While an assistant draws, a banner shows its name with a Stop button. Every action is one undo step and goes in the timelapse, and it works on a new layer unless it's told otherwise.")
-                    .font(AppFont.body(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.horizontal, 14)
+            Text("Connected apps · each one asks you first").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            if bridge.approved.isEmpty && bridge.pending.isEmpty {
+                Text("None yet.").font(AppFont.body(14, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
             }
+            ForEach(bridge.approved, id: \.self) { client in
+                appRow(client, status: status(of: client)) {
+                    Button { bridge.remove(client) } label: {
+                        Text("Remove").font(AppFont.pixel(11)).foregroundStyle(Theme.text).padding(.horizontal, 12).frame(height: 34).background(Theme.tool)
+                    }
+                }
+            }
+            ForEach(bridge.pending, id: \.self) { client in
+                appRow(client, status: Text("Asked to connect · waiting for you")) {
+                    Button { bridge.approve(client) } label: {
+                        Text("Allow").font(AppFont.pixel(11)).foregroundStyle(Theme.onAccent).padding(.horizontal, 12).frame(height: 34).background(Theme.accent)
+                    }
+                }
+            }
+
+            Text("Tools they can use").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 6, alignment: .leading)], alignment: .leading, spacing: 6) {
+                ForEach(Self.toolNames, id: \.self) { name in
+                    Text(verbatim: name)
+                        .font(.system(size: 12, design: .monospaced))
+                        .foregroundStyle(Theme.text)
+                        .padding(.horizontal, 8)
+                        .frame(height: 26)
+                        .background(Theme.tool)
+                }
+            }
+
+            Text("While an assistant draws").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("· A banner shows its name with a Stop button")
+                Text("· Every action is one undo step, and goes in the timelapse")
+                Text("· It works on a new layer unless you say otherwise")
+            }
+            .font(AppFont.body(14, relativeTo: .subheadline))
+            .foregroundStyle(Theme.text)
+
+            if bridge.isStopped {
+                Button { bridge.allowAgain() } label: {
+                    Text("You pressed Stop. Let assistants draw again").font(AppFont.body(14, .medium, relativeTo: .subheadline)).foregroundStyle(Theme.accent2)
+                }
+                .buttonStyle(.plain)
+            }
+
+            HStack(spacing: 10) {
+                Group {
+                    if !bridge.enabled {
+                        Text("Server: off")
+                    } else if let port = bridge.port {
+                        Text("Server: local · pixeldeck-mcp · running on port \(String(port))", comment: "AI server status; the placeholder is a port number")
+                    } else if bridge.serverFailed {
+                        Text("Server: couldn't start. Turn this off and on again.")
+                    } else {
+                        Text("Server: starting…")
+                    }
+                }
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundStyle(Theme.muted)
+                Spacer(minLength: 4)
+                Menu {
+                    Button("For Claude Code (paste into Terminal)") { copy(bridge.claudeCodeSetup) }
+                    Button("For the Claude app (developer settings file)") { copy(bridge.claudeDesktopSetup) }
+                    Button("Just the server address") { copy(bridge.address) }
+                } label: {
+                    Text(copied ? "Copied" : "Copy setup for Claude").font(AppFont.pixel(11)).foregroundStyle(Theme.text)
+                        .padding(.horizontal, 12).frame(height: 34)
+                }
+                .disabled(bridge.address == nil)
+            }
+            .padding(.horizontal, 14)
+            .frame(minHeight: 52)
+            .background(Theme.surface)
         }
     }
 
-    private func copyRow(_ title: LocalizedStringKey, detail: LocalizedStringKey, value: String) -> some View {
-        Button {
-            UIPasteboard.general.string = value
-            copied = value
-        } label: {
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title).font(AppFont.body(15, .medium, relativeTo: .body)).foregroundStyle(Theme.text)
-                    Text(detail).font(AppFont.body(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
-                }
-                Spacer(minLength: 4)
-                if copied == value { Text("Copied").font(AppFont.pixel(10)).foregroundStyle(Theme.accent2) }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Theme.surface)
-            .contentShape(Rectangle())
+    private func status(of client: String) -> Text {
+        var parts: [String] = []
+        if let date = bridge.approvedAt[client] {
+            parts.append(String(localized: "Approved \(date.formatted(.dateTime.day().month(.abbreviated)))", comment: "When an AI assistant was allowed; the placeholder is a date like 18 Nov"))
+        } else {
+            parts.append(String(localized: "Approved"))
         }
-        .buttonStyle(.plain)
+        if let used = bridge.lastUsed[client] {
+            parts.append(Calendar.current.isDateInToday(used) ? String(localized: "last used today")
+                         : String(localized: "last used \(used.formatted(.dateTime.day().month(.abbreviated)))", comment: "When an AI assistant last drew; the placeholder is a date"))
+        }
+        return Text(verbatim: parts.joined(separator: " · "))
+    }
+
+    private func copy(_ value: String?) {
+        guard let value else { return }
+        UIPasteboard.general.string = value
+        copied = true
     }
 
     private func appRow<Trailing: View>(_ name: String, status: Text, @ViewBuilder trailing: () -> Trailing) -> some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
+            SparkShape().fill(Theme.accent2).frame(width: 18, height: 18).frame(width: 40, height: 40).background(Theme.tool)
             VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: name).font(AppFont.body(15, .bold, relativeTo: .body)).foregroundStyle(Theme.cream)
-                status.font(AppFont.body(12, relativeTo: .caption)).foregroundStyle(Theme.muted)
+                Text(verbatim: name).font(AppFont.body(16, .bold, relativeTo: .headline)).foregroundStyle(Theme.cream)
+                status.font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
             }
             Spacer(minLength: 4)
-            trailing().font(AppFont.body(14, .medium, relativeTo: .subheadline)).buttonStyle(.plain)
+            trailing().buttonStyle(.plain)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Theme.surface)
+        .padding(.vertical, 8)
+        .overlay(alignment: .bottom) { Theme.line.frame(height: 1) }
     }
 }
