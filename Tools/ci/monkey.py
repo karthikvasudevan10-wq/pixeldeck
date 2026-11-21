@@ -72,7 +72,7 @@ def check(what):
     crashes.append(what)
     time.sleep(5)         # the crash report is written a little later
     report()
-    if len(crashes) >= 14 or time.time() - STARTED > LIMIT:
+    if len(crashes) >= int(os.environ.get("MONKEY_MAX_CRASHES", "14")) or time.time() - STARTED > LIMIT:
         raise Enough()
     launch()
     return False
@@ -232,10 +232,20 @@ def report():
             continue
         images = body.get("usedImages", [])
         thread = next((t for t in body.get("threads", []) if t.get("triggered")), None)
-        frames = []
-        for frame in (thread or {}).get("frames", [])[:28]:
+        # The first few frames say what went wrong; after that only the app's own frames are
+        # listed, with a count of the system frames between them.
+        frames, skipped = [], 0
+        for n, frame in enumerate((thread or {}).get("frames", [])):
             image = images[frame.get("imageIndex", 0)].get("name", "?") if images else "?"
+            if n >= 6 and not image.startswith("PixelDeck"):
+                skipped += 1
+                continue
+            if skipped:
+                frames.append(f"    ... {skipped} system frames")
+                skipped = 0
             frames.append(f"{image}  {frame.get('symbol', hex(frame.get('imageOffset', 0)))} +{frame.get('symbolLocation', 0)}")
+        if skipped:
+            frames.append(f"    ... {skipped} system frames")
         ours = next((f for f in frames if f.startswith("PixelDeck")), frames[0] if frames else "")
         signature = (json.dumps(body.get("asi", {}))[:200], ours)
         if signature in seen:
