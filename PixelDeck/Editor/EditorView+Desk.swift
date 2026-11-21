@@ -158,6 +158,7 @@ extension EditorView {
         guard project.id != model.project.id else { return }
         model.isPlaying = false
         model.commitSelection()
+        tidySounds()
         store.save(model.project)
         saveTimelapse()
         // The stored copy is the freshest (another device may have just synced a change).
@@ -354,6 +355,13 @@ struct DeskInspector: View {
             Text("Bounce, blink, float, shake, colour cycle and squash, drawn for you as frames.")
                 .font(AppFont.body(12, relativeTo: .caption))
                 .foregroundStyle(Theme.muted)
+            Button { panels.sound = true } label: {
+                (model.hasSound(onFrame: model.currentIndex) ? Text("Sound on this frame…") : Text("Add sound to this frame…"))
+                    .font(AppFont.body(13, .medium, relativeTo: .footnote)).foregroundStyle(Theme.accent2)
+                    .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
         Menu {
             Picker(selection: Binding(get: { model.motionGuide }, set: { model.motionGuide = $0 })) {

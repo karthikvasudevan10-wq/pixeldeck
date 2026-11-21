@@ -351,6 +351,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Pixel Deck uses the camera when you take a photo to turn into pixel art.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Pixel Deck uses the microphone when you record a sound for a frame of your animation.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Pixel Deck saves exported sprites and GIFs to your photo library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -389,6 +390,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.graphics-design";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Pixel Deck uses the camera when you take a photo to turn into pixel art.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Pixel Deck uses the microphone when you record a sound for a frame of your animation.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "Pixel Deck saves exported sprites and GIFs to your photo library.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

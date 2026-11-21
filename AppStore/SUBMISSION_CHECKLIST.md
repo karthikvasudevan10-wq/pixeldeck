@@ -11,7 +11,7 @@ Everything for v2 is in [`Notes/v2-build-notes.md`](../Notes/v2-build-notes.md):
 - [ ] **Free trial**: add a second non-consumable in-app purchase, `karthikvasudevan.pixeldeck.trial`, priced Free. Without it the paywall doesn't offer a trial.
 - [ ] **Mac**: App Store Connect › Add Platform › macOS, with Mac screenshots.
 - [ ] **CloudKit**: after posting one remix and one level from a development build, add the index **`remixOf`: Queryable** on `Post`, then deploy the schema to Production.
-- [ ] **Privacy answers**: the camera is now used (a photo you take to pixelate stays on the device). Data collection is still "no".
+- [ ] **Privacy answers**: the camera is now used (a photo you take to pixelate stays on the device), and the microphone (a sound you record for a frame stays with the sprite). Data collection is still "no".
 - [ ] Put the app's Apple ID into `AppConfig.appStoreURL`, and set `AppConfig.allowReportingOwnPosts` back to `false`.
 - [ ] Re-answer the age rating questionnaire if asked: nothing in v2 changes the answers (Community is still off under 13; Playground levels are shared through Community with the same reporting and blocking).
 

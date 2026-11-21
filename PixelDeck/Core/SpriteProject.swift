@@ -168,6 +168,8 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     var retroMode: RetroMode?
     /// Set when the sprite was remixed from a Community post, so sharing it credits the original.
     var remix: RemixCredit?
+    /// Sounds attached to frames (the audio files are kept beside the sprite).
+    var sounds: [SoundClip] = []
     /// Bottom to top. Every frame has one cel per layer.
     var layers: [LayerInfo] = [LayerInfo(name: "Layer 1")]
     static let maxLayers = 8
@@ -222,7 +224,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         frames.map { $0.grid.reframed(from: bounds, to: world) }
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, extraColors, loopMode, retroMode, remix, layers, trace, createdAt, modifiedAt }
+    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, extraColors, loopMode, retroMode, remix, sounds, layers, trace, createdAt, modifiedAt }
 
     /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
     /// crashing the app (the editor assumes at least one frame, all the same size). Files from
@@ -265,6 +267,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         let pal = ((try? c.decode([RGBA].self, forKey: .palette)) ?? []).map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         retroMode = try? c.decodeIfPresent(RetroMode.self, forKey: .retroMode)
         remix = try? c.decodeIfPresent(RemixCredit.self, forKey: .remix)
+        sounds = Array(((try? c.decodeIfPresent([SoundClip].self, forKey: .sounds)) ?? []).prefix(SoundClip.maxPerSprite * 2))
         // Ten swatches, except retro canvases, which have just their mode's colours.
         if let mode = retroMode {
             palette = mode.colors
@@ -292,6 +295,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         if loopMode != .loop { try c.encode(loopMode, forKey: .loopMode) }
         try c.encodeIfPresent(retroMode, forKey: .retroMode)
         try c.encodeIfPresent(remix, forKey: .remix)
+        if !sounds.isEmpty { try c.encode(sounds, forKey: .sounds) }
         try c.encode(layers, forKey: .layers)
         try c.encodeIfPresent(trace, forKey: .trace)
         try c.encode(createdAt, forKey: .createdAt)
@@ -309,10 +313,19 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         var copy = self
         copy.id = UUID()
         copy.name = name
+        // Frames get new ids, and each sound follows its frame to the new one.
+        var newIDs: [UUID: UUID] = [:]
         copy.frames = frames.map {
             var f = Frame(layers: $0.layers, visible: layerVisibility)
             f.hold = $0.hold
+            newIDs[$0.id] = f.id
             return f
+        }
+        copy.sounds = sounds.compactMap { clip in
+            guard let frame = newIDs[clip.frameID] else { return nil }
+            var c = clip
+            c.frameID = frame
+            return c
         }
         copy.createdAt = Date()
         copy.modifiedAt = Date()

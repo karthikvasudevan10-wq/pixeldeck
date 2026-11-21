@@ -546,7 +546,7 @@ struct ImageStore {
     /// Folders moved between the device and iCloud when sync is switched (saved palettes,
     /// Playground levels and stamps too).
     private static let movable = all + [ImageStore(folder: "Palettes", png: false), ImageStore(folder: "Scenes", png: false),
-                                        ImageStore(folder: "Stamps", png: false)]
+                                        ImageStore(folder: "Stamps", png: false), ImageStore(folder: "Sounds", png: false)]
 
     /// The iCloud container, when syncing; nil for the device.
     nonisolated(unsafe) static var root: URL?
@@ -594,11 +594,13 @@ struct ImageStore {
     static func deleteAll(for id: UUID) {
         for s in all { s.delete(for: id) }
         TimelapseStore.delete(for: id)
+        SoundStore.deleteAll(for: id)
     }
 
     static func copyAll(from id: UUID, to newID: UUID) {
         for s in all { s.copy(from: id, to: newID) }
         TimelapseStore.copy(from: id, to: newID)
+        SoundStore.copyAll(from: id, to: newID)
     }
 
     /// Switches between the device and iCloud (`newRoot`), copying pictures that aren't there yet.

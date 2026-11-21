@@ -51,6 +51,24 @@ enum VideoExporter {
         try write(grids: grids, durations: durations, spec: VideoSpec(width: side, height: side), to: url)
     }
 
+    /// How a video of these frames is laid out in time: how long one pass of the animation is,
+    /// how many passes there are, and how long the animation part lasts (before any end card).
+    static func plan(durations: [Double], frames: Int, spec: VideoSpec) -> (loopSeconds: Double, loops: Int, seconds: Double) {
+        let d = (0..<frames).map { i in max(PlaybackTiming.minimumDuration, i < durations.count ? durations[i] : 0.125) }
+        let loopSeconds = d.reduce(0, +)
+        guard loopSeconds > 0 else { return (0, 1, 0) }
+        let loops = spec.loop ? max(1, Int((minimumSeconds / loopSeconds).rounded(.up))) : 1
+        // The writer stops adding frames once it passes the longest video allowed.
+        var time = 0.0
+        outer: for _ in 0..<loops {
+            for i in 0..<frames {
+                if time >= maximumSeconds { break outer }
+                time += d[i]
+            }
+        }
+        return (loopSeconds, loops, time)
+    }
+
     /// Height of the watermark band for a frame.
     static func bandHeight(_ spec: VideoSpec) -> Int {
         spec.watermark ? max(64, Int((Double(min(spec.width, spec.height)) * 0.11).rounded())) : 0

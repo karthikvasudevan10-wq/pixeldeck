@@ -57,6 +57,8 @@ struct ExportSource {
     let height: Int
     /// The timelapse of the drawing, if there is one (set by the export screen).
     var timelapse: [PixelGrid] = []
+    /// The sounds on its frames, with when each starts in one pass. They go into videos.
+    let sounds: [ExportSound]
 
     init(_ project: SpriteProject) {
         // Hidden layers aren't exported, so crop to what's visible.
@@ -70,6 +72,12 @@ struct ExportSource {
         playGrids = sequence.frames.map { all[$0] }
         playDurations = sequence.durations
         repeats = sequence.repeats
+        let clips = Dictionary(project.liveSounds.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+        sounds = project.soundCues.compactMap { cue in
+            guard let clip = clips[cue.clipID], let url = SoundStore.url(for: clip, in: project.id),
+                  FileManager.default.fileExists(atPath: url.path) else { return nil }
+            return ExportSound(url: url, time: cue.time, volume: cue.volume)
+        }
         width = rect.width
         height = rect.height
     }
@@ -211,6 +219,11 @@ enum SpriteExporter {
             let url = dir.appendingPathComponent("\(base).mp4")
             if !src.repeats { spec.loop = false }
             try VideoExporter.write(grids: src.playGrids, durations: src.playDurations, spec: spec, to: url)
+            if !src.sounds.isEmpty {
+                // The sounds repeat with the animation, for as long as the picture lasts.
+                let plan = VideoExporter.plan(durations: src.playDurations, frames: src.playGrids.count, spec: spec)
+                try VideoSound.add(src.sounds, to: url, loopSeconds: plan.loopSeconds, loops: plan.loops, seconds: plan.seconds)
+            }
             return [url]
         }
     }

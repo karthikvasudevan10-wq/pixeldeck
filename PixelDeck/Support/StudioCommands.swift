@@ -120,6 +120,8 @@ struct StudioCommands: Commands {
                 edit { $0.setHold($0.project.frames[$0.currentIndex].hold - 1, at: $0.currentIndex) }
             }
             .keyboardShortcut("[", modifiers: .command)
+            Button("Sound on This Frame…") { studio?.panels.sound = true }
+                .keyboardShortcut("s", modifiers: [.command, .option])
             Button("Onion Skin Settings…") { studio?.panels.onionTiming = true }
                 .keyboardShortcut("o", modifiers: .option)
             Menu("Flip and Rotate") {

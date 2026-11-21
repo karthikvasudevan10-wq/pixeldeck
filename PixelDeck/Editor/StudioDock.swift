@@ -34,6 +34,7 @@ struct StudioDock: View {
 /// (40 × 52 in the dock, 44 × 58 in the Flipbook bottom bar).
 struct FrameRow: View {
     let model: EditorModel
+    @Environment(StudioPanelState.self) private var panels: StudioPanelState?
     var thumb = CGSize(width: 40, height: 52)
     var playSize: CGFloat = 52
 
@@ -89,6 +90,17 @@ struct FrameRow: View {
                 .frame(width: thumb.width, height: thumb.height)
                 .background(Theme.ink)
                 .overlay(Rectangle().strokeBorder(current ? Theme.accent : (index == model.currentIndex - 1 ? Theme.muted : Theme.line), lineWidth: 2))
+                .overlay(alignment: .bottomLeading) {
+                    // A frame with a sound on it.
+                    if model.hasSound(onFrame: index) {
+                        Image(systemName: "speaker.wave.2.fill")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(Theme.onAccent)
+                            .padding(2)
+                            .background(Theme.accent)
+                            .accessibilityHidden(true)
+                    }
+                }
                 .overlay(alignment: .topTrailing) {
                     // Frames held for more than one beat say so.
                     if frame.hold > 1 {
@@ -111,6 +123,13 @@ struct FrameRow: View {
                 Label("Hold this frame", systemImage: "timer")
             }
             .pickerStyle(.menu)
+            if let panels {
+                Button {
+                    model.isPlaying = false
+                    model.selectFrame(index)
+                    panels.sound = true
+                } label: { Label("Sound…", systemImage: "speaker.wave.2") }
+            }
             TransformMenu(model: model, frame: index)
             Button { model.copyFrameToClipboard(at: index) } label: { Label("Copy", systemImage: "doc.on.doc") }
             Button { model.pasteClipboard(at: index, asNewFrame: false) } label: {
@@ -128,6 +147,7 @@ struct FrameRow: View {
             Button(role: .destructive) { model.deleteFrame(at: index) } label: { Label("Delete", systemImage: "trash") }
         }
         .accessibilityLabel(current ? Text("Frame \(index + 1), selected") : Text("Frame \(index + 1)"))
+        .accessibilityValue(model.hasSound(onFrame: index) ? Text("Has sound") : Text(verbatim: ""))
     }
 }
 

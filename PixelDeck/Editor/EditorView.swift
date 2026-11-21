@@ -181,6 +181,7 @@ struct EditorView: View {
         .onDisappear {
             model.isPlaying = false
             model.commitSelection()
+            tidySounds()
             store.save(model.project)
             saveTimelapse()
         }
@@ -275,7 +276,9 @@ struct EditorView: View {
         // Holds, ping-pong and "play once" all come from the sprite's playback sequence.
         let sequence = model.playbackSequence
         return TimelineView(.animation(minimumInterval: PlaybackClock.tick(sequence.durations), paused: !model.isPlaying)) { ctx in
-            let elapsed = sequence.repeats ? ctx.date.timeIntervalSinceReferenceDate : max(0, ctx.date.timeIntervalSince(model.playStartedAt))
+            // Counted from when Play was pressed, so the animation starts at its first frame
+            // and frame sounds stay in step with it.
+            let elapsed = max(0, ctx.date.timeIntervalSince(model.playStartedAt))
             let frame: Int? = model.isPlaying ? sequence.frame(at: elapsed) : nil
             PixelCanvas(state: withLessonGuide(withTourGuide(model.canvasState(playingFrame: frame))), model: model, fit: fit,
                         drawingEnabled: !swipeAnywhere && !model.isPlaying,
@@ -332,6 +335,7 @@ struct EditorView: View {
             Button { showingTrace = true } label: { Label("Tracing image…", systemImage: "photo") }
             Button { panels.onionTiming = true } label: { Label("Onion skin and timing…", systemImage: "timer") }
             Button { panels.presets = true } label: { Label("Animate with a preset…", systemImage: "wand.and.stars") }
+            Button { panels.sound = true } label: { Label("Sound on this frame…", systemImage: "speaker.wave.2") }
             Button { panels.adjust = true } label: { Label("Adjust colours…", systemImage: "slider.horizontal.3") }
             Button { panels.stamps = true } label: { Label("Stamps…", systemImage: "seal") }
             MotionGuideMenu(model: model)
@@ -611,6 +615,7 @@ struct EditorView: View {
             canvas(.fit)
             return
         }
+        tidySounds()
         store.save(model.project)
         saveTimelapse()
         defer { loadTimelapse() }

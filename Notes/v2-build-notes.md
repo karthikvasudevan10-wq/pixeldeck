@@ -8,8 +8,8 @@ The design is in [`Design/v2`](../Design/v2); feature numbers match
 
 ## How far this has been checked
 
-- **The engine is tested.** Everything in `PixelDeck/Core` is compiled and unit-tested: 189 tests
-  pass (104 from before, 85 new). Run them with `swift test`.
+- **The engine is tested.** Everything in `PixelDeck/Core` is compiled and unit-tested: 195 tests
+  pass (104 from before, 91 new). Run them with `swift test`.
 - **The screens have not been compiled.** There is no Xcode where this was written. Every Swift
   file passes a syntax check, and three separate read-throughs of the new screens against the
   code they call found no compile errors (and ten bugs, now fixed). But SwiftUI code can only
@@ -76,6 +76,29 @@ Sharing a level: post it to Community (others can play it and keep a copy), send
 | 17 | Aseprite files | New canvas › Open an Aseprite file; Export › More › Aseprite file | Pro |
 | 20 | AI assistants on the Mac | Mac › Settings › AI assistants | Free |
 
+### Sound on frames (added 21 Nov 2026)
+
+- **What it does**: attach a sound to any frame, by recording with the microphone (up to two
+  minutes) or choosing an audio file (M4A, MP3, WAV; up to ten minutes). The sound starts when
+  the animation reaches that frame and plays for its own length. A frame can have four sounds, a
+  sprite twenty-four, each with its own volume.
+- **Where**: long-press a frame › Sound; sprite menu › Sound on this frame; on the Mac, Frame ›
+  Sound on This Frame (⌥⌘S). Frames with a sound show a small speaker.
+- **Where you hear it**: when you press Play in the Studio, and in exported videos (square and
+  9:16), where the sounds are mixed into the soundtrack and repeat with the animation. GIFs,
+  sprite sheets and Community posts are silent.
+- **Kept with the sprite**: sounds follow their frame when frames are added or moved, are copied
+  when a sprite is duplicated, are removed with the sprite, and sync through iCloud with it.
+- **Changed with it**: pressing Play now always starts from the first frame (it used to start
+  wherever the loop happened to be), so sound and picture stay in step.
+- **Not checked**: recording, playback and the video soundtrack use the device's audio system,
+  which can't be run here. Try a recording and a file, and export a video with each.
+- **For App Store Connect**: the app now asks for the **microphone** (only when you tap Record;
+  recordings stay with the sprite on the user's devices). Data collection is still "no".
+
+A whole film (many scenes joined into one long video with one soundtrack, 60 fps, long holds)
+is not built yet. Sound on frames is the first piece of it.
+
 ## Not built, or built differently
 
 - **"N people drew this today"** on Idea of the day: left out. It needs a count from Community.
@@ -109,7 +132,7 @@ Sharing a level: post it to Community (others can play it and keep a copy), send
   one-time purchase; a free product like this is the approach Apple suggests.)
 - **Mac**: on the app's page choose **Add Platform › macOS**, and add Mac screenshots.
 - **Privacy**: the app now uses the **camera** (to take a photo to pixelate; the photo stays on
-  the device) and the photo picker. The answer to "do you collect data" is still no.
+  the device), the **microphone** (to record a sound for a frame) and the photo picker. The answer to "do you collect data" is still no.
 - **App Store link in captions**: put your app's numeric Apple ID into `AppConfig.appStoreURL`
   so shared videos' captions link to the App Store instead of the website.
 - **Before submitting**: set `AppConfig.allowReportingOwnPosts` back to `false`.

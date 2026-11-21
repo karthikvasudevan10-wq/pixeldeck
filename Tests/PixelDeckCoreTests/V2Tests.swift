@@ -1194,3 +1194,108 @@ final class V2ReviewFixTests: XCTestCase {
         XCTAssertEqual(m.playCount, 1)
     }
 }
+
+final class SoundTests: XCTestCase {
+    private func threeFrames() -> EditorModel {
+        let m = makeModel()
+        m.pixelPerfect = false
+        tap(m, 0.5, 0.5)
+        m.addKeyframe()
+        tap(m, 1.5, 0.5)
+        m.addKeyframe()
+        tap(m, 2.5, 0.5)
+        return m
+    }
+
+    private func clip(_ name: String = "Boing", seconds: Double = 0.5) -> SoundClip {
+        SoundClip(name: name, frameID: UUID(), duration: seconds, fileExtension: "m4a")
+    }
+
+    func testSoundStaysWithItsFrame() throws {
+        let m = threeFrames()
+        XCTAssertTrue(m.addSound(clip("  Boing  "), toFrame: 1))
+        XCTAssertEqual(m.sounds(onFrame: 1).map(\.name), ["Boing"])
+        XCTAssertTrue(m.hasSound(onFrame: 1))
+        XCTAssertFalse(m.hasSound(onFrame: 0))
+        // Put a new frame in front: the sound moves along with its frame.
+        m.selectFrame(0)
+        m.addKeyframe()
+        XCTAssertTrue(m.hasSound(onFrame: 2))
+        XCTAssertFalse(m.hasSound(onFrame: 1))
+        m.moveFrame(from: 2, by: 1)
+        XCTAssertTrue(m.hasSound(onFrame: 3))
+        // Saved and loaded with the sprite.
+        let back = try JSONDecoder().decode(SpriteProject.self, from: JSONEncoder().encode(m.project))
+        XCTAssertEqual(back.sounds, m.project.sounds)
+        XCTAssertEqual(back.sounds(onFrame: 3).count, 1)
+    }
+
+    func testCuesFollowTimingHoldsAndPingPong() {
+        let m = threeFrames()                               // 8 fps: 0.125 s a frame
+        m.addSound(clip(), toFrame: 0)
+        m.addSound(clip("Pop"), toFrame: 2)
+        XCTAssertEqual(m.project.soundCues.map(\.time), [0, 0.25])
+        m.setHold(3, at: 1)                                 // frame 2 is held for 3 beats
+        XCTAssertEqual(m.project.soundCues.map(\.time), [0, 0.5])
+        m.setHold(1, at: 1)
+        m.setLoopMode(.pingPong)                            // 0 1 2 1
+        XCTAssertEqual(m.project.soundCues.map(\.time), [0, 0.25])
+        m.addSound(clip("Tick"), toFrame: 1)
+        XCTAssertEqual(m.project.soundCues.filter { $0.time == 0.125 || $0.time == 0.375 }.count, 2, "it plays both times round")
+        m.setSoundVolume(0, for: m.sounds(onFrame: 1)[0].id)
+        XCTAssertEqual(m.project.soundCues.count, 2, "silent sounds make no cue")
+    }
+
+    func testDeletingAFrameKeepsItsSoundUntilTheSpriteCloses() {
+        let m = threeFrames()
+        m.addSound(clip(), toFrame: 2)
+        let id = m.sounds(onFrame: 2)[0].id
+        m.deleteFrame(at: 2)
+        XCTAssertTrue(m.project.liveSounds.isEmpty)
+        XCTAssertTrue(m.project.soundCues.isEmpty)
+        m.undo()
+        XCTAssertEqual(m.sounds(onFrame: 2).map(\.id), [id], "undo brings the frame back with its sound")
+        m.deleteFrame(at: 2)
+        XCTAssertEqual(m.pruneSounds().map(\.id), [id])
+        XCTAssertTrue(m.project.sounds.isEmpty)
+    }
+
+    func testLimitsAndRemoving() {
+        let m = threeFrames()
+        for _ in 0..<SoundClip.maxPerFrame { XCTAssertTrue(m.addSound(clip(), toFrame: 0)) }
+        XCTAssertFalse(m.addSound(clip(), toFrame: 0), "a frame holds four")
+        XCTAssertFalse(m.addSound(clip(seconds: SoundClip.maxSeconds + 1), toFrame: 1))
+        XCTAssertFalse(m.addSound(clip(), toFrame: 9))
+        let first = m.sounds(onFrame: 0)[0].id
+        m.moveSound(first, toFrame: 1)
+        XCTAssertEqual(m.sounds(onFrame: 1).map(\.id), [first])
+        m.removeSound(first)
+        XCTAssertFalse(m.hasSound(onFrame: 1))
+    }
+
+    func testDuplicatedSpriteKeepsSoundsOnTheRightFrames() {
+        let m = threeFrames()
+        m.addSound(clip(), toFrame: 1)
+        let copy = m.project.duplicated(name: "Copy")
+        XCTAssertEqual(copy.sounds.count, 1)
+        XCTAssertEqual(copy.sounds(onFrame: 1).count, 1)
+        XCTAssertNotEqual(copy.sounds[0].frameID, m.project.sounds[0].frameID)
+    }
+
+    func testMixing() {
+        var track = [Float](repeating: 0, count: 8)
+        AudioMix.add([0.5, 0.5, 0.5], into: &track, at: 2, volume: 1)
+        AudioMix.add([0.5, 0.5, 0.5, 0.5], into: &track, at: 6, volume: 0.5)   // runs off the end
+        AudioMix.add([1], into: &track, at: 99, volume: 1)
+        XCTAssertEqual(track, [0, 0, 0.5, 0.5, 0.5, 0, 0.25, 0.25])
+        var loud: [Float] = [0.5, 1.6, -1.6]
+        AudioMix.soften(&loud)
+        XCTAssertEqual(loud[0], 0.5)
+        XCTAssertLessThan(loud[1], 1)
+        XCTAssertGreaterThan(loud[1], 0.8)
+        XCTAssertEqual(loud[2], -loud[1])
+        let id = UUID()
+        let starts = AudioMix.starts(of: [SoundCue(clipID: id, time: 0.25, volume: 1)], loopSeconds: 1, loops: 3, total: 2.5)
+        XCTAssertEqual(starts.map(\.time), [0.25, 1.25, 2.25])
+    }
+}

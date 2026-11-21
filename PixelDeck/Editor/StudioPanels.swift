@@ -9,6 +9,7 @@ final class StudioPanelState {
     var adjust = false
     var stamps = false
     var beads = false
+    var sound = false
 }
 
 /// Presents the v2 panels. Kept apart from `EditorView.body` so that body stays quick to compile.
@@ -22,6 +23,8 @@ struct StudioPanelSheets: ViewModifier {
             .sheet(isPresented: $panels.onionTiming) { OnionTimingSheet(model: model) }
             .sheet(isPresented: $panels.adjust) { AdjustColorsSheet(model: model) }
             .sheet(isPresented: $panels.stamps) { StampsSheet(model: model) }
+            .sheet(isPresented: $panels.sound) { FrameSoundSheet(model: model) }
+            .modifier(FrameSoundPlayback(model: model))
             .sheet(isPresented: $panels.beads) { BeadPatternView(project: model.project, frame: model.currentIndex) }
     }
 }
