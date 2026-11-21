@@ -1,0 +1,59 @@
+# Builds Pixel Deck for the Mac and for iPhone on every push to the v2 branch, on GitHub's own Macs,
+# so build errors show up here (Actions tab) instead of one at a time in Xcode.
+# Nothing is signed or published: this only checks that the app compiles.
+name: Build check
+
+on:
+  push:
+    branches: [v2]
+    paths-ignore: ["Website/**", "Design/**", "Notes/**", "AppStore/**", "**.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: macos-26
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Mac
+            destination: "platform=macOS,variant=Mac Catalyst"
+          - name: iPhone
+            destination: "generic/platform=iOS Simulator"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Xcode version
+        run: |
+          xcodebuild -version
+          xcodebuild -list -project PixelDeck.xcodeproj
+      - name: Build
+        run: |
+          set +e
+          xcodebuild -project PixelDeck.xcodeproj -scheme PixelDeck \
+            -destination '${{ matrix.destination }}' -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            -IDEBuildingContinueBuildingAfterErrors=YES \
+            build > build.log 2>&1
+          status=$?
+          echo "===== WARNINGS (in Pixel Deck's own files) ====="
+          grep -E "PixelDeck[^ ]*\.swift:[0-9]+:[0-9]+: warning:" build.log | sed "s|$PWD/||" | sort -u | head -150
+          echo "===== ERRORS ====="
+          grep -E "error:|\*\* BUILD|The following build commands failed" build.log | sed "s|$PWD/||" | sort -u | head -250
+          echo "===== END (xcodebuild exit $status) ====="
+          exit $status
+      - name: Keep the full log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.name }}
+          path: build.log
+          retention-days: 7
