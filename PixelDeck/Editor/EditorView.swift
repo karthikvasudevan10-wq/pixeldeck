@@ -256,8 +256,9 @@ struct EditorView: View {
     // MARK: Canvas
 
     /// `chips`: the sprite menu and layer chip float over the canvas (the desk layout has them
-    /// in its top bar and inspector instead).
-    func canvasArea(chips: Bool = true) -> some View {
+    /// in its top bar and inspector instead). `strips`: the tool's options float over the foot
+    /// of the canvas (the Mac docks them in a bar above the canvas, clear of the art).
+    func canvasArea(chips: Bool = true, strips: Bool = true) -> some View {
         SwipeCanvas(swipeAnywhere: swipeAnywhere,
                     onNewFrame: { model.addKeyframe() },   // also stops playback
                     onNewCanvas: newCanvas) {
@@ -266,15 +267,23 @@ struct EditorView: View {
         .overlay(alignment: .topLeading) { if chips { chip.padding(.leading, 12).padding(.top, 14) } }
         .overlay(alignment: .topTrailing) { if chips { layersButton.padding(.trailing, 12).padding(.top, 14) } }
         .overlay(alignment: .bottom) {
-            VStack(spacing: 10) {
-                if model.tool == .select && !model.isPlaying { selectionStrip }
-                if model.tool == .shape && !model.isPlaying { shapeStrip }
-                if (model.tool == .pencil || model.tool == .eraser) && !model.isPlaying { brushStrip }
-                frameDots
+            if strips {
+                VStack(spacing: 10) {
+                    toolStrips
+                    frameDots
+                }
+                .padding(.bottom, 12)
             }
-            .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// The options of the tool in use: selection actions, shapes, or the brush.
+    @ViewBuilder
+    var toolStrips: some View {
+        if model.tool == .select && !model.isPlaying { selectionStrip }
+        if model.tool == .shape && !model.isPlaying { shapeStrip }
+        if (model.tool == .pencil || model.tool == .eraser) && !model.isPlaying { brushStrip }
     }
 
     /// While playing, the canvas shows each frame in turn at the sprite's frame rate.

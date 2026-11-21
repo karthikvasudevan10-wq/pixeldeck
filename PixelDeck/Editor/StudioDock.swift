@@ -281,18 +281,25 @@ struct PaletteRow: View {
 /// The tools. A row in the dock; a vertical rail or a 2-column grid in the iPhone Duo layouts.
 struct ToolRow: View {
     let model: EditorModel
-    /// nil: one row filling the width. Otherwise a grid of fixed 52 pt tiles this many columns wide.
+    /// nil: one row filling the width. Otherwise a grid of fixed tiles this many columns wide.
     var columns: Int? = nil
+    /// The side of a fixed tile, and the gap between tiles.
+    var tile: CGFloat = 52
+    var spacing: CGFloat = 6
 
     var body: some View {
         if let columns {
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(52), spacing: 6), count: columns), spacing: 6) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(tile), spacing: spacing), count: columns), spacing: spacing) {
                 tiles(fixed: true)
             }
+            // Only as wide as its tiles: a grid otherwise stretches across whatever it is put in.
+            .frame(width: CGFloat(columns) * tile + CGFloat(columns - 1) * spacing)
         } else {
             HStack(spacing: 6) { tiles(fixed: false) }
         }
     }
+
+    private var iconSize: CGFloat { tile < 48 ? 20 : 22 }
 
     @ViewBuilder
     private func tiles(fixed: Bool) -> some View {
@@ -304,7 +311,7 @@ struct ToolRow: View {
         tool(.eyedropper, icon: .picker, fixed: fixed)
         // Mirror is a mode that works with pencil, eraser, fill and shapes.
         Button { model.mirror.toggle() } label: {
-            PixelIcon.mirror.view(size: 22).tileFrame(fixed: fixed)
+            PixelIcon.mirror.view(size: iconSize).tileFrame(fixed ? tile : nil)
         }
         .buttonStyle(TileButtonStyle(active: model.mirror))
         .accessibilityLabel("Mirror")
@@ -318,7 +325,7 @@ struct ToolRow: View {
             model.isPlaying = false
             model.tool = t
         } label: {
-            icon.view(size: 22).tileFrame(fixed: fixed)
+            icon.view(size: iconSize).tileFrame(fixed ? tile : nil)
         }
         .buttonStyle(TileButtonStyle(active: active))
         .accessibilityLabel(Text(t.title))
@@ -327,9 +334,10 @@ struct ToolRow: View {
 }
 
 private extension View {
-    func tileFrame(fixed: Bool) -> some View {
-        frame(width: fixed ? 52 : nil, height: 52)
-            .frame(maxWidth: fixed ? 52 : .infinity)
+    /// `side`: a square tile of that size; nil: 52 pt high, sharing the width.
+    func tileFrame(_ side: CGFloat?) -> some View {
+        frame(width: side, height: side ?? 52)
+            .frame(maxWidth: side ?? .infinity)
             .contentShape(Rectangle())
     }
 }

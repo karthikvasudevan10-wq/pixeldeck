@@ -51,6 +51,10 @@ extension EditorView {
                     Theme.line.frame(width: 2)
                 }
                 VStack(spacing: 0) {
+                    if Self.isMac {
+                        macOptionsBar
+                        Theme.line.frame(height: 2)
+                    }
                     deskCanvas
                     Theme.line.frame(height: 2)
                     if Self.isMac { macTimeline } else { padTimeline }
@@ -78,14 +82,15 @@ extension EditorView {
     // MARK: Canvas, with the Mac's floating tool rail and the drop target
 
     private var deskCanvas: some View {
-        canvasArea(chips: false)
+        canvasArea(chips: false, strips: !Self.isMac)
             .overlay(alignment: .topLeading) {
                 if Self.isMac {
-                    ToolRow(model: model, columns: 1)
+                    // As designed: a narrow rail of 40 pt tools in the canvas's top left corner.
+                    ToolRow(model: model, columns: 1, tile: 40, spacing: 2)
                         .padding(4)
                         .background(Theme.surface)
                         .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
-                        .padding(16)
+                        .padding(14)
                 }
             }
             .overlay(alignment: .top) {
@@ -93,6 +98,34 @@ extension EditorView {
             }
             .overlay { if dropTargeted { dropTarget } }
             .onDrop(of: [UTType.fileURL, UTType.image], isTargeted: $dropTargeted, perform: handleDrop)
+    }
+
+    /// Mac: the options of the tool in use (brush size, pixel-perfect, shading, shapes, selection
+    /// actions), docked above the canvas so nothing sits on top of the art. Always the same
+    /// height at least, so the canvas doesn't jump when the tool changes.
+    private var macOptionsBar: some View {
+        VStack(spacing: 6) {
+            if model.isPlaying {
+                optionsHint("Playing. Press Space to stop.")
+            } else {
+                switch model.tool {
+                case .fill: optionsHint("Fill: click an area to fill it with your colour.")
+                case .eyedropper: optionsHint("Colour picker: click a pixel to pick up its colour.")
+                default: toolStrips
+                }
+            }
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, minHeight: 58)
+        .background(Theme.surface)
+    }
+
+    private func optionsHint(_ text: LocalizedStringKey) -> some View {
+        Text(text)
+            .font(AppFont.body(14, relativeTo: .subheadline))
+            .foregroundStyle(Theme.muted)
+            .lineLimit(1)
+            .padding(.horizontal, 12)
     }
 
     /// "Drop to make pixel art", shown while something is dragged over the canvas.
@@ -545,6 +578,11 @@ struct DeskInspector: View {
                  comment: "Under the ramp: the colour it starts from (e.g. Blue), and the hue shift in degrees")
                 .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
                 .padding(.horizontal, 4)
+            Button { panels?.adjust = true } label: {
+                Text("Adjust colours…").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
+            }
+            .buttonStyle(TileButtonStyle())
+            .accessibilityHint("Brightness, contrast, hue and saturation of the selection, layer, frame or every frame")
             MoreColorsSection(model: model)
         }
     }
