@@ -68,8 +68,7 @@ jobs:
           swiftc -O Tools/ci/pdinput.swift -o pdinput
           python3 Tools/ci/monkey.py "$APP" "$PWD/pdinput"
         env:
-          MONKEY_ONLY: "opened photo"
-          MONKEY_LOOK: "1"
+          MONKEY_ONLY: "opened"
       - name: Keep the full log
         if: failure()
         uses: actions/upload-artifact@v4

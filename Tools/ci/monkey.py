@@ -259,14 +259,17 @@ def trial():
         if phase(f"opened {what} screen", "-monkeyOpen", what):
             time.sleep(3)
             look(f"showing the {what} screen")
-            for y in range(70, 830, 48):
-                for x in range(40, 1250, 86):
+            # From the foot of the window up, so the Back and Close buttons along the top come last.
+            for y in range(826, 100, -48):
+                for x in range(1250, 30, -86):
                     click(x, y, f"{what} screen")
                 if what == "playground":
                     for name in ("right", "right", "space", "left", "space"):
                         key(name, what="playing")
             drag(560, 380, 700, 470, f"{what} screen")
             look(f"after clicking all over the {what} screen")
+            for x in range(1250, 30, -86):
+                click(x, 70, f"top of the {what} screen")
             escape()
 
     # Community needs iCloud, which the build machine's unsigned copy of the app doesn't have:

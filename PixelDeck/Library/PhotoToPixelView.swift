@@ -47,6 +47,10 @@ struct PhotoToPixelView: View {
         }
         .screenBackground()
         .onAppear { if photo == nil { photo = initialPhoto } }
+        // A picture dropped on the canvas is handed over just after this screen starts to appear.
+        .onChange(of: initialPhoto) { _, picture in
+            if let picture, photo == nil { use(picture) }
+        }
         .onChange(of: item) { _, picked in
             guard let picked else { return }
             Task {
@@ -139,30 +143,34 @@ struct PhotoToPixelView: View {
 
             HStack(spacing: 8) {
                 if EditorView.isMac {
-                    // On the Mac pictures are usually files: choose one in Finder. (The system
-                    // camera screen isn't offered here: on a Mac it opens with no way to close it.)
+                    // On the Mac: the Finder's own window, which also lists the Photos library in
+                    // its sidebar. (The separate Photos window and the system camera screen aren't
+                    // used here: on a Mac they can open with no way to close them.)
                     Button { pickingFile = true } label: {
-                        Text("Choose a file").font(AppFont.pixel(12)).frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
+                        (photo == nil ? Text("Choose a picture") : Text("Other picture"))
+                            .font(AppFont.pixel(12)).frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
                     }
                     .buttonStyle(TileButtonStyle(fill: Theme.surface))
                     .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
-                } else if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                    Button { showingCamera = true } label: {
-                        Text("Take a photo").font(AppFont.pixel(12)).frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
-                    }
-                    .buttonStyle(TileButtonStyle(fill: Theme.surface))
-                    .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
-                }
-                PhotosPicker(selection: $item, matching: .images) {
-                    (EditorView.isMac ? Text("From Photos") : photo == nil ? Text("Choose a photo") : Text("Other photo"))
-                        .font(AppFont.pixel(12))
-                        .foregroundStyle(Theme.text)
-                        .frame(maxWidth: .infinity, minHeight: 48)
-                        .background(Theme.surface)
+                } else {
+                    if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                        Button { showingCamera = true } label: {
+                            Text("Take a photo").font(AppFont.pixel(12)).frame(maxWidth: .infinity, minHeight: 48).contentShape(Rectangle())
+                        }
+                        .buttonStyle(TileButtonStyle(fill: Theme.surface))
                         .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
-                        .contentShape(Rectangle())
+                    }
+                    PhotosPicker(selection: $item, matching: .images) {
+                        (photo == nil ? Text("Choose a photo") : Text("Other photo"))
+                            .font(AppFont.pixel(12))
+                            .foregroundStyle(Theme.text)
+                            .frame(maxWidth: .infinity, minHeight: 48)
+                            .background(Theme.surface)
+                            .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
             }
             .padding(.horizontal, 16)
 
