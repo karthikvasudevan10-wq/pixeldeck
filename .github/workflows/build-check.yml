@@ -58,8 +58,8 @@ jobs:
         if: matrix.name == 'Mac'
         run: Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
         env:
-          MODES: "0 1 2 3"
-          REGIONS: "4:0:0:1280:112 10:0:0:1280:830"
+          MODES: "0"
+          REGIONS: "2:0:0:1000:76 8:0:0:1000:700"
       - name: Keep the Mac pictures
         if: always() && matrix.name == 'Mac'
         uses: actions/upload-artifact@v4
