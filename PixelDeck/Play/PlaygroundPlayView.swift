@@ -351,8 +351,8 @@ final class ChipSound {
         stepSamples = Int(sampleRate * 0.16)
         guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else { return }
         let node = AVAudioSourceNode(format: format) { [weak self] _, _, frameCount, audioBufferList -> OSStatus in
-            let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
-            guard let self, let out = buffers.first?.mData?.assumingMemoryBound(to: Float.self) else { return noErr }
+            // One channel, so the list holds a single buffer of samples.
+            guard let self, let out = audioBufferList.pointee.mBuffers.mData?.assumingMemoryBound(to: Float.self) else { return noErr }
             self.lock.lock()
             for i in 0..<Int(frameCount) { out[i] = self.nextSample() }
             self.lock.unlock()
