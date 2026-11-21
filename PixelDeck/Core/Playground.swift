@@ -197,10 +197,12 @@ struct PlaygroundGame: Sendable {
     private mutating func collectCoins() {
         let t = Double(TileScene.tileSize)
         let before = coinsLeft.count
+        // Copied first: the closure below can't read the game while its coins are being changed.
+        let left = x, top = y, right = x + heroWidth, bottom = y + heroHeight
         coinsLeft.removeAll { c in
             // A coin sits in the middle of its cell.
             let cx = Double(c.x) * t + 3, cy = Double(c.y) * t + 3, size = t - 6
-            return x < cx + size && x + heroWidth > cx && y < cy + size && y + heroHeight > cy
+            return left < cx + size && right > cx && top < cy + size && bottom > cy
         }
         for _ in 0..<(before - coinsLeft.count) { events.append(.coin) }
     }
