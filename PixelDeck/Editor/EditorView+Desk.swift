@@ -31,10 +31,20 @@ enum InspectorTab: String, CaseIterable, Identifiable {
 extension EditorView {
     static let sidebarWidth: CGFloat = 250
     static let inspectorWidth: CGFloat = 292
+    /// The height of the Mac's title bar, in this app's points.
+    static let macTitleBarHeight: CGFloat = 42
 
     var desk: some View {
         VStack(spacing: 0) {
-            if Self.isMac { macToolbar } else { padTopBar }
+            if Self.isMac {
+                // Full screen: the Mac slides its menu bar and title bar down over the top of the
+                // window when the pointer goes there. That strip is left empty, so they never
+                // cover the toolbar.
+                if macFullScreen { Theme.surface.frame(height: Self.macTitleBarHeight) }
+                macToolbar
+            } else {
+                padTopBar
+            }
             Theme.line.frame(height: 2)
             HStack(spacing: 0) {
                 if Self.isMac && showingSidebar {
@@ -69,6 +79,7 @@ extension EditorView {
             }
         }
         .background(Theme.surface.ignoresSafeArea())
+        .background { if Self.isMac { FullScreenWatcher(isFullScreen: $macFullScreen) } }
         // On the Mac the toolbar shares its row with the window's close, minimise and zoom buttons.
         .ignoresSafeArea(edges: Self.isMac ? .top : [])
         .fullScreenCover(item: $editingScene) { SceneEditorView(scene: $0, store: SceneStore.forApp()) }
@@ -193,8 +204,8 @@ extension EditorView {
 
     private var macToolbar: some View {
         HStack(spacing: 2) {
-            // Room for the window's close, minimise and zoom buttons.
-            Color.clear.frame(width: 76, height: 1)
+            // Room for the window's close, minimise and zoom buttons (they aren't there in full screen).
+            if !macFullScreen { Color.clear.frame(width: 76, height: 1) }
             deskButton(systemImage: "sidebar.left", "Sprites", active: showingSidebar) {
                 withAnimation(.easeOut(duration: 0.15)) { showingSidebar.toggle() }
             }

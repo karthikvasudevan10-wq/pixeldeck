@@ -58,12 +58,10 @@ jobs:
         if: matrix.name == 'Mac'
         run: |
           ls /Applications | grep -i xcode | tr '\n' ' '; echo; sw_vers
-          # The Night theme (dark appearance), as most people run it.
-          defaults write -g AppleInterfaceStyle Dark
           Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
         env:
-          MODES: "0 3"
-          REGIONS: "2:0:0:1000:60"
+          MODES: "0 4"
+          REGIONS: "2:0:0:560:84 2:700:0:324:84"
       - name: Keep the Mac pictures
         if: always() && matrix.name == 'Mac'
         uses: actions/upload-artifact@v4

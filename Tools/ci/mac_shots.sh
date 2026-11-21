@@ -27,14 +27,14 @@ SWIFT
 
 for mode in ${MODES:-0}; do
   echo "===== MAC WINDOW, titlebar experiment $mode ====="
-  open -n --stderr "$PWD/shots/diag-$mode.txt" "$APP" --args -hasSeenOnboarding YES -tourOffered YES -tourCompleted YES -pdTitlebar "$mode"
+  open -n --stderr "$PWD/shots/diag-$mode.txt" "$APP" --args -hasSeenOnboarding YES -tourOffered YES -tourCompleted YES -AppleInterfaceStyle Dark -pdTitlebar "$mode"
   sleep 14
   info=($(window))
   echo "window: id x y width height = ${info[*]}"
   if [ -n "${info[0]}" ]; then
     screencapture -x -o -l"${info[0]}" "shots/mac-$mode.png" || echo "screencapture failed"
     sips -s format bmp "shots/mac-$mode.png" --out "shots/mac-$mode.bmp" > /dev/null 2>&1
-    grep -h "PD-DIAG\|scene \|uiwindow\|nswindow" "shots/diag-$mode.txt" || true
+    grep -h "PD-DIAG\|scene \|uiwindow\|nswindow\|fullScreen" "shots/diag-$mode.txt" || true
     # The picture may have two pixels for each point of the window.
     pixels=$(sips -g pixelWidth "shots/mac-$mode.png" | awk '/pixelWidth/ {print $2}')
     scale=$(( pixels / ${info[3]} )); [ "$scale" -lt 1 ] && scale=1

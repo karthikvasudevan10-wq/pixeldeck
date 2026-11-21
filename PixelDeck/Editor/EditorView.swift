@@ -76,6 +76,8 @@ struct EditorView: View {
     /// the right, and which of its tabs is open.
     @AppStorage("deskSidebar") var showingSidebar = ProcessInfo.processInfo.isMacCatalystApp
     @AppStorage("deskInspector") var showingInspector = true
+    /// Mac: the window is full screen (see `FullScreenWatcher`).
+    @State var macFullScreen = false
     @State var inspectorTab: InspectorTab = .layers
     @State var showingCommunity = false
     @State var showingPlayground = false

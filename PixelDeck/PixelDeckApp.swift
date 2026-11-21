@@ -50,6 +50,7 @@ struct PixelDeckApp: App {
         func report(_ label: String) {
             var out = "PD-DIAG mode=\(mode) \(label)\n"
             for s in scenes() {
+                out += "  fullScreen=\(s.isFullScreen)\n"
                 // Read by name: mentioning the title bar's type here doesn't link on the Mac.
                 let bar = s.value(forKey: "titlebar") as? NSObject
                 out += "  scene titlebar=\(bar == nil ? "none" : "yes") toolbar=\(String(describing: bar?.value(forKey: "toolbar"))) titleVis=\(String(describing: bar?.value(forKey: "titleVisibility"))) style=\(String(describing: bar?.value(forKey: "toolbarStyle")))\n"
@@ -78,7 +79,14 @@ struct PixelDeckApp: App {
                 }
             }
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { report("after 5s") }
+        if mode == 4 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                for w in nsWindows() where String(describing: type(of: w)) == "UINSWindow" {
+                    _ = w.perform(NSSelectorFromString("toggleFullScreen:"), with: nil)
+                }
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7) { report("after 7s") }
     }
     #endif
 
