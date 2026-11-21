@@ -36,8 +36,6 @@ struct EditorView: View {
     @State var showingPalettes = false
     /// The v2 panels (presets, onion skin and timing, adjust colours).
     @State var panels = StudioPanelState()
-    /// When playback last started, for animations that play once and stop.
-    @State var playStarted = Date()
     @State var sharingToCommunity = false
     /// This sprite's timelapse, recorded as you draw (saved every few edits and on leaving).
     @State var timelapse = Timelapse()
@@ -131,7 +129,7 @@ struct EditorView: View {
         .animation(.easeInOut(duration: 0.2), value: layout)
         .environment(panels)
         .modifier(StudioPanelSheets(model: model, panels: panels))
-        .onChange(of: model.playCount) { _, _ in playStarted = Date() }
+        .task(id: model.playCount) { await stopWhenPlayedOnce() }
         .environment(\.tourTarget, tourTarget)
         .overlay(alignment: .top) {
             if let step = tourStep {
@@ -277,7 +275,7 @@ struct EditorView: View {
         // Holds, ping-pong and "play once" all come from the sprite's playback sequence.
         let sequence = model.playbackSequence
         return TimelineView(.animation(minimumInterval: PlaybackClock.tick(sequence.durations), paused: !model.isPlaying)) { ctx in
-            let elapsed = sequence.repeats ? ctx.date.timeIntervalSinceReferenceDate : ctx.date.timeIntervalSince(playStarted)
+            let elapsed = sequence.repeats ? ctx.date.timeIntervalSinceReferenceDate : max(0, ctx.date.timeIntervalSince(model.playStartedAt))
             let frame: Int? = model.isPlaying ? sequence.frame(at: elapsed) : nil
             PixelCanvas(state: withLessonGuide(withTourGuide(model.canvasState(playingFrame: frame))), model: model, fit: fit,
                         drawingEnabled: !swipeAnywhere && !model.isPlaying,
@@ -557,6 +555,15 @@ struct EditorView: View {
     }
 
     // MARK: Actions
+
+    /// An animation set to play once stops by itself at the end (and drawing comes back).
+    func stopWhenPlayedOnce() async {
+        let sequence = model.playbackSequence
+        guard model.isPlaying, !sequence.repeats else { return }
+        let run = model.playCount
+        try? await Task.sleep(for: .seconds(sequence.total + 0.4))
+        if !Task.isCancelled, model.isPlaying, model.playCount == run { model.isPlaying = false }
+    }
 
     func canvas(_ action: FitCommand.Action) {
         fit = FitCommand(action: action, nonce: fit.nonce + 1)

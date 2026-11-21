@@ -8,10 +8,12 @@ The design is in [`Design/v2`](../Design/v2); feature numbers match
 
 ## How far this has been checked
 
-- **The engine is tested.** Everything in `PixelDeck/Core` is compiled and unit-tested: 186 tests
-  pass (104 from before, 82 new). Run them with `swift test`.
+- **The engine is tested.** Everything in `PixelDeck/Core` is compiled and unit-tested: 189 tests
+  pass (104 from before, 85 new). Run them with `swift test`.
 - **The screens have not been compiled.** There is no Xcode where this was written. Every Swift
-  file passes a syntax check and was reviewed, but SwiftUI code can only be type-checked by Xcode.
+  file passes a syntax check, and three separate read-throughs of the new screens against the
+  code they call found no compile errors (and ten bugs, now fixed). But SwiftUI code can only
+  really be type-checked by Xcode.
   **Expect some build errors the first time you open the `v2` branch.** Copy them back and they
   can be fixed quickly; they are usually one-line fixes.
 - **Nothing has been run on a device or a Mac**: layouts, gestures, the game's feel, sound, video
@@ -135,6 +137,9 @@ How it works: Pixel Deck runs a small server that only your Mac can reach, at an
 private key in it. The assistant calls Pixel Deck's own drawing tools (set pixels, line,
 rectangle, fill, frames, layers, read the canvas back), so what it draws is ordinary layers and
 frames. Each step is one undo. Nothing goes to any Pixel Deck server.
+
+On the Mac, also check the menu shortcuts that have no ⌘ (B for Pencil, Space for Play, Delete):
+typing a sprite's name in the Rename box should still type letters, not switch tools.
 
 To check when testing: that the Mac App Store's sandbox lets the server start (the entitlement
 is in place), and which other assistants can connect to a local address.

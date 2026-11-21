@@ -1172,3 +1172,25 @@ final class SharedLevelTests: XCTestCase {
         XCTAssertNil(TileScene.decodeChecked(data, maxBytes: 10))
     }
 }
+
+final class V2ReviewFixTests: XCTestCase {
+    func testRotationStaysWithinTheSlidersRange() {
+        let m = makeModel()
+        drawBlock(m, x: 0, y: 0, side: 3, color: .black)
+        m.selectAll()
+        for _ in 0..<7 {
+            XCTAssertTrue(m.rotateSelection(by: 90))
+            XCTAssertTrue((-180.0...180.0).contains(m.selectionTransform.angle))
+        }
+        m.commitSelection()
+        XCTAssertEqual(opaqueCount(m.currentGrid), 9)
+    }
+
+    func testPlaybackClockStartsWhenPlayingStarts() {
+        let m = makeModel()
+        let before = Date()
+        m.isPlaying = true
+        XCTAssertGreaterThanOrEqual(m.playStartedAt, before)
+        XCTAssertEqual(m.playCount, 1)
+    }
+}

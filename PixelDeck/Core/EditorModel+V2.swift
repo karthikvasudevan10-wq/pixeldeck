@@ -43,7 +43,11 @@ extension EditorModel {
     @discardableResult
     func rotateSelection(by degrees: Double) -> Bool {
         var t = selectionTransform
-        t.angle = (t.angle + degrees).truncatingRemainder(dividingBy: 360)
+        // Kept between -180 and 180, like the Rotate slider.
+        var angle = (t.angle + degrees).truncatingRemainder(dividingBy: 360)
+        if angle > 180 { angle -= 360 }
+        if angle <= -180 { angle += 360 }
+        t.angle = angle
         return setSelectionTransform(t)
     }
 

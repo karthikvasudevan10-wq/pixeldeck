@@ -178,13 +178,18 @@ final class EditorModel {
     var isPlaying = false {
         didSet {
             if isPlaying { commitSelection() }
-            if isPlaying && !oldValue { playCount += 1 }
+            if isPlaying && !oldValue {
+                playStartedAt = Date()
+                playCount += 1
+            }
         }
     }
     /// How many times these were used (the guided tour watches them).
     private(set) var undoCount = 0
     private(set) var redoCount = 0
     private(set) var playCount = 0
+    /// When playback last began (for animations that play once and stop).
+    @ObservationIgnored private(set) var playStartedAt = Date()
 
     /// A selected area that hasn't been moved yet (world).
     var marquee: PixelRect?

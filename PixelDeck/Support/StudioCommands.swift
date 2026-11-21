@@ -88,7 +88,7 @@ struct StudioCommands: Commands {
             }
             Divider()
             Button("Colours and Palettes…") { studio?.palettes() }.keyboardShortcut("k", modifiers: .command)
-            Button("Adjust Colours…") { studio?.panels.adjust = true }.keyboardShortcut("u", modifiers: .command)
+            Button("Adjust Colours…") { studio?.panels.adjust = true }.keyboardShortcut("u", modifiers: [.command, .shift])
             Button("Stamps…") { studio?.panels.stamps = true }.keyboardShortcut("s", modifiers: [.command, .shift])
             Button("Bead or Cross-stitch Pattern…") { studio?.panels.beads = true }
             Button("Tracing Image…") { studio?.trace() }
@@ -145,7 +145,8 @@ struct StudioCommands: Commands {
         }
 
         CommandMenu("Select") {
-            Button("Select All") { model?.selectAll() }.keyboardShortcut("a", modifiers: .command)
+            // ⇧⌘A: plain ⌘A stays with Edit › Select All, for text fields.
+            Button("Select All Pixels") { model?.selectAll() }.keyboardShortcut("a", modifiers: [.command, .shift])
             Button("Deselect") { model?.commitSelection() }.keyboardShortcut(.escape, modifiers: [])
             Divider()
             Button("Box") { model?.tool = .select; model?.selectionMode = .box }
@@ -161,6 +162,10 @@ struct StudioCommands: Commands {
             Divider()
             Button("Delete Selected Pixels") { model?.deleteSelection() }.keyboardShortcut(.delete, modifiers: [])
         }
+
+        // The standard Format menu (fonts, bigger, smaller) has nothing to act on here, and its
+        // shortcuts would take ⌘- and ⌘+ from zooming.
+        CommandGroup(replacing: .textFormatting) {}
 
         // View
         CommandGroup(after: .toolbar) {

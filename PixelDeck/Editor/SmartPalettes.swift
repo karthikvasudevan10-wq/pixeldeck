@@ -65,7 +65,8 @@ struct ColorCountHint: View {
 
     var body: some View {
         let merges = plan
-        return Group {
+        // A stack, not a Group: an empty Group has nothing for onAppear to attach to.
+        return VStack(spacing: 0) {
             if histogram.count > ColorTools.hintThreshold, !merges.isEmpty, dismissedFor != model.project.id.uuidString {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("\(histogram.count) colours in this sprite", comment: "Colour count hint title; plural")
@@ -247,6 +248,7 @@ struct PhotoPalettePanel: View {
                     PrimaryActionLabel(title: "Use as my palette", icon: .swatches, height: 48)
                 }
                 .buttonStyle(PrimaryButtonStyle(depth: 4))
+                .disabled(model.isPaletteLocked)
                 Button {
                     let added = model.addColors(colors)
                     message = added > 0
