@@ -266,6 +266,7 @@ def trial():
                     for name in ("right", "right", "space", "left", "space"):
                         key(name, what="playing")
             drag(560, 380, 700, 470, f"{what} screen")
+            look(f"after clicking all over the {what} screen")
             escape()
 
     # Community needs iCloud, which the build machine's unsigned copy of the app doesn't have:
