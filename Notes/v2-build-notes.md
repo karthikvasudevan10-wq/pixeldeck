@@ -10,14 +10,17 @@ The design is in [`Design/v2`](../Design/v2); feature numbers match
 
 - **The engine is tested.** Everything in `PixelDeck/Core` is compiled and unit-tested: 195 tests
   pass (104 from before, 91 new). Run them with `swift test`.
-- **The screens have not been compiled.** There is no Xcode where this was written. Every Swift
-  file passes a syntax check, and three separate read-throughs of the new screens against the
-  code they call found no compile errors (and ten bugs, now fixed). But SwiftUI code can only
-  really be type-checked by Xcode.
-  **Expect some build errors the first time you open the `v2` branch.** Copy them back and they
-  can be fixed quickly; they are usually one-line fixes.
-- **Nothing has been run on a device or a Mac**: layouts, gestures, the game's feel, sound, video
-  export, printing, the Mac window and menus all need trying.
+- **The whole app is compiled on every push.** GitHub builds the `v2` branch for the Mac and
+  for iPhone on its own Macs each time something is pushed (the repository's **Actions** tab,
+  "Build check"; set up in `.github/workflows/build-check.yml`). Both build with no errors and
+  no warnings in Pixel Deck's own code. That build skips code signing, so signing and
+  capability messages (iCloud, App Group) can still appear in your Xcode.
+- **The Mac window has been checked by machine, not by eye.** The build check can open the Mac
+  app and describe its window (put `[window-check]` in a commit message). That confirmed the
+  toolbar, the narrow tool rail, the options bar and the full-screen layout are where they
+  should be. Colours, text and the feel of it still need a person.
+- **Nothing has been tried by hand on a device**: gestures, the game's feel, sound, video
+  export and printing all need trying.
 - **Aseprite files** were tested by saving a sprite and reading it back, following Aseprite's
   published file format. They have not been tested with files saved by Aseprite itself: try a few.
 

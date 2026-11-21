@@ -52,23 +52,11 @@ jobs:
           grep -A14 -E "Undefined symbols|^ld: " build.log | sed "s|$PWD/||" | head -60
           echo "===== END (xcodebuild exit $status) ====="
           exit $status
-      # Opens the Mac app on GitHub's Mac and describes its window in this log, to check the layout
-      # against the design (Tools/ci/mac_shots.sh). The picture itself is kept with the run for a week.
+      # Only when the commit message says [window-check]: opens the Mac app on GitHub's Mac and
+      # describes its window in this log, to check the layout (Tools/ci/mac_shots.sh).
       - name: Mac window check
-        if: matrix.name == 'Mac'
-        run: |
-          ls /Applications | grep -i xcode | tr '\n' ' '; echo; sw_vers
-          Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
-        env:
-          MODES: "0 4"
-          REGIONS: "2:0:0:560:84 2:700:0:324:84"
-      - name: Keep the Mac pictures
-        if: always() && matrix.name == 'Mac'
-        uses: actions/upload-artifact@v4
-        with:
-          name: mac-window
-          path: shots
-          retention-days: 7
+        if: matrix.name == 'Mac' && contains(github.event.head_commit.message, '[window-check]')
+        run: Tools/ci/mac_shots.sh "$PWD/build/Build/Products/Debug-maccatalyst/PixelDeck.app"
       - name: Keep the full log
         if: failure()
         uses: actions/upload-artifact@v4

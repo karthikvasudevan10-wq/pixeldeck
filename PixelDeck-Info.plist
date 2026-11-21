@@ -3,6 +3,9 @@
 <plist version="1.0">
 <dict>
 	<!-- Merged with the keys Xcode generates from the build settings (INFOPLIST_KEY_...). -->
+	<!-- The name in the Mac's menu bar. -->
+	<key>CFBundleName</key>
+	<string>Pixel Deck</string>
 	<!-- Files Pixel Deck opens: Playground levels people send each other, and Aseprite sprites. -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
