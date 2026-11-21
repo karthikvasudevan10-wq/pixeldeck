@@ -97,6 +97,27 @@ struct TileScene: Identifiable, Codable, Equatable, Sendable {
 
     func contains(_ p: PixelPoint) -> Bool { p.x >= 0 && p.y >= 0 && p.x < columns && p.y < rows }
 
+    /// Whether the scene hangs together: the right number of cells for its size, a sensible
+    /// size, and tiles of the right size. Files and Community posts come from other people, so
+    /// they're checked before use (a scene that fails would crash when drawn).
+    var isValid: Bool {
+        (4...TileScene.proMaxColumns).contains(columns) && (4...TileScene.proMaxRows).contains(rows)
+            && cells.count == columns * rows
+            && !tiles.isEmpty && tiles.count <= TileScene.maxTiles
+            && tiles.allSatisfy { $0.grid.width == TileScene.tileSize && $0.grid.height == TileScene.tileSize }
+            && cells.allSatisfy { $0 >= -1 && $0 < tiles.count }
+            && coins.count <= TileScene.maxCoins && enemies.count <= TileScene.maxEnemies
+            && heroFrames.count <= TileScene.maxHeroFrames
+            && heroFrames.allSatisfy { $0.width <= FeatureAccess.proMaxArtSide && $0.height <= FeatureAccess.proMaxArtSide }
+            && (1...30).contains(heroFPS)
+    }
+
+    /// Reads a scene from JSON, or nil if it's damaged or doesn't hang together.
+    static func decodeChecked(_ data: Data, maxBytes: Int = 8_000_000) -> TileScene? {
+        guard data.count <= maxBytes, let scene = try? JSONDecoder().decode(TileScene.self, from: data), scene.isValid else { return nil }
+        return scene
+    }
+
     /// The tile index at a cell, or -1 when empty or off the scene.
     subscript(x: Int, y: Int) -> Int {
         get { contains(PixelPoint(x: x, y: y)) ? cells[y * columns + x] : -1 }
@@ -249,6 +270,7 @@ final class SceneStore {
         let decoder = JSONDecoder()
         scenes = files.filter { $0.pathExtension == "json" }
             .compactMap { try? decoder.decode(TileScene.self, from: Data(contentsOf: $0)) }
+            .filter(\.isValid)
             .sorted { $0.modifiedAt > $1.modifiedAt }
     }
 

@@ -543,8 +543,10 @@ struct ImageStore {
     /// PNG, so transparent sketches stay transparent.
     static let traces = ImageStore(folder: "Trace", png: true)
     static let all = [references, traces]
-    /// Folders moved between the device and iCloud when sync is switched (saved palettes too).
-    private static let movable = all + [ImageStore(folder: "Palettes", png: false)]
+    /// Folders moved between the device and iCloud when sync is switched (saved palettes,
+    /// Playground levels and stamps too).
+    private static let movable = all + [ImageStore(folder: "Palettes", png: false), ImageStore(folder: "Scenes", png: false),
+                                        ImageStore(folder: "Stamps", png: false)]
 
     /// The iCloud container, when syncing; nil for the device.
     nonisolated(unsafe) static var root: URL?

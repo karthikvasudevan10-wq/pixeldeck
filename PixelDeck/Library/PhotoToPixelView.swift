@@ -465,6 +465,7 @@ struct NewCanvasFlow: ViewModifier {
     var onImport: ([SpriteProject]) -> Void
     /// A picture dragged in (from Finder on the Mac, or another app on iPad).
     @State private var dropped: UIImage?
+    @Environment(PurchaseManager.self) private var purchases
     @State private var showingRetro = false
     @State private var pickingAseprite = false
     @State private var aseprite: AsepriteImport?
@@ -484,7 +485,7 @@ struct NewCanvasFlow: ViewModifier {
                                    NewCanvasOption(id: "level", icon: .play, title: "Playground level",
                                                    detail: "Make your sprite a hero", action: { close { showingPlayground = true } }),
                                    NewCanvasOption(id: "aseprite", icon: .download, title: "Open an Aseprite file",
-                                                   detail: "With its layers, frames and tags", pro: true,
+                                                   detail: "With its layers, frames and tags", pro: !purchases.access.allowsAseprite,
                                                    action: { close { pickingAseprite = true } }),
                                ])
             }

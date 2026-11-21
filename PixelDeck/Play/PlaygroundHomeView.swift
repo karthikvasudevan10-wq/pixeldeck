@@ -26,8 +26,7 @@ enum LevelFile {
     static func read(_ url: URL) -> TileScene? {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        guard let data = try? Data(contentsOf: url), data.count < 8_000_000,
-              var scene = try? JSONDecoder().decode(TileScene.self, from: data) else { return nil }
+        guard let data = try? Data(contentsOf: url), var scene = TileScene.decodeChecked(data) else { return nil }
         scene.id = UUID()
         scene.heroID = nil
         return scene
@@ -116,7 +115,7 @@ struct PlaygroundHomeView: View {
         }
         .fullScreenCover(item: $editing, onDismiss: { store.load() }) { SceneEditorView(scene: $0, store: store) }
         .fullScreenCover(item: $playing) { PlaygroundPlayView(scene: $0) }
-        .fullScreenCover(isPresented: $showingCommunity) { CommunityView() }
+        .fullScreenCover(isPresented: $showingCommunity, onDismiss: { store.load() }) { CommunityView() }
         .sheet(item: $sharing) { ShareLevelSheet(scene: $0) }
         .fileImporter(isPresented: $importing, allowedContentTypes: LevelFile.contentTypes, allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first { open(url) }

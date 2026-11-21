@@ -357,9 +357,8 @@ final class CommunityService {
                                 author: ContentFilter.isAcceptable((r["remixOfAuthor"] as? String) ?? "") ? ((r["remixOfAuthor"] as? String) ?? "") : "")
         }
         var level: TileScene?
-        if let asset = r["level"] as? CKAsset, let levelURL = asset.fileURL, let levelData = try? Data(contentsOf: levelURL),
-           levelData.count < 8_000_000 {
-            level = try? JSONDecoder().decode(TileScene.self, from: levelData)
+        if let asset = r["level"] as? CKAsset, let levelURL = asset.fileURL, let levelData = try? Data(contentsOf: levelURL) {
+            level = TileScene.decodeChecked(levelData)
         }
         return CommunityPost(
             id: r.recordID.recordName,

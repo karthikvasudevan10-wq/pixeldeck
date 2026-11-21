@@ -530,7 +530,7 @@ struct SceneEditorView: View {
     }
 
     private func heroTile(_ project: SpriteProject?) -> some View {
-        let on = project?.id == scene.heroID || (project == nil && scene.heroFrames.isEmpty)
+        let on = project.map { $0.id == scene.heroID } ?? scene.heroFrames.isEmpty
         let frame: PixelGrid? = project.map { $0.frames[0].grid } ?? PlayArt.frames("slime").first
         return Button {
             if let project {

@@ -1153,3 +1153,22 @@ final class AIToolTests: XCTestCase {
         XCTAssertNil(m.project.contentBounds)
     }
 }
+
+final class SharedLevelTests: XCTestCase {
+    func testGoodLevelsPassAndDamagedOnesAreRefused() throws {
+        let scene = TileScene.starter(name: "Night hills")
+        XCTAssertTrue(scene.isValid)
+        let data = try JSONEncoder().encode(scene)
+        XCTAssertEqual(TileScene.decodeChecked(data)?.coins, scene.coins)
+
+        // Someone else's file can say anything: wrong sizes must be refused, not drawn.
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        object["columns"] = 90
+        XCTAssertNil(TileScene.decodeChecked(try JSONSerialization.data(withJSONObject: object)), "cells no longer match the size")
+        object["columns"] = scene.columns
+        object["cells"] = [Int](repeating: 99, count: scene.columns * scene.rows)
+        XCTAssertNil(TileScene.decodeChecked(try JSONSerialization.data(withJSONObject: object)), "tiles that don't exist")
+        XCTAssertNil(TileScene.decodeChecked(Data("not a level".utf8)))
+        XCTAssertNil(TileScene.decodeChecked(data, maxBytes: 10))
+    }
+}
