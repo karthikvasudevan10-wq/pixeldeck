@@ -114,7 +114,8 @@ struct PlaygroundHomeView: View {
         }
         .screenBackground()
         .onAppear {
-            if let incoming { open(incoming) }
+            if let url = incoming ?? Shared.router.pendingLevel { open(url) }
+            Shared.router.pendingLevel = nil
         }
         .fullScreenCover(item: $editing, onDismiss: { store.load() }) { SceneEditorView(scene: $0, store: store) }
         .fullScreenCover(item: $playing) { PlaygroundPlayView(scene: $0) }

@@ -46,7 +46,10 @@ struct PhotoToPixelView: View {
             if step == 1 { choose } else { adjust }
         }
         .screenBackground()
-        .onAppear { if photo == nil { photo = initialPhoto } }
+        .onAppear {
+            if photo == nil, let picture = initialPhoto ?? Shared.router.pendingPhoto { photo = picture }
+            Shared.router.pendingPhoto = nil
+        }
         // A picture dropped on the canvas is handed over just after this screen starts to appear.
         .onChange(of: initialPhoto) { _, picture in
             if let picture, photo == nil { use(picture) }
@@ -588,6 +591,7 @@ struct NewCanvasFlow: ViewModifier {
                 _ = provider.loadObject(ofClass: UIImage.self) { object, _ in
                     guard let image = object as? UIImage else { return }
                     Task { @MainActor in
+                        Shared.router.pendingPhoto = image
                         dropped = image
                         showingPhoto = true
                     }

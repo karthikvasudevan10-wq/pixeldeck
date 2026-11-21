@@ -17,4 +17,11 @@ final class AppRouter {
     }
 
     var request: Request?
+
+    /// A picture on its way to Photo to pixel art (dropped on the canvas or the gallery), and a
+    /// level file on its way to the Playground. The screen that opens collects it from here: on
+    /// the Mac a screen opened from the gallery while the Studio is in front is built from values
+    /// the gallery had before, so handing it over as the screen is made arrives empty.
+    @ObservationIgnored var pendingPhoto: UIImage?
+    @ObservationIgnored var pendingLevel: URL?
 }

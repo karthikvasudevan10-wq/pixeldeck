@@ -153,6 +153,7 @@ struct ProjectListView: View {
             if url.isFileURL {
                 if url.pathExtension.lowercased() == LevelFile.fileExtension {
                     if !EditorView.isMac { path = [] }
+                    Shared.router.pendingLevel = url
                     incomingLevel = url
                     showingPlayground = true
                 } else if AsepriteFiles.isAseprite(url) {
@@ -491,6 +492,7 @@ struct ProjectListView: View {
             guard let lesson = Academy.lesson(id: id) else { return }
             if purchases.access.allows(lesson) { startLesson(lesson) } else { upgrade = .academy }
         case .photo(let image):
+            Shared.router.pendingPhoto = image
             droppedPhoto = image
             showingPhoto = true
         case .aseprite(let url):
