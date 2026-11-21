@@ -41,7 +41,9 @@ struct PhotoOptions: Equatable, Sendable {
         var id: String { rawValue }
     }
 
-    static let sizes = [32, 48, 64, 96]
+    /// Tiny icons to detailed pictures. (Anything over 64 needs Pro's bigger canvas, as does
+    /// keeping a photo conversion at all.)
+    static let sizes = [16, 32, 48, 64, 96, 128]
     static let colorCountRange = 2...32
 
     /// Longest side of the result, in pixels.

@@ -605,6 +605,20 @@ final class PhotoPixelizerTests: XCTestCase {
         XCTAssertGreaterThan(out.grid[31, 0].b, out.grid[31, 0].r)
     }
 
+    func testEverySizeOnOfferGivesArtThatSize() {
+        XCTAssertEqual(PhotoOptions.sizes, [16, 32, 48, 64, 96, 128])
+        for size in PhotoOptions.sizes {
+            var o = PhotoOptions()
+            o.size = size
+            // A photo as the app hands it over: bigger than the biggest size on offer.
+            var bytes = [UInt8](repeating: 255, count: 384 * 384 * 4)
+            for i in stride(from: 0, to: bytes.count, by: 4) { bytes[i] = UInt8((i / 4) % 256) }
+            let out = PhotoPixelizer.convert(rgba: bytes, width: 384, height: 384, options: o, palette: [])
+            XCTAssertEqual(out?.grid.width, size)
+            XCTAssertEqual(out?.grid.height, size)
+        }
+    }
+
     func testKeepsTheShapeOfWidePhotos() {
         let bytes = [UInt8](repeating: 128, count: 100 * 50 * 4)
         var o = PhotoOptions()

@@ -272,6 +272,13 @@ def trial():
                 click(x, 70, f"top of the {what} screen")
             escape()
 
+    # Photo to pixel art, step 2: are the size and colour options in view?
+    if "photo options" in ONLY and phase("photo options", "-monkeyOpen", "photo"):
+        time.sleep(3)
+        click(640, 802, "Next")
+        time.sleep(1.5)
+        look("showing step 2 of Photo to pixel art")
+
     # Choosing a picture: does the Finder's window open, and does it close again?
     if "picture" in ONLY and phase("picture window", "-monkeyOpen", "photoEmpty"):
         global window

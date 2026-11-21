@@ -69,6 +69,9 @@ jobs:
           codesign -d --entitlements - "$APP" 2>/dev/null | grep -c sandbox || true
           swiftc -O Tools/ci/pdinput.swift -o pdinput
           python3 Tools/ci/monkey.py "$APP" "$PWD/pdinput"
+        env:
+          MONKEY_ONLY: "photo options"
+          MONKEY_LOOK: "1"
       - name: Keep the full log
         if: failure()
         uses: actions/upload-artifact@v4

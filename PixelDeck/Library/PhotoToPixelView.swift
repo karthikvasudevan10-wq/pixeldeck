@@ -255,60 +255,26 @@ struct PhotoToPixelView: View {
 
     private var adjust: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 10) {
-                        pane(Text("Photo")) {
-                            if let cropped { Image(uiImage: cropped).resizable().scaledToFit() }
-                        }
-                        pane(Text(verbatim: "\(result?.width ?? 0) × \(result?.height ?? 0)")) {
-                            if let result { PixelImage(grid: result, checker: false) }
-                        }
+            GeometryReader { geo in
+                if geo.size.width > 760 {
+                    // Wide (Mac, iPad): the pictures on the left, every option in view on the right.
+                    HStack(alignment: .top, spacing: 24) {
+                        previews.frame(maxWidth: min(560, geo.size.width * 0.5))
+                        ScrollView { optionControls.padding(.bottom, 16) }
+                            .scrollBounceBehavior(.basedOnSize)
                     }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        SectionLabel(text: "Size")
-                        HStack(spacing: 6) {
-                            ForEach(PhotoOptions.sizes, id: \.self) { s in
-                                let on = options.size == s
-                                Button { options.size = s } label: {
-                                    Text(verbatim: "\(s)").font(AppFont.pixel(15)).frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
-                                }
-                                .buttonStyle(TileButtonStyle(active: on, fill: Theme.surface))
-                                .accessibilityLabel(Text("\(s) by \(s) pixels"))
-                                .accessibilityAddTraits(on ? .isSelected : [])
-                            }
+                    .padding(16)
+                    .frame(maxWidth: 1100)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            previews
+                            optionControls
                         }
-                    }
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        SectionLabel(text: "Colours")
-                        ChoiceRow(options: PhotoOptions.Colors.allCases, selection: $options.colors) { Text($0.title) }
-                        if options.colors == .own {
-                            HStack {
-                                Text("How many colours").font(AppFont.body(14, .medium, relativeTo: .subheadline)).foregroundStyle(Theme.text)
-                                Spacer()
-                                Text(verbatim: "\(options.colorCount)").font(AppFont.pixel(13)).foregroundStyle(Theme.accent2)
-                            }
-                            Slider(value: Binding(get: { Double(options.colorCount) }, set: { options.colorCount = Int($0) }),
-                                   in: Double(PhotoOptions.colorCountRange.lowerBound)...Double(PhotoOptions.colorCountRange.upperBound), step: 1)
-                                .tint(Theme.accent)
-                                .accessibilityLabel("How many colours")
-                        } else if options.colors == .retro {
-                            ChoiceRow(options: RetroMode.allCases, selection: $options.retro, columns: 2) { Text($0.title) }
-                        } else {
-                            Text("Uses the ten starter colours. You can swap the palette in the Studio.")
-                                .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
-                        }
-                    }
-
-                    VStack(spacing: 8) {
-                        toggle("Clean up stray pixels", detail: nil, isOn: $options.cleanUp)
-                        toggle("Dither", detail: "Checkerboard blends between colours", isOn: $options.dither)
-                        toggle("Add an outline", detail: nil, isOn: $options.outline)
+                        .padding(16)
                     }
                 }
-                .padding(16)
             }
             Button(action: open) {
                 HStack(spacing: 10) {
@@ -323,6 +289,66 @@ struct PhotoToPixelView: View {
             .disabled(result == nil)
             .padding(.horizontal, 16)
             .padding(.bottom, 20)
+        }
+    }
+
+
+    /// The framed photo beside the pixel art made from it.
+    private var previews: some View {
+        HStack(spacing: 10) {
+            pane(Text("Photo")) {
+                if let cropped { Image(uiImage: cropped).resizable().scaledToFit() }
+            }
+            pane(Text(verbatim: "\(result?.width ?? 0) × \(result?.height ?? 0)")) {
+                if let result { PixelImage(grid: result, checker: false) }
+            }
+        }
+    }
+
+    /// Size (the resolution of the pixel art), colours and tidy-up.
+    private var optionControls: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "Size (pixels across)")
+                HStack(spacing: 6) {
+                    ForEach(PhotoOptions.sizes, id: \.self) { s in
+                        let on = options.size == s
+                        Button { options.size = s } label: {
+                            Text(verbatim: "\(s)").font(AppFont.pixel(15)).frame(maxWidth: .infinity, minHeight: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(TileButtonStyle(active: on, fill: Theme.surface))
+                        .accessibilityLabel(Text("\(s) by \(s) pixels"))
+                        .accessibilityAddTraits(on ? .isSelected : [])
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                SectionLabel(text: "Colours")
+                ChoiceRow(options: PhotoOptions.Colors.allCases, selection: $options.colors) { Text($0.title) }
+                if options.colors == .own {
+                    HStack {
+                        Text("How many colours").font(AppFont.body(14, .medium, relativeTo: .subheadline)).foregroundStyle(Theme.text)
+                        Spacer()
+                        Text(verbatim: "\(options.colorCount)").font(AppFont.pixel(13)).foregroundStyle(Theme.accent2)
+                    }
+                    Slider(value: Binding(get: { Double(options.colorCount) }, set: { options.colorCount = Int($0) }),
+                           in: Double(PhotoOptions.colorCountRange.lowerBound)...Double(PhotoOptions.colorCountRange.upperBound), step: 1)
+                        .tint(Theme.accent)
+                        .accessibilityLabel("How many colours")
+                } else if options.colors == .retro {
+                    ChoiceRow(options: RetroMode.allCases, selection: $options.retro, columns: 2) { Text($0.title) }
+                } else {
+                    Text("Uses the ten starter colours. You can swap the palette in the Studio.")
+                        .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+                }
+            }
+
+            VStack(spacing: 8) {
+                toggle("Clean up stray pixels", detail: nil, isOn: $options.cleanUp)
+                toggle("Dither", detail: "Checkerboard blends between colours", isOn: $options.dither)
+                toggle("Add an outline", detail: nil, isOn: $options.outline)
+            }
         }
     }
 
