@@ -183,6 +183,7 @@ struct EditorView: View {
             model.access = purchases.access
             model.onProRequired = { feature in upgrade = feature }
             model.newLayerName = { String(localized: "Layer \($0)", comment: "Default name for a new layer") }
+            model.newFolderName = { String(localized: "Folder \($0)", comment: "Default name for a new folder of layers") }
             model.shapesLayerName = String(localized: "Shapes", comment: "Name of the layer created for the first shape")
         }
         .onChange(of: purchases.isPro) { _, _ in model.access = purchases.access }

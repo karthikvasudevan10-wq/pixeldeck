@@ -165,9 +165,10 @@ final class EditorModel {
     /// Squares, circles, equal-sided triangles, and lines snapped to 0°/45°/90°.
     var lockProportions = false
     /// The layer being drawn on (index into `project.layers`, bottom first).
-    private(set) var activeLayer = 0
+    internal(set) var activeLayer = 0
     /// Names for new layers, localised by the app.
     @ObservationIgnored var newLayerName: (Int) -> String = { "Layer \($0)" }
+    @ObservationIgnored var newFolderName: (Int) -> String = { "Folder \($0)" }
     @ObservationIgnored var shapesLayerName = "Shapes"
     private(set) var color: RGBA = SpriteProject.defaultPalette[2]
     var showGrid = true
@@ -215,6 +216,7 @@ final class EditorModel {
         var bounds: PixelRect
         var currentIndex: Int
         var layers: [LayerInfo]
+        var folders: [LayerFolder] = []
         var activeLayer: Int
     }
     private var undoStack: [Snapshot] = []
@@ -1153,7 +1155,7 @@ final class EditorModel {
         reflattenAll()
     }
 
-    private func reflattenAll() {
+    func reflattenAll() {
         let visible = project.layerVisibility
         for i in project.frames.indices { project.frames[i].reflatten(visible: visible) }
     }
@@ -1172,7 +1174,10 @@ final class EditorModel {
         commitSelection()
         pushUndo()
         let at = activeLayer + 1
-        project.layers.insert(LayerInfo(name: name ?? newLayerName(project.layers.count + 1)), at: at)
+        var layer = LayerInfo(name: name ?? newLayerName(project.layers.count + 1))
+        // Added above a layer in a folder, it goes in that folder too.
+        layer.folderID = project.layers[activeLayer].folderID
+        project.layers.insert(layer, at: at)
         let blank = blankGrid, visible = project.layerVisibility
         for i in project.frames.indices {
             var cels = project.frames[i].layers
@@ -1205,21 +1210,47 @@ final class EditorModel {
         finishEdit()
     }
 
-    /// Moves a layer up (+1, towards the top) or down (-1).
-    func moveLayer(_ index: Int, by delta: Int) {
+    /// Where a layer lands when moved up (+1, towards the top) or down (-1), or nil if it can't
+    /// move that way. A layer in a folder moves among that folder's layers; a loose layer steps
+    /// over a whole folder at once.
+    func layerMoveTarget(_ index: Int, by delta: Int) -> Int? {
         let target = index + delta
-        guard project.layers.indices.contains(index), project.layers.indices.contains(target) else { return }
+        guard delta == 1 || delta == -1, project.layers.indices.contains(index), project.layers.indices.contains(target) else { return nil }
+        if let folder = project.layers[index].folderID {
+            return project.layers[target].folderID == folder ? target : nil
+        }
+        if let other = project.layers[target].folderID, let block = project.folderRange(other) {
+            return delta > 0 ? block.upperBound : block.lowerBound
+        }
+        return target
+    }
+
+    /// Moves a layer up (+1, towards the top) or down (-1). See `layerMoveTarget`.
+    func moveLayer(_ index: Int, by delta: Int) {
+        guard let target = layerMoveTarget(index, by: delta) else { return }
         commitSelection()
         pushUndo()
-        project.layers.swapAt(index, target)
+        var order = Array(project.layers.indices)
+        order.remove(at: index)
+        order.insert(index, at: target)
+        reorderLayers(order)
+        finishEdit()
+    }
+
+    /// Puts the layers in a new order, in every frame: `order[k]` is where the layer that ends up
+    /// at `k` is now.
+    func reorderLayers(_ order: [Int]) {
+        guard order.count == project.layers.count, Set(order).count == order.count,
+              order.allSatisfy(project.layers.indices.contains) else { return }
+        let old = project.layers
+        project.layers = order.map { old[$0] }
+        project.tidyFolders()
         let visible = project.layerVisibility
         for i in project.frames.indices {
-            var cels = project.frames[i].layers
-            cels.swapAt(index, target)
-            project.frames[i].setLayers(cels, visible: visible)
+            let cels = project.frames[i].layers
+            project.frames[i].setLayers(order.map { cels[$0] }, visible: visible)
         }
-        if activeLayer == index { activeLayer = target } else if activeLayer == target { activeLayer = index }
-        finishEdit()
+        if let moved = order.firstIndex(of: activeLayer) { activeLayer = moved }
     }
 
     /// Deletes a layer from every frame. The last layer can't be deleted.
@@ -1235,6 +1266,7 @@ final class EditorModel {
             project.frames[i].setLayers(cels, visible: visible)
         }
         activeLayer = min(activeLayer > index ? activeLayer - 1 : activeLayer, project.layers.count - 1)
+        project.tidyFolders()                    // a folder with nothing left in it goes too
         contentKnown = false
         finishEdit()
     }
@@ -1254,6 +1286,7 @@ final class EditorModel {
             project.frames[i].setLayers(cels, visible: project.layerVisibility.enumerated().filter { $0.offset != top }.map(\.element))
         }
         project.layers.remove(at: top)
+        project.tidyFolders()
         activeLayer = top - 1
         reflattenAll()
         finishEdit()
@@ -1316,7 +1349,7 @@ final class EditorModel {
 
     func snapshot() -> Snapshot {
         Snapshot(frames: project.frames, bounds: project.bounds, currentIndex: currentIndex,
-                 layers: project.layers, activeLayer: activeLayer)
+                 layers: project.layers, folders: project.folders, activeLayer: activeLayer)
     }
 
     func pushUndo(_ s: Snapshot? = nil) {
@@ -1342,6 +1375,7 @@ final class EditorModel {
         project.frames = s.frames
         project.bounds = s.bounds
         project.layers = s.layers
+        project.folders = s.folders
         activeLayer = min(s.activeLayer, s.layers.count - 1)
         currentIndex = min(s.currentIndex, s.frames.count - 1)
         contentKnown = false

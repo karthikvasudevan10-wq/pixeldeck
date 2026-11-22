@@ -9,6 +9,7 @@ struct LayersSheet: View {
     @State private var showingTrace = false
     @State private var renamingIndex: Int?
     @State private var renameText = ""
+    @State private var renamingFolder: LayerFolder?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,8 +17,17 @@ struct LayersSheet: View {
             ScrollView {
                 VStack(spacing: 6) {
                     // Shown top-down, as they stack on the canvas.
-                    ForEach(Array(model.layers.indices.reversed()), id: \.self) { i in
-                        row(i)
+                    ForEach(model.project.layerOutline) { entry in
+                        switch entry {
+                        case .layer(_, let i):
+                            row(i)
+                        case .folder(let folder, let indices):
+                            LayerFolderRow(model: model, folder: folder, count: indices.count) { renamingFolder = $0 }
+                            // A folder's layers, set in a little.
+                            if !folder.isCollapsed {
+                                ForEach(indices, id: \.self) { i in row(i).padding(.leading, 18) }
+                            }
+                        }
                     }
                     // Always the bottom of the stack.
                     traceRow
@@ -33,7 +43,8 @@ struct LayersSheet: View {
             .disabled(!model.canAddLayer)
             .padding(.horizontal, 16)
             .padding(.bottom, 6)
-            Text(model.canAddLayer ? "New layers go above the selected one." : "This sprite has as many layers as it can hold.")
+            Text(model.canAddLayer ? "New layers go above the selected one. A layer's ••• menu puts it in a folder."
+                 : "This sprite is too big in memory for another layer.")
                 .font(AppFont.body(12, relativeTo: .caption))
                 .foregroundStyle(Theme.muted)
                 .padding(.bottom, 16)
@@ -41,6 +52,7 @@ struct LayersSheet: View {
         .screenBackground()
         .presentationDetents([.medium, .large])
         .sheet(isPresented: $showingTrace) { TraceSheet(model: model, image: $traceImage) }
+        .modifier(FolderRenameAlert(model: model, renaming: $renamingFolder))
         .alert("Rename layer", isPresented: Binding(get: { renamingIndex != nil }, set: { if !$0 { renamingIndex = nil } })) {
             TextField("Name", text: $renameText)
             Button("Save") { if let i = renamingIndex { model.renameLayer(i, to: renameText) } }
@@ -155,9 +167,10 @@ struct LayersSheet: View {
                     renamingIndex = i
                 } label: { Label("Rename", systemImage: "pencil") }
                 Button { model.moveLayer(i, by: 1) } label: { Label("Move up", systemImage: "arrow.up") }
-                    .disabled(i == model.layers.count - 1)
+                    .disabled(model.layerMoveTarget(i, by: 1) == nil)
                 Button { model.moveLayer(i, by: -1) } label: { Label("Move down", systemImage: "arrow.down") }
-                    .disabled(i == 0)
+                    .disabled(model.layerMoveTarget(i, by: -1) == nil)
+                LayerFolderMenu(model: model, index: i)
                 Button {
                     model.selectLayer(i)
                     model.mergeLayerDown()

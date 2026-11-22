@@ -5,6 +5,20 @@ struct LayerInfo: Identifiable, Codable, Hashable, Sendable {
     var id = UUID()
     var name: String
     var isVisible = true
+    /// The folder this layer is kept in, if any (see `LayerFolder`).
+    var folderID: UUID?
+}
+
+/// A folder of layers: a named group that can be shown, hidden, folded away and moved as one.
+/// A folder's layers sit together in the stack. Folders don't hold other folders.
+struct LayerFolder: Identifiable, Codable, Hashable, Sendable {
+    var id = UUID()
+    var name: String
+    /// Hiding a folder hides every layer in it (each layer keeps its own setting for when the
+    /// folder is shown again).
+    var isVisible = true
+    /// Folded away in the layers list. Kept with the sprite.
+    var isCollapsed = false
 }
 
 /// One keyframe of an animation: one cel per layer (bottom to top), plus the visible layers
@@ -175,7 +189,14 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     /// Frames a second: 1 to this.
     static let maxFPS = 60
 
-    var layerVisibility: [Bool] { layers.map(\.isVisible) }
+    /// Folders that layers are grouped in (see `LayerFolder`).
+    var folders: [LayerFolder] = []
+    /// Whether each layer shows: its own setting, and its folder's.
+    var layerVisibility: [Bool] {
+        guard !folders.isEmpty else { return layers.map(\.isVisible) }
+        let hidden = Set(folders.filter { !$0.isVisible }.map(\.id))
+        return layers.map { $0.isVisible && !($0.folderID.map(hidden.contains) ?? false) }
+    }
     /// A picture under every layer to trace over (the picture itself is stored separately).
     var trace: TraceSettings?
     var createdAt = Date()
@@ -225,7 +246,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         frames.map { $0.grid.reframed(from: bounds, to: world) }
     }
 
-    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, extraColors, loopMode, retroMode, remix, sounds, layers, trace, createdAt, modifiedAt }
+    private enum CodingKeys: String, CodingKey { case id, name, size, bounds, frames, fps, playbackEasing, palette, extraColors, loopMode, retroMode, remix, sounds, layers, folders, trace, createdAt, modifiedAt }
 
     /// Tolerant decoding: a damaged or hand-edited file loads as something editable instead of
     /// crashing the app (the editor assumes at least one frame, all the same size). Files from
@@ -251,9 +272,13 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         let valid = decoded.filter { $0.grid.width == w && $0.grid.height == h }
         var decodedLayers = (try? c.decode([LayerInfo].self, forKey: .layers)) ?? []
         if decodedLayers.isEmpty { decodedLayers = [LayerInfo(name: "Layer 1")] }
+        var decodedFolders = (try? c.decode([LayerFolder].self, forKey: .folders)) ?? []
+        SpriteProject.tidyFolders(layers: &decodedLayers, folders: &decodedFolders)
         layers = decodedLayers
+        folders = decodedFolders
         // Every frame gets exactly one cel per layer (padding with blanks, dropping extras).
-        let n = layers.count, visible = layers.map(\.isVisible)
+        let hiddenFolders = Set(decodedFolders.filter { !$0.isVisible }.map(\.id))
+        let n = layers.count, visible = layers.map { $0.isVisible && !($0.folderID.map(hiddenFolders.contains) ?? false) }
         let blank = PixelGrid(width: w, height: h)
         let normalized = valid.map { f -> Frame in
             var cels = Array(f.layers.prefix(n))
@@ -298,6 +323,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         try c.encodeIfPresent(remix, forKey: .remix)
         if !sounds.isEmpty { try c.encode(sounds, forKey: .sounds) }
         try c.encode(layers, forKey: .layers)
+        if !folders.isEmpty { try c.encode(folders, forKey: .folders) }
         try c.encodeIfPresent(trace, forKey: .trace)
         try c.encode(createdAt, forKey: .createdAt)
         try c.encode(modifiedAt, forKey: .modifiedAt)

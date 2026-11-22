@@ -468,6 +468,7 @@ struct DeskInspector: View {
     var onPalettes: () -> Void
     @Environment(StudioPanelState.self) private var panels: StudioPanelState?
     @State private var bridge = AIBridge.shared
+    @State private var renamingFolder: LayerFolder?
 
     /// The AI tab appears on the Mac once assistants are switched on and one has connected.
     private var showsAI: Bool {
@@ -523,8 +524,20 @@ struct DeskInspector: View {
     private var layers: some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(spacing: 4) {
-                ForEach(Array(model.layers.indices.reversed()), id: \.self) { i in layerRow(i) }
+                // Top of the stack first; a folder's layers are listed under it, set in a little.
+                ForEach(model.project.layerOutline) { entry in
+                    switch entry {
+                    case .layer(_, let i):
+                        layerRow(i)
+                    case .folder(let folder, let indices):
+                        LayerFolderRow(model: model, folder: folder, count: indices.count, compact: true) { renamingFolder = $0 }
+                        if !folder.isCollapsed {
+                            ForEach(indices, id: \.self) { i in layerRow(i).padding(.leading, 14) }
+                        }
+                    }
+                }
             }
+            .modifier(FolderRenameAlert(model: model, renaming: $renamingFolder))
             HStack(spacing: 6) {
                 Button { model.addLayer() } label: {
                     Text("Add").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
@@ -539,6 +552,13 @@ struct DeskInspector: View {
                 .buttonStyle(TileButtonStyle())
                 .disabled(model.activeLayer == 0)
                 .help("Merge down: join this layer with the one below it")
+                Button { model.newFolder(containing: model.activeLayer) } label: {
+                    Text("Folder").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
+                }
+                .buttonStyle(TileButtonStyle())
+                .accessibilityLabel("New folder")
+                .accessibilityHint("Puts the layer you are drawing on in a new folder")
+                .help("Folder: put this layer in a new folder. Right-click a layer to move it into a folder.")
                 Spacer(minLength: 0)
             }
         }
@@ -583,9 +603,10 @@ struct DeskInspector: View {
         .contextMenu {
             Button(action: onLayers) { Label("Rename and more…", systemImage: "pencil") }
             Button { model.moveLayer(i, by: 1) } label: { Label("Move up", systemImage: "arrow.up") }
-                .disabled(i == model.layers.count - 1)
+                .disabled(model.layerMoveTarget(i, by: 1) == nil)
             Button { model.moveLayer(i, by: -1) } label: { Label("Move down", systemImage: "arrow.down") }
-                .disabled(i == 0)
+                .disabled(model.layerMoveTarget(i, by: -1) == nil)
+            LayerFolderMenu(model: model, index: i)
             Button(role: .destructive) { model.deleteLayer(i) } label: { Label("Delete layer", systemImage: "trash") }
                 .disabled(model.layers.count == 1)
         }
