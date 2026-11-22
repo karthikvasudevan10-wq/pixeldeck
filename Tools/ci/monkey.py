@@ -284,6 +284,26 @@ def trial():
         print(said or "PD-MOVIE nothing reported", flush=True)
         check("making a movie into a video")
 
+    # An assistant drawing through the bridge the app gives the Claude app (Tools/ci/mcp_bridge.sh).
+    if phase("assistant", "-aiEnabled", "YES", "-aiToken", "monkeytoken0123456789", "-aiApprovedClients", "(Tester)"):
+        url = "http://127.0.0.1:47860/mcp/monkeytoken0123456789"
+        asks = [
+            {"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": "2025-03-26", "capabilities": {}, "clientInfo": {"name": "Tester", "version": "1"}}},
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": "rect", "arguments": {"x1": 2, "y1": 2, "x2": 7, "y2": 6, "color": "#FF5C8A", "filled": True}}},
+            {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {"name": "read_canvas", "arguments": {}}},
+        ]
+        script = open(os.path.join(HERE, "mcp_bridge.sh")).read()
+        out = subprocess.run(["/bin/sh", "-c", script, "pixeldeck", url], input="\n".join(json.dumps(a) for a in asks) + "\n",
+                             capture_output=True, text=True, timeout=60)
+        for line in out.stdout.split("\n"):
+            if line.strip():
+                print("    answer:", line[:700], flush=True)
+        if out.stderr.strip():
+            print("    bridge said:", out.stderr.strip()[:300])
+        check("an assistant drawing through the bridge")
+
     # Photo to pixel art, step 2: are the size and colour options in view?
     if "photo options" in ONLY and phase("photo options", "-monkeyOpen", "photo"):
         time.sleep(3)

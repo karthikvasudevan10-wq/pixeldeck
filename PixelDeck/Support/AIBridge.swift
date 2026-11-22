@@ -259,9 +259,21 @@ final class AIBridge {
     /// What to paste into a terminal to connect Claude Code.
     var claudeCodeSetup: String? { address.map { "claude mcp add --transport http pixeldeck \($0)" } }
 
-    /// What to add to the Claude desktop app's settings file (it reaches local servers through a small bridge).
+    /// The Claude app talks to local tools by starting a program and passing messages through
+    /// it, one a line. This is that program: a few lines of shell that hand each message to the
+    /// server here with `curl` (both come with every Mac, so nothing has to be installed) and
+    /// pass the answer back. It keeps the session the server gives it, and says so plainly when
+    /// Pixel Deck isn't open. The same text is in Tools/ci/mcp_bridge.sh, which the build check
+    /// runs against the app.
+    static let bridgeScript = #"u="$1"; s=""; h=$(mktemp); while IFS= read -r l; do o=$(printf '%s' "$l" | curl -sf -D "$h" -X POST -H 'Content-Type: application/json' -H 'Accept: application/json' ${s:+-H "Mcp-Session-Id: $s"} --data-binary @- "$u"); e=$?; n=$(tr -d '\r' < "$h" | awk -F': ' 'tolower($1)=="mcp-session-id"{print $2}'); [ -n "$n" ] && s="$n"; if [ $e -ne 0 ]; then i=$(printf '%s' "$l" | sed -n 's/.*"id":\([0-9][0-9]*\).*/\1/p'); [ -n "$i" ] && printf '{"jsonrpc":"2.0","id":%s,"error":{"code":-32000,"message":"Pixel Deck is not open, or AI drawing is switched off in its Settings."}}\n' "$i"; elif [ -n "$o" ]; then printf '%s\n' "$o"; fi; done"#
+
+    /// What to put in the Claude app's settings file (Settings › Developer › Edit Config).
     var claudeDesktopSetup: String? {
-        address.map { "{\n  \"mcpServers\": {\n    \"pixeldeck\": {\n      \"command\": \"npx\",\n      \"args\": [\"-y\", \"mcp-remote\", \"\($0)\"]\n    }\n  }\n}" }
+        guard let address else { return nil }
+        let config: [String: Any] = ["mcpServers": ["pixeldeck": ["command": "/bin/sh",
+                                                                  "args": ["-c", Self.bridgeScript, "pixeldeck", address]] as [String: Any]]]
+        guard let data = try? JSONSerialization.data(withJSONObject: config, options: [.prettyPrinted, .withoutEscapingSlashes, .sortedKeys]) else { return nil }
+        return String(decoding: data, as: UTF8.self)
     }
 
     func approve(_ client: String) {
@@ -692,8 +704,8 @@ struct AISettingsSection: View {
                 .foregroundStyle(Theme.muted)
                 Spacer(minLength: 4)
                 Menu {
+                    Button("For the Claude app (its settings file)") { copy(bridge.claudeDesktopSetup) }
                     Button("For Claude Code (paste into Terminal)") { copy(bridge.claudeCodeSetup) }
-                    Button("For the Claude app (developer settings file)") { copy(bridge.claudeDesktopSetup) }
                     Button("Just the server address") { copy(bridge.address) }
                 } label: {
                     Text(copied ? "Copied" : "Copy setup for Claude").font(AppFont.pixel(11)).foregroundStyle(Theme.text)
@@ -704,6 +716,20 @@ struct AISettingsSection: View {
             .padding(.horizontal, 14)
             .frame(minHeight: 52)
             .background(Theme.surface)
+
+            Text("Connecting the Claude app").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("1. Turn the switch above on, then choose Copy setup for Claude › For the Claude app.")
+                Text("2. In Claude, open Settings › Developer › Edit Config. It shows a file called claude_desktop_config.json.")
+                Text("3. Open that file, replace what is in it with what you copied, and save. (If it already lists other tools, add the \"pixeldeck\" part beside them instead.)")
+                Text("4. Quit Claude and open it again, with Pixel Deck open. Ask it to draw something.")
+                Text("5. The first time, Pixel Deck asks whether to let Claude draw. Choose Allow.")
+                Text("Claude's \"Add custom connector\" won't work for this: those are reached from Claude's servers, which can't see an app on your Mac.")
+                    .foregroundStyle(Theme.muted)
+            }
+            .font(AppFont.body(14, relativeTo: .subheadline))
+            .foregroundStyle(Theme.text)
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
