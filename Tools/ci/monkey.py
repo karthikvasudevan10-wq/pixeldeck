@@ -255,7 +255,7 @@ def trial():
             stroke(f"canvas after the {title}")
 
     # Whole-window screens the app opens by itself when asked to (debug builds: -monkeyOpen).
-    for what in ("photo", "playground", "academy"):
+    for what in ("photo", "playground", "academy", "movies"):
         if phase(f"opened {what} screen", "-monkeyOpen", what):
             time.sleep(3)
             look(f"showing the {what} screen")

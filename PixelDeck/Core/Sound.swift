@@ -148,6 +148,16 @@ enum AudioMix {
         for i in from..<count { track[start + i] += samples[i] * volume }
     }
 
+    /// For mixing a long soundtrack a piece at a time: adds the part of `samples` (a sound that
+    /// starts at sample `start` of the whole soundtrack) that falls inside `window`, a piece of
+    /// the soundtrack beginning at sample `windowStart`.
+    static func add(_ samples: [Float], startingAt start: Int, intoWindow window: inout [Float], windowStart: Int, volume: Float) {
+        guard volume > 0 else { return }
+        let from = max(start, windowStart), to = min(start + samples.count, windowStart + window.count)
+        guard from < to else { return }
+        for i in from..<to { window[i - windowStart] += samples[i - start] * volume }
+    }
+
     /// Keeps the mix from clipping harshly when several sounds overlap: quiet parts are left
     /// alone, and peaks above 0.8 are eased towards 1.
     static func soften(_ track: inout [Float]) {

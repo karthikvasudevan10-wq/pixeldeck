@@ -9,6 +9,16 @@ struct ExportSound {
     let volume: Double
 }
 
+/// One sound in a movie's soundtrack.
+struct MovieSoundCue: Sendable {
+    let url: URL
+    /// Seconds from the start of the movie.
+    let time: Double
+    /// How long the sound lasts.
+    let seconds: Double
+    let volume: Double
+}
+
 /// Adds a sprite's sounds to an exported video: the sounds are mixed into one soundtrack, which
 /// is then joined to the picture (the picture itself isn't re-encoded).
 enum VideoSound {
@@ -47,6 +57,74 @@ enum VideoSound {
             try? FileManager.default.removeItem(at: joined)
         }
         try write(left: left, right: right, to: track)
+        try join(video: video, audio: track, into: joined)
+        _ = try FileManager.default.replaceItemAt(video, withItemAt: joined)
+    }
+
+    /// A movie's soundtrack: mixed and written ten seconds at a time, so the sound of a long film
+    /// never has to be held in memory at once. Then joined to the picture, as above.
+    static func add(_ cues: [MovieSoundCue], to video: URL, seconds: Double, progress: (Double) -> Void = { _ in }) throws {
+        guard !cues.isEmpty, seconds > 0 else { return }
+        let rate = Double(AudioMix.sampleRate)
+        let total = Int(seconds * rate)
+        guard total > 0 else { return }
+        let folder = video.deletingLastPathComponent()
+        let track = folder.appendingPathComponent("soundtrack-\(UUID().uuidString).m4a")
+        let joined = folder.appendingPathComponent("joined-\(UUID().uuidString).mp4")
+        defer {
+            try? FileManager.default.removeItem(at: track)
+            try? FileManager.default.removeItem(at: joined)
+        }
+        var anySound = false
+        do {
+            let settings: [String: Any] = [
+                AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+                AVSampleRateKey: AudioMix.sampleRate,
+                AVNumberOfChannelsKey: 2,
+                AVEncoderBitRateKey: 160_000,
+            ]
+            let file = try AVAudioFile(forWriting: track, settings: settings)
+            let format = file.processingFormat
+            let piece = AudioMix.sampleRate * 10
+            let ordered = cues.sorted { $0.time < $1.time }
+            var decoded: [URL: (left: [Float], right: [Float])] = [:]
+            var unreadable: Set<URL> = []
+            var position = 0
+            while position < total {
+                let n = min(piece, total - position)
+                var left = [Float](repeating: 0, count: n), right = [Float](repeating: 0, count: n)
+                var inUse: Set<URL> = []
+                for cue in ordered {
+                    let start = Int(cue.time * rate)
+                    if start >= position + n { break }
+                    // Still sounding in this piece? (A second to spare for files a little longer than noted.)
+                    guard start + Int((cue.seconds + 1) * rate) > position, !unreadable.contains(cue.url) else { continue }
+                    if decoded[cue.url] == nil {
+                        if let audio = try? samples(of: cue.url) { decoded[cue.url] = audio } else { unreadable.insert(cue.url) }
+                    }
+                    guard let audio = decoded[cue.url] else { continue }
+                    inUse.insert(cue.url)
+                    anySound = true
+                    AudioMix.add(audio.left, startingAt: start, intoWindow: &left, windowStart: position, volume: Float(cue.volume))
+                    AudioMix.add(audio.right, startingAt: start, intoWindow: &right, windowStart: position, volume: Float(cue.volume))
+                }
+                // Sounds that have finished are let go.
+                for url in Array(decoded.keys) where !inUse.contains(url) { decoded[url] = nil }
+                AudioMix.soften(&left)
+                AudioMix.soften(&right)
+                guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(n)),
+                      let channels = buffer.floatChannelData else { throw Failure.couldNotMix }
+                buffer.frameLength = AVAudioFrameCount(n)
+                for i in 0..<n {
+                    channels[0][i] = left[i]
+                    if format.channelCount > 1 { channels[1][i] = right[i] }
+                }
+                try file.write(from: buffer)
+                position += n
+                progress(Double(position) / Double(total))
+            }
+        }   // the soundtrack file is finished when `file` goes away here
+        guard anySound else { throw Failure.couldNotMix }
         try join(video: video, audio: track, into: joined)
         _ = try FileManager.default.replaceItemAt(video, withItemAt: joined)
     }

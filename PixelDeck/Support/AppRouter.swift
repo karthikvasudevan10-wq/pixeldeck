@@ -9,7 +9,9 @@ import UIKit
 @Observable
 final class AppRouter {
     enum Request: Equatable {
-        case newCanvas, settings, academy, playground, community
+        case newCanvas, settings, academy, playground, community, movies
+        /// Open a sprite in the Studio, by id.
+        case open(UUID)
         /// A Pixel Academy lesson, by id.
         case lesson(String)
         case photo(UIImage)

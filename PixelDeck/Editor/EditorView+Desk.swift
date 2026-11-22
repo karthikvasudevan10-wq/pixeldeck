@@ -691,6 +691,17 @@ struct DeskSidebar: View {
                 .padding(.bottom, 10)
             }
 
+            Button { Shared.router.request = .movies } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: "film").font(.system(size: 14)).foregroundStyle(Theme.muted).frame(width: 16)
+                    Text("Movies").font(AppFont.body(15, relativeTo: .subheadline)).foregroundStyle(Theme.muted)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 18)
+                .frame(height: 40)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
             Button(action: onCommunity) {
                 HStack(spacing: 10) {
                     PixelIcon.community.view(size: 16).foregroundStyle(Theme.muted)

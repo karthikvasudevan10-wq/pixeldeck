@@ -37,6 +37,7 @@ struct ProjectListView: View {
     @State private var confirmingBulkDelete = false
     /// "New canvas": the chooser, and the photo flow it can lead to.
     @State private var showingNewCanvas = false
+    @State private var showingMovies = false
     @State private var showingPhoto = false
     @State private var upgrade: ProFeature?
     /// Pixel Playground (the Play tab) and Pixel Academy.
@@ -62,7 +63,7 @@ struct ProjectListView: View {
     /// Live previews run only while the gallery is actually on screen — not under the Studio,
     /// the welcome screens or export, and not in the background.
     private var galleryVisible: Bool {
-        path.isEmpty && !showingWelcome && exporting == nil && !showingSettings && !showingPhoto
+        path.isEmpty && !showingWelcome && exporting == nil && !showingSettings && !showingPhoto && !showingMovies
             && !showingPlayground && !showingAcademy && scenePhase == .active
     }
 
@@ -179,6 +180,13 @@ struct ProjectListView: View {
             answer(request)
         }
         .sheet(item: $beadPattern) { BeadPatternView(project: $0) }
+        .fullScreenCover(isPresented: $showingMovies) {
+            MoviesView { id in
+                // Close the movie screens, then open that scene's sprite in the Studio.
+                showingMovies = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { path = [id] }
+            }
+        }
         .proUpgradeSheet($upgrade)
         .fullScreenCover(item: $exporting) { ExportView(project: $0) }
         .alert("Rename sprite", isPresented: Binding(get: { renamingID != nil }, set: { if !$0 { renamingID = nil } })) {
@@ -244,6 +252,11 @@ struct ProjectListView: View {
                     }
                     .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
                     .accessibilityLabel("Community")
+                    Button { showingMovies = true } label: {
+                        Image(systemName: "film.fill").font(.system(size: 17)).frame(width: 42, height: 42)
+                    }
+                    .buttonStyle(TileButtonStyle(fill: Theme.surface, foreground: Theme.accent))
+                    .accessibilityLabel("Movies")
                     Button { showingAcademy = true } label: {
                         Image(systemName: "graduationcap.fill").font(.system(size: 17)).frame(width: 42, height: 42)
                     }
@@ -488,6 +501,9 @@ struct ProjectListView: View {
         case .academy: showingAcademy = true
         case .playground: showingPlayground = true
         case .community: showingCommunity = true
+        case .movies: showingMovies = true
+        case .open(let id):
+            if store.project(id: id) != nil { path = [id] }
         case .lesson(let id):
             guard let lesson = Academy.lesson(id: id) else { return }
             if purchases.access.allows(lesson) { startLesson(lesson) } else { upgrade = .academy }
@@ -625,6 +641,7 @@ struct ProjectListView: View {
                 answer(.photo(picture))
             case "photoEmpty": showingPhoto = true
             case "playground": answer(.playground)
+            case "movies": answer(.movies)
             case "academy": answer(.academy)
             case "community": answer(.community)
             case "settings": answer(.settings)

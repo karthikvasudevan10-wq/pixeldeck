@@ -56,6 +56,7 @@ struct StudioCommands: Commands {
             Button("New from a photo, retro mode, tiles…") { router.request = .newCanvas }
                 .keyboardShortcut("n", modifiers: [.command, .option])
             Divider()
+            Button("Movies") { router.request = .movies }
             Button("Playground") { router.request = .playground }
             Button("Pixel Academy") { router.request = .academy }
             Divider()

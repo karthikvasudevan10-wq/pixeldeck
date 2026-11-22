@@ -546,7 +546,8 @@ struct ImageStore {
     /// Folders moved between the device and iCloud when sync is switched (saved palettes,
     /// Playground levels and stamps too).
     private static let movable = all + [ImageStore(folder: "Palettes", png: false), ImageStore(folder: "Scenes", png: false),
-                                        ImageStore(folder: "Stamps", png: false), ImageStore(folder: "Sounds", png: false)]
+                                        ImageStore(folder: "Stamps", png: false), ImageStore(folder: "Sounds", png: false),
+                                        ImageStore(folder: "Movies", png: false)]
 
     /// The iCloud container, when syncing; nil for the device.
     nonisolated(unsafe) static var root: URL?

@@ -152,7 +152,7 @@ enum VideoExporter {
         guard writer.status == .completed else { throw writer.error ?? ExportError.couldNotWrite(url.lastPathComponent) }
     }
 
-    private struct Layout {
+    struct Layout {
         let width: Int
         let height: Int
         /// The part above the watermark band, where the art is centred.
@@ -161,7 +161,7 @@ enum VideoExporter {
     }
 
     /// One video frame: ink, the art (if any), then `overlay` across the bottom `overlayHeight` rows.
-    private static func makeBuffer(_ grid: PixelGrid?, layout: Layout, overlay: CGImage?, overlayHeight: Int) throws -> CVPixelBuffer {
+    static func makeBuffer(_ grid: PixelGrid?, layout: Layout, overlay: CGImage?, overlayHeight: Int) throws -> CVPixelBuffer {
         let width = layout.width, height = layout.height, scale = layout.scale
         var pb: CVPixelBuffer?
         let attrs: [String: Any] = [kCVPixelBufferCGImageCompatibilityKey as String: true,
