@@ -642,6 +642,7 @@ struct ProjectListView: View {
             case "photoEmpty": showingPhoto = true
             case "playground": answer(.playground)
             case "movies": answer(.movies)
+            case "movieExport": MonkeyHooks.movieExport()
             case "academy": answer(.academy)
             case "community": answer(.community)
             case "settings": answer(.settings)

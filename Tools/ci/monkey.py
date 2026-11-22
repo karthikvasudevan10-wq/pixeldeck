@@ -272,6 +272,18 @@ def trial():
                 click(x, 70, f"top of the {what} screen")
             escape()
 
+    # A whole movie made into a video by the app itself (three scenes and a sound).
+    if phase("movie export", "-monkeyOpen", "movieExport"):
+        said = ""
+        for _ in range(30):
+            time.sleep(3)
+            said = sh("grep", "-h", "PD-MOVIE", ERRORS,
+                      os.path.expanduser("~/Library/Containers/karthikvasudevan.pixeldeck/Data/tmp/pd-movie-test.txt"))
+            if said or not alive():
+                break
+        print(said or "PD-MOVIE nothing reported", flush=True)
+        check("making a movie into a video")
+
     # Photo to pixel art, step 2: are the size and colour options in view?
     if "photo options" in ONLY and phase("photo options", "-monkeyOpen", "photo"):
         time.sleep(3)
