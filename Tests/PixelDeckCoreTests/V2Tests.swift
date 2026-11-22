@@ -143,6 +143,29 @@ final class PixelPerfectTests: XCTestCase {
     }
 }
 
+final class BigArtTests: XCTestCase {
+    func testArtPastTheFreeSizeCanBeDrawnOnButNotGrown() {
+        // A scene wider than the free size, as the ones that come with the app are.
+        let m = makeModel(access: .pro)
+        stroke(m, [(-50.5, 0.5), (49.5, 0.5)])
+        XCTAssertEqual(m.contentBounds?.width, 101)
+        m.access = .free
+        var asked = 0
+        m.onProRequired = { _ in asked += 1 }
+        // Inside what is already there: allowed, and nobody is asked to buy anything.
+        tap(m, 0.5, 0.5)
+        m.pickColor(.white)
+        tap(m, 10.5, 0.5)
+        XCTAssertEqual(m.pixel(P(10, 0)), .white)
+        XCTAssertEqual(asked, 0)
+        // Outside it: the art would grow, so it is refused and Pro is offered.
+        tap(m, 0.5, 30.5)
+        XCTAssertTrue(m.pixel(P(0, 30)).isClear)
+        XCTAssertEqual(asked, 1)
+        XCTAssertEqual(m.contentBounds?.width, 101)
+    }
+}
+
 final class QuarterMirrorTests: XCTestCase {
     /// Every pixel has its three reflections: across the upright line, the level line, and both.
     private func assertFourWay(_ m: EditorModel, _ what: String) {

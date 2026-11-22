@@ -676,7 +676,7 @@ final class EditorModel {
                 // the art within it (the canvas's spare margin mustn't let art exceed the cap).
                 for p in PixelGrid.linePoints(from: s, to: e) {
                     let one = PixelRect(x: p.x, y: p.y, width: 1, height: 1)
-                    guard access.allowsArt(contentBounds.map { $0.union(one) } ?? one), ensureCovers(one) else { continue }
+                    guard allowsArt(including: one), ensureCovers(one) else { continue }
                     let o = bounds.origin
                     mutateCurrent(dirty: one) { $0[p - o] = c }
                     cachedContent = cachedContent.map { $0.union(one) } ?? one
@@ -705,7 +705,7 @@ final class EditorModel {
         } else {
             for p in pixels {
                 let one = PixelRect(x: p.x, y: p.y, width: 1, height: 1)
-                guard access.allowsArt(contentBounds.map { $0.union(one) } ?? one), ensureCovers(one) else { continue }
+                guard allowsArt(including: one), ensureCovers(one) else { continue }
                 let o = bounds.origin
                 mutateCurrent(dirty: one) { $0[p - o] = c }
                 cachedContent = cachedContent.map { $0.union(one) } ?? one
@@ -737,6 +737,15 @@ final class EditorModel {
         }
     }
 
+    /// Whether the art may cover `r` too: it stays within the size cap, or gets no bigger than
+    /// it already is. Art that is already past the cap (the scenes that come with the app, or
+    /// one made with Pro) can still be drawn on where it is; it just can't grow.
+    func allowsArt(including r: PixelRect) -> Bool {
+        guard let content = contentBounds else { return access.allowsArt(r) }
+        let needed = content.union(r)
+        return needed == content || access.allowsArt(needed)
+    }
+
     /// Makes sure the canvas covers world rect `r`, growing every frame if needed. Returns false
     /// (and offers Pro once, if Pro would allow it) when the art would exceed the size cap or the
     /// memory budget.
@@ -745,7 +754,7 @@ final class EditorModel {
         // Check the cap even when `r` is already on the canvas: the canvas keeps spare margin
         // around the art, and drawing into it must not take the art past the cap.
         let needed = contentBounds.map { $0.union(r) } ?? r
-        guard access.allowsArt(needed) else {
+        guard allowsArt(including: r) else {
             if !access.isPro, FeatureAccess.pro.allowsArt(needed), !promptedThisGesture {
                 promptedThisGesture = true
                 requestPro(.largeCanvas)
@@ -1129,7 +1138,9 @@ final class EditorModel {
             let cap = access
             allowed = { p in
                 let one = PixelRect(x: p.x, y: p.y, width: 1, height: 1)
-                return cap.allowsArt(content.map { $0.union(one) } ?? one)
+                guard let content else { return cap.allowsArt(one) }
+                let needed = content.union(one)
+                return needed == content || cap.allowsArt(needed)
             }
         }
         let o = bounds.origin

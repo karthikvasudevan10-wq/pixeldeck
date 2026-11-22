@@ -203,7 +203,7 @@ enum AITools {
             var box = PixelRect(x: first.x, y: first.y, width: 1, height: 1)
             for p in all { box = box.union(p) }
             let art = model.contentBounds.map { $0.union(box) } ?? box
-            guard model.access.allowsArt(art) else {
+            guard model.allowsArt(including: box) else {
                 let side = model.access.maxArtSide
                 throw AIToolError("That would make the art \(art.width) × \(art.height) pixels; the most here is \(side) × \(side). Draw closer to the existing art, which covers x \(model.contentBounds?.x ?? 0)…, y \(model.contentBounds?.y ?? 0)….")
             }
