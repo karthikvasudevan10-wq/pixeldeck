@@ -290,6 +290,9 @@ struct ToolRow: View {
     /// The side of a fixed tile, and the gap between tiles.
     var tile: CGFloat = 52
     var spacing: CGFloat = 6
+    /// Shows the second mirror (top and bottom) beside the first. Rails have room for it; the
+    /// iPhone's row of seven doesn't, and keeps it in the brush options.
+    private var bothMirrors: Bool { columns != nil }
 
     var body: some View {
         if let columns {
@@ -320,7 +323,20 @@ struct ToolRow: View {
         .buttonStyle(TileButtonStyle(active: model.mirror))
         .accessibilityLabel("Mirror")
         .accessibilityAddTraits(model.mirror ? .isSelected : [])
-        .help("Mirror: whatever you draw is copied on the other side. Key: Y")
+        .help("Mirror left and right: what you draw on one side is copied on the other. Key: Y")
+        if bothMirrors {
+            Button { model.mirrorVertical.toggle() } label: {
+                PixelIcon.mirror.view(size: iconSize).rotationEffect(.degrees(90)).tileFrame(fixed ? tile : nil)
+                    .overlay(alignment: .topTrailing) {
+                        if !model.access.allowsArtistBrushes { ProBadge().scaleEffect(0.6).offset(x: 3, y: -3) }
+                    }
+            }
+            .buttonStyle(TileButtonStyle(active: model.mirrorVertical))
+            .accessibilityLabel("Mirror top and bottom")
+            .accessibilityHint("With Mirror left and right on too, you draw one quarter and the other three are drawn for you")
+            .accessibilityAddTraits(model.mirrorVertical ? .isSelected : [])
+            .help("Mirror top and bottom: what you draw above is copied below. With both mirrors on, draw one quarter and the other three are drawn for you: good for tiles and patterns. Key: Shift-Y")
+        }
         tool(.select, icon: .select, fixed: fixed)
     }
 

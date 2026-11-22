@@ -143,6 +143,67 @@ final class PixelPerfectTests: XCTestCase {
     }
 }
 
+final class QuarterMirrorTests: XCTestCase {
+    /// Every pixel has its three reflections: across the upright line, the level line, and both.
+    private func assertFourWay(_ m: EditorModel, _ what: String) {
+        let b = m.project.bounds
+        var count = 0
+        for y in b.y..<b.maxY {
+            for x in b.x..<b.maxX {
+                let p = P(x, y)
+                guard !m.pixel(p).isClear else { continue }
+                count += 1
+                XCTAssertFalse(m.pixel(p.mirrored).isClear, "\(what): \(p) mirrored left-right")
+                XCTAssertFalse(m.pixel(p.flippedVertically).isClear, "\(what): \(p) mirrored top-bottom")
+                XCTAssertFalse(m.pixel(p.mirrored.flippedVertically).isClear, "\(what): \(p) mirrored both ways")
+            }
+        }
+        XCTAssertGreaterThan(count, 0, "\(what) drew something")
+        XCTAssertEqual(count % 4, 0, "\(what) is four equal quarters")
+    }
+
+    private func quarterModel() -> EditorModel {
+        let m = makeModel(access: .pro)
+        m.mirror = true
+        m.mirrorVertical = true
+        return m
+    }
+
+    func testAQuarterBecomesTheWholePattern() {
+        // A stroke in one quarter.
+        let pencil = quarterModel()
+        stroke(pencil, [(1.5, 1.5), (4.5, 1.5), (4.5, 5.5)])
+        assertFourWay(pencil, "pencil")
+
+        // With pixel-perfect on too.
+        let tidy = quarterModel()
+        tidy.pixelPerfect = true
+        stroke(tidy, [(1.5, 1.5), (2.5, 1.5), (2.5, 2.5), (3.5, 3.5)])
+        assertFourWay(tidy, "pixel-perfect pencil")
+
+        // A shape.
+        let shape = quarterModel()
+        shape.tool = .shape
+        shape.shapeKind = .rectangle
+        stroke(shape, [(2.5, 2.5), (6.5, 5.5)])
+        assertFourWay(shape, "rectangle")
+
+        // Erasing in one quarter rubs out all four.
+        stroke(pencil, [(0.5, 8.5), (7.5, 8.5)])
+        pencil.tool = .eraser
+        stroke(pencil, [(2.5, 8.5), (5.5, 8.5)])
+        assertFourWay(pencil, "eraser")
+        XCTAssertTrue(pencil.pixel(P(3, 8)).isClear)
+        XCTAssertTrue(pencil.pixel(P(3, 8).mirrored.flippedVertically).isClear)
+    }
+
+    func testTopBottomMirrorNeedsPro() {
+        let free = makeModel()
+        free.mirrorVertical = true
+        XCTAssertFalse(free.mirrorVertical)
+    }
+}
+
 final class ShadingTests: XCTestCase {
     func testDepthFollowsTheLight() {
         let r = PixelRect(x: 0, y: 0, width: 9, height: 9)

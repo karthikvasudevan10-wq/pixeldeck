@@ -545,10 +545,13 @@ struct EditorView: View {
                 stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes && model.project.retroMode == nil,
                             tip: "Dither: draws every other pixel, a checkerboard that blends two colours") { model.dither.toggle() }
                     .accessibilityLabel("Dither brush")
-                stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes,
-                            tip: "Top-bottom symmetry: copies what you draw above and below. With Mirror on too, it is four-way.") { model.mirrorVertical.toggle() }
-                    .accessibilityLabel("Top-bottom symmetry")
-                    .accessibilityHint("With Mirror on too, it's four-way")
+                // The desk's tool rail has this as its second mirror button.
+                if layout != .desk {
+                    stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes,
+                                tip: "Top-bottom symmetry: copies what you draw above and below. With Mirror on too, it is four-way.") { model.mirrorVertical.toggle() }
+                        .accessibilityLabel("Top-bottom symmetry")
+                        .accessibilityHint("With Mirror on too, it's four-way")
+                }
             }
         }
         .padding(.bottom, 3)
