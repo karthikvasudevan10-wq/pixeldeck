@@ -180,6 +180,27 @@ Not in the design: asked for directly, and built from the app's existing pieces.
     untried for hours.
   - Nobody has timed making a long video. The six-second test took a few seconds.
 
+## Added on 22 November, after Movies
+
+- **Layer folders** (`Core/LayerFolders.swift`, `Editor/LayerFolderViews.swift`). Layers can be
+  kept in folders: a folder shows or hides all its layers, folds away in the list, and moves up
+  and down as one block. One level deep. A layer's menu moves it into a folder, a new one, or
+  out. On the Mac and iPad panel there is a Folder button beside Add and Merge down.
+- **Mirror top and bottom** has its own button in the tool rail, beside Mirror left and right.
+  With both on, one quarter is drawn and the other three follow. It is still a Pro feature.
+- **Tooltips** on the tools, options, toolbar, timeline and panel (Mac, and iPad with a pointer).
+- **The panel's Colours and Animate tabs** show their own tools (they used to only scroll).
+  "Choose a palette…" is under the swatches.
+- **Big sprites** (past the free size, like the scenes that come with the app) can be drawn on
+  where they already are; only making them bigger needs Pro. Before, the first stroke brought
+  up the Pro screen.
+- **Connecting the Claude app.** Claude's "Add custom connector" is reached from Anthropic's
+  servers and cannot see an app on the Mac. Settings › AI assistants copies a setup for Claude's
+  settings file instead (Settings › Developer › Edit Config in Claude). It runs a few lines of
+  shell with `curl`, so nothing needs installing. The build check runs the same lines against
+  the app (`[monkey:assistant]`): it connected, listed the tools, drew a rectangle and read the
+  canvas back. Not tried with the Claude app itself.
+
 ## Not built, or built differently
 
 - **"N people drew this today"** on Idea of the day: left out. It needs a count from Community.
