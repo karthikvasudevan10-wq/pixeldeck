@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // Display names for the core's enums. They live here, not in Core, because Core is
 // platform-independent (it also builds on Linux for tests) and LocalizedStringResource is

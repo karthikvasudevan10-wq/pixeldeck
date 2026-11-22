@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 // Display names for the v2 core enums (see LocalizedTitles.swift for why they live here).
 
