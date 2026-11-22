@@ -148,6 +148,38 @@ Sharing a level: post it to Community (others can play it and keep a copy), send
 A whole film (many scenes joined into one long video with one soundtrack, 60 fps, long holds)
 is not built yet. Sound on frames is the first piece of it.
 
+## Movies, and the limits that were lifted (22 November)
+
+Not in the design: asked for directly, and built from the app's existing pieces.
+
+- **Movies.** A movie is a list of scenes; each scene is a sprite, played through one or more
+  times. Scenes are drawn, animated and given sound in the Studio like any sprite. In Movies they
+  are put in order, previewed (with their sounds) and made into one video: widescreen 1920 × 1080,
+  square, tall, or 4K. Reached from the gallery (film button), the Mac's sidebar and File menu,
+  and the New canvas chooser. Code: `Core/Movie.swift`, `Movies/MoviesView.swift`,
+  `Export/MovieExporter.swift`.
+- **How a long film stays small.** The video is written one scene and one frame at a time, and
+  the soundtrack ten seconds at a time, so making it needs no more memory than the biggest scene.
+- **Layers** have no fixed number now (it was 8). What stops a new layer is the sprite's size in
+  memory: every layer is kept for every frame.
+- **Frame rate** goes up to 60 a second (it was 30). **Holds** go up to 600 beats (it was 8).
+  Community posts and Playground heroes still play at up to 30, and a GIF frame lasts at least
+  1/50 of a second.
+- **Checked:** 206 engine tests, including where scenes and their sounds fall in a movie's
+  running time. On GitHub's Mac the app made a three-scene movie with a sound: the video came
+  out the expected length (6.125 s) with one picture track and one sound track.
+- **Decisions made here that are yours to change:** free videos carry the "Made with Pixel
+  Deck" band and 4K needs Pro, the same as other exports. Scenes of different sizes are each
+  scaled to fit the frame. There are no titles or transitions between scenes.
+- **What still stands between this and a three-hour film:**
+  - Every sprite is loaded into memory when the app starts. A feature-length film has more
+    drawn frames than that allows; sprites need to be loaded only when they are opened or
+    played. That is the next piece of work.
+  - A sprite still holds at most 999 frames, so a long film is many scenes.
+  - Previewing a movie gets every remaining sound ready when Play is pressed; fine for minutes,
+    untried for hours.
+  - Nobody has timed making a long video. The six-second test took a few seconds.
+
 ## Not built, or built differently
 
 - **"N people drew this today"** on Idea of the day: left out. It needs a count from Community.
