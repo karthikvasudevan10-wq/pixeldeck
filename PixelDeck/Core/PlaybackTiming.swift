@@ -9,7 +9,7 @@ import Foundation
 enum PlaybackTiming {
     /// Shortest frame we produce. GIF delays are in hundredths of a second, and many viewers treat
     /// anything under 0.02 s as 0.1 s, which would break the timing.
-    static let minimumDuration = 0.02
+    static let minimumDuration = 1.0 / 120
 
     /// Seconds each frame is shown, for `count` frames at `fps`.
     static func durations(count: Int, fps: Int, easing: Easing) -> [Double] {

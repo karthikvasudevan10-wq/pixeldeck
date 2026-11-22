@@ -215,7 +215,7 @@ struct TileScene: Identifiable, Codable, Equatable, Sendable {
         heroID = project.id
         heroName = project.name
         heroFrames = Array(project.grids(croppedTo: r).prefix(TileScene.maxHeroFrames))
-        heroFPS = project.fps
+        heroFPS = min(project.fps, 30)
     }
 
     static let maxHeroFrames = 24

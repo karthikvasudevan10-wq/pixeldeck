@@ -343,7 +343,7 @@ final class PersistenceTests: XCTestCase {
         """
         let p = try JSONDecoder().decode(SpriteProject.self, from: Data(json.utf8))
         XCTAssertEqual(p.frames.count, 1)
-        XCTAssertEqual(p.fps, 30)
+        XCTAssertEqual(p.fps, SpriteProject.maxFPS)
         XCTAssertEqual(p.name, "Sprite")
         let huge = #"{"id":"\#(UUID().uuidString)","name":"H","size":100000,"frames":[]}"#
         XCTAssertThrowsError(try JSONDecoder().decode(SpriteProject.self, from: Data(huge.utf8)))

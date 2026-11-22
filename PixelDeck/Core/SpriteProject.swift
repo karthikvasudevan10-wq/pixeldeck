@@ -172,7 +172,8 @@ struct SpriteProject: Identifiable, Codable, Sendable {
     var sounds: [SoundClip] = []
     /// Bottom to top. Every frame has one cel per layer.
     var layers: [LayerInfo] = [LayerInfo(name: "Layer 1")]
-    static let maxLayers = 8
+    /// Frames a second: 1 to this.
+    static let maxFPS = 60
 
     var layerVisibility: [Bool] { layers.map(\.isVisible) }
     /// A picture under every layer to trace over (the picture itself is stored separately).
@@ -191,7 +192,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         self.name = name
         self.bounds = bounds
         self.frames = frames.isEmpty ? [Frame(grid: PixelGrid(width: bounds.width, height: bounds.height))] : frames.map { Frame(grid: $0) }
-        self.fps = min(max(fps, 1), 30)
+        self.fps = min(max(fps, 1), SpriteProject.maxFPS)
     }
 
     /// World rectangle holding every opaque pixel in every frame and layer (hidden ones too, since
@@ -250,7 +251,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
         let valid = decoded.filter { $0.grid.width == w && $0.grid.height == h }
         var decodedLayers = (try? c.decode([LayerInfo].self, forKey: .layers)) ?? []
         if decodedLayers.isEmpty { decodedLayers = [LayerInfo(name: "Layer 1")] }
-        layers = Array(decodedLayers.prefix(SpriteProject.maxLayers))
+        layers = decodedLayers
         // Every frame gets exactly one cel per layer (padding with blanks, dropping extras).
         let n = layers.count, visible = layers.map(\.isVisible)
         let blank = PixelGrid(width: w, height: h)
@@ -262,7 +263,7 @@ struct SpriteProject: Identifiable, Codable, Sendable {
             return frame
         }
         frames = normalized.isEmpty ? [Frame.blank(width: w, height: h, layers: n)] : normalized
-        fps = min(max((try? c.decode(Int.self, forKey: .fps)) ?? 8, 1), 30)
+        fps = min(max((try? c.decode(Int.self, forKey: .fps)) ?? 8, 1), SpriteProject.maxFPS)
         playbackEasing = (try? c.decode(Easing.self, forKey: .playbackEasing)) ?? .linear
         let pal = ((try? c.decode([RGBA].self, forKey: .palette)) ?? []).map { RGBA(r: $0.r, g: $0.g, b: $0.b, a: 255) }
         retroMode = try? c.decodeIfPresent(RetroMode.self, forKey: .retroMode)

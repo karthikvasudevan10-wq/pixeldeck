@@ -253,7 +253,7 @@ extension EditorView {
     func fpsMenu(bordered: Bool) -> some View {
         Menu {
             Picker("Frame rate", selection: Binding(get: { model.project.fps }, set: { model.setFPS($0) })) {
-                ForEach([1, 2, 3, 4, 6, 8, 10, 12, 15, 24, 30], id: \.self) { Text("\($0) fps").tag($0) }
+                ForEach([1, 2, 3, 4, 6, 8, 10, 12, 15, 24, 30, 60], id: \.self) { Text("\($0) fps").tag($0) }
             }
             TimingPicker(model: model)
         } label: {
@@ -323,7 +323,7 @@ extension EditorView {
     }
 
     private func fpsStep(_ symbol: String, label: LocalizedStringKey, by delta: Int) -> some View {
-        Button { model.setFPS(min(30, max(1, model.project.fps + delta))) } label: {
+        Button { model.setFPS(min(SpriteProject.maxFPS, max(1, model.project.fps + delta))) } label: {
             Text(verbatim: symbol).font(AppFont.pixel(16)).foregroundStyle(Theme.text)
                 .frame(width: 52, height: 44)
                 .overlay(Rectangle().strokeBorder(Theme.line, lineWidth: 2))

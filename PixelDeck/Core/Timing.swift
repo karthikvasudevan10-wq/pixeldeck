@@ -37,8 +37,10 @@ struct PlaybackSequence: Equatable, Sendable {
 }
 
 extension Frame {
-    /// A frame can stay on screen for up to this many beats.
-    static let maxHold = 8
+    /// A frame can stay on screen for up to this many beats (ten seconds at 60 frames a second).
+    static let maxHold = 600
+    /// The holds offered in menus (any number up to `maxHold` can be set with the stepper).
+    static let holdChoices = [1, 2, 3, 4, 6, 8, 12, 16, 24, 30, 48, 60, 120, 240, 600]
 }
 
 extension SpriteProject {

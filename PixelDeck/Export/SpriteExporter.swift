@@ -258,7 +258,7 @@ enum SpriteExporter {
         let loop: [String: Any] = [kCGImagePropertyGIFDictionary as String: [kCGImagePropertyGIFLoopCount as String: repeats ? 0 : 1]]
         CGImageDestinationSetProperties(dest, loop as CFDictionary)
         for (i, grid) in grids.enumerated() {
-            let delay = max(PlaybackTiming.minimumDuration, i < durations.count ? durations[i] : 0.125)
+            let delay = max(0.02, i < durations.count ? durations[i] : 0.125)      // a GIF frame lasts at least 1/50 s
             let frameProps: [String: Any] = [kCGImagePropertyGIFDictionary as String: [
                 kCGImagePropertyGIFDelayTime as String: delay,
                 kCGImagePropertyGIFUnclampedDelayTime as String: delay,

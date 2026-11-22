@@ -66,7 +66,7 @@ struct AsepriteImportSheet: View {
 
     private var file: AsepriteFile { item.file }
     private var sprites: [SpriteProject] { Aseprite.projects(from: file, name: item.name, splitTags: splitTags, keepLayers: keepLayers) }
-    private var tooManyLayers: Bool { file.layerNames.count > SpriteProject.maxLayers }
+    private var tooManyLayers: Bool { !Aseprite.layersFit(file) }
 
     var body: some View {
         let result = sprites
@@ -91,7 +91,7 @@ struct AsepriteImportSheet: View {
                         toggle("Tags become animations", detail: Text(verbatim: file.tags.map { "\($0.name) · \($0.frameCount)" }.joined(separator: "   ")), isOn: $splitTags)
                     }
                     toggle("Keep layers", detail: tooManyLayers
-                           ? Text("Pixel Deck sprites have up to \(SpriteProject.maxLayers) layers, so these are joined into one.")
+                           ? Text("With every layer this file is too big to hold in memory, so its layers are joined into one.")
                            : Text(verbatim: file.layerNames.joined(separator: ", ")), isOn: $keepLayers)
                         .disabled(tooManyLayers)
                     VStack(alignment: .leading, spacing: 2) {

@@ -1160,9 +1160,10 @@ final class EditorModel {
 
     // MARK: Layers
 
+    /// There is no fixed number of layers. Every layer is kept for every frame, so what stops a
+    /// new one is the sprite's size in memory (`FeatureAccess.pixelBudget`).
     var canAddLayer: Bool {
-        project.layers.count < SpriteProject.maxLayers
-            && project.frames.count <= FeatureAccess.maxFrames(forArea: bounds.width * bounds.height * (project.layers.count + 1))
+        project.frames.count <= FeatureAccess.maxFrames(forArea: bounds.width * bounds.height * (project.layers.count + 1))
     }
 
     /// Adds an empty layer above the active one and makes it active.
@@ -1261,7 +1262,7 @@ final class EditorModel {
     // MARK: Project settings
 
     func setFPS(_ fps: Int) {
-        project.fps = min(max(fps, 1), 30)
+        project.fps = min(max(fps, 1), SpriteProject.maxFPS)
         finishEdit()
     }
 

@@ -224,14 +224,19 @@ enum Aseprite {
     // MARK: Into sprites
 
     /// The sprites a file becomes. With `splitTags`, each tag is its own sprite ("idle", "run");
-    /// otherwise (or with no tags) the whole file is one. Up to eight layers are kept; with more,
-    /// the visible ones are flattened into one.
+    /// otherwise (or with no tags) the whole file is one. Layers are kept when the sprite fits in
+    /// memory with all of them; otherwise the visible ones are flattened into one.
+    /// Every layer of every frame fits in a sprite's memory budget.
+    static func layersFit(_ file: AsepriteFile) -> Bool {
+        file.frames.count <= FeatureAccess.maxFrames(forArea: file.width * file.height * max(1, file.layerNames.count))
+    }
+
     static func projects(from file: AsepriteFile, name: String, splitTags: Bool = true, keepLayers: Bool = true) -> [SpriteProject] {
         let ranges: [(String, ClosedRange<Int>)] = splitTags && !file.tags.isEmpty
             ? file.tags.map { ("\(name) \($0.name)", $0.from...$0.to) }
             : [(name, 0...(file.frames.count - 1))]
         let bounds = PixelRect(x: -file.width / 2, y: -file.height / 2, width: file.width, height: file.height)
-        let layered = keepLayers && file.layerNames.count <= SpriteProject.maxLayers
+        let layered = keepLayers && layersFit(file)
         return ranges.map { title, range in
             let indices = Array(range)
             var p = SpriteProject(name: title, bounds: bounds, frames: [], fps: 8)
@@ -240,7 +245,7 @@ enum Aseprite {
             }
             // The quickest frame sets the frame rate; slower ones are held for whole beats.
             let shortest = max(1, indices.map { file.durations[$0] }.min() ?? 100)
-            p.fps = min(max(Int((1000.0 / Double(shortest)).rounded()), 1), 30)
+            p.fps = min(max(Int((1000.0 / Double(shortest)).rounded()), 1), SpriteProject.maxFPS)
             let beat = 1000.0 / Double(p.fps)
             p.frames = indices.map { i in
                 var f = layered

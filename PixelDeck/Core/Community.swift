@@ -24,7 +24,8 @@ struct PostArt: Codable, Equatable, Sendable {
         guard let r = project.visibleContentBounds, r.width <= Self.maxSide, r.height <= Self.maxSide else { return nil }
         width = r.width
         height = r.height
-        fps = project.fps
+        // Community posts play at up to 30 frames a second (what every version of the app accepts).
+        fps = min(project.fps, 30)
         easing = project.playbackEasing
         frames = Array(project.grids(croppedTo: r).prefix(Self.maxFrames))
     }

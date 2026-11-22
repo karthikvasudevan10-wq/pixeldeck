@@ -156,7 +156,7 @@ enum AITools {
             model.selectFrame(n - 1)
             return "Now on frame \(n) of \(model.frameCount)."
         case "add_layer":
-            guard model.canAddLayer else { throw AIToolError("This sprite has as many layers as it can hold (\(SpriteProject.maxLayers)).") }
+            guard model.canAddLayer else { throw AIToolError("This sprite is too big in memory for another layer (it has \(model.layers.count)). Fewer frames or a smaller canvas would make room.") }
             let raw = (args["name"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             model.addLayer(named: raw.isEmpty ? nil : String(raw.prefix(24)))
             return "Drawing on new layer \(model.activeLayer + 1) of \(model.layers.count): \"\(model.layers[model.activeLayer].name)\"."
@@ -181,7 +181,7 @@ enum AITools {
             }
             return "Done."
         case "set_speed":
-            guard let fps = int(args["fps"]), (1...30).contains(fps) else { throw AIToolError("fps is a whole number from 1 to 30.") }
+            guard let fps = int(args["fps"]), (1...SpriteProject.maxFPS).contains(fps) else { throw AIToolError("fps is a whole number from 1 to \(SpriteProject.maxFPS).") }
             model.setFPS(fps)
             return "Playing at \(fps) frames per second."
         case "undo":

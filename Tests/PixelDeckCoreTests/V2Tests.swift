@@ -351,11 +351,33 @@ final class TimingTests: XCTestCase {
         return m
     }
 
+    func testSixtyFramesASecondAndLongHolds() {
+        let m = threeFrames()
+        m.setFPS(60)
+        XCTAssertEqual(m.project.fps, 60)
+        XCTAssertEqual(m.frameDurations[0], 1.0 / 60, accuracy: 1e-9)
+        m.setFPS(500)
+        XCTAssertEqual(m.project.fps, SpriteProject.maxFPS)
+        m.setHold(600, at: 0)                       // ten seconds at 60 frames a second
+        XCTAssertEqual(m.frameDurations[0], 10, accuracy: 1e-9)
+    }
+
+    func testLayersHaveNoFixedNumber() throws {
+        let m = threeFrames()
+        for _ in 0..<40 { m.addLayer() }
+        XCTAssertEqual(m.layers.count, 41)
+        XCTAssertTrue(m.canAddLayer)
+        // And they all come back from a saved file.
+        let back = try JSONDecoder().decode(SpriteProject.self, from: JSONEncoder().encode(m.project))
+        XCTAssertEqual(back.layers.count, 41)
+        XCTAssertEqual(back.frames.first?.layers.count, 41)
+    }
+
     func testHoldsStretchAFrame() throws {
         let m = threeFrames()
         m.setHold(3, at: 1)
         XCTAssertEqual(m.frameDurations, [0.125, 0.375, 0.125])
-        m.setHold(99, at: 0)
+        m.setHold(99_999, at: 0)
         XCTAssertEqual(m.project.frames[0].hold, Frame.maxHold)
         let back = try JSONDecoder().decode(SpriteProject.self, from: JSONEncoder().encode(m.project))
         XCTAssertEqual(back.frames.map(\.hold), [Frame.maxHold, 3, 1])

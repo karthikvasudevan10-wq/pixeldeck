@@ -128,7 +128,7 @@ struct FrameRow: View {
         .contextMenu {
             Button { model.duplicateFrame(at: index) } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
             Picker(selection: Binding(get: { frame.hold }, set: { model.setHold($0, at: index) })) {
-                ForEach(1...Frame.maxHold, id: \.self) { n in Text(verbatim: "×\(n)").tag(n) }
+                ForEach(Array(Set(Frame.holdChoices + [frame.hold])).sorted(), id: \.self) { n in Text(verbatim: "×\(n)").tag(n) }
             } label: {
                 Label("Hold this frame", systemImage: "timer")
             }
@@ -350,7 +350,7 @@ private struct ActionRow: View {
     var onExport: () -> Void
     var onTrace: () -> Void
 
-    static let fpsChoices = [1, 2, 3, 4, 6, 8, 10, 12, 15, 24, 30]
+    static let fpsChoices = [1, 2, 3, 4, 6, 8, 10, 12, 15, 24, 30, 60]
 
     var body: some View {
         HStack(spacing: 6) {
