@@ -206,23 +206,24 @@ extension EditorView {
         HStack(spacing: 2) {
             // Room for the window's close, minimise and zoom buttons (they aren't there in full screen).
             if !macFullScreen { Color.clear.frame(width: 76, height: 1) }
-            deskButton(systemImage: "sidebar.left", "Sprites", active: showingSidebar) {
+            deskButton(systemImage: "sidebar.left", "Sprites", tip: "Sprites: show or hide your list of sprites", active: showingSidebar) {
                 withAnimation(.easeOut(duration: 0.15)) { showingSidebar.toggle() }
             }
             titleMenu(size: 15)
             Spacer(minLength: 8)
-            barButton(.undo, "Undo") { model.undo() }.disabled(!model.canUndo)
-            barButton(.redo, "Redo") { model.redo() }.disabled(!model.canRedo)
-            barButton(model.isPlaying ? .pause : .play, model.isPlaying ? "Pause" : "Play") { model.isPlaying.toggle() }
+            barButton(.undo, "Undo", tip: "Undo the last change. Key: Command-Z") { model.undo() }.disabled(!model.canUndo)
+            barButton(.redo, "Redo", tip: "Redo what was undone. Key: Shift-Command-Z") { model.redo() }.disabled(!model.canRedo)
+            barButton(model.isPlaying ? .pause : .play, model.isPlaying ? "Pause" : "Play",
+                      tip: "Play or pause the animation. Key: Space") { model.isPlaying.toggle() }
                 .disabled(model.frameCount < 2 && !model.isPlaying)
-            barButton(.layers, "Layers") { showingLayers = true }
+            barButton(.layers, "Layers", tip: "Layers: rename, reorder, hide and set the tracing picture") { showingLayers = true }
             zoomMenu
-            barButton(.community, "Share to Community") {
+            barButton(.community, "Share to Community", tip: "Share this sprite to Community") {
                 model.commitSelection()
                 sharingToCommunity = true
             }
-            barButton(.export, "Export") { openExport() }
-            deskButton(systemImage: "sidebar.right", "Inspector", active: showingInspector) {
+            barButton(.export, "Export", tip: "Export: save as PNG, GIF, video, sprite sheet and more. Key: Command-E") { openExport() }
+            deskButton(systemImage: "sidebar.right", "Inspector", tip: "Panel: show or hide layers, colours and animation", active: showingInspector) {
                 withAnimation(.easeOut(duration: 0.15)) { showingInspector.toggle() }
             }
         }
@@ -254,6 +255,7 @@ extension EditorView {
             .contentShape(Rectangle())
         }
         .accessibilityLabel(Text("\(model.project.name), frame \(model.currentIndex + 1) of \(model.frameCount). Sprite menu"))
+        .help("Sprite menu: rename, grid, timing, flip and rotate, and more")
     }
 
     /// The zoom, as a percentage (100% is one screen point for each art pixel).
@@ -270,9 +272,10 @@ extension EditorView {
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(Text("Zoom, \(Int((model.zoom * 100).rounded())) percent"))
+        .help("Zoom: zoom in, zoom out, or fit the art to the window")
     }
 
-    private func deskButton(systemImage: String, _ label: LocalizedStringKey, active: Bool = false,
+    private func deskButton(systemImage: String, _ label: LocalizedStringKey, tip: LocalizedStringKey? = nil, active: Bool = false,
                             action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
@@ -284,6 +287,7 @@ extension EditorView {
         .buttonStyle(.plain)
         .accessibilityLabel(label)
         .accessibilityAddTraits(active ? .isSelected : [])
+        .help(tip ?? label)
     }
 
     // MARK: iPad top bar and tool rail
@@ -323,6 +327,7 @@ extension EditorView {
                     }
                     .buttonStyle(TileButtonStyle(active: on))
                     .accessibilityLabel(Text("Brush size \(n)"))
+                    .help(Text("Brush size \(n): the pencil and eraser are \(n) pixels wide. Keys: [ and ]"))
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
@@ -378,6 +383,7 @@ extension EditorView {
         }
         .buttonStyle(TileButtonStyle(active: model.onionSkinEnabled))
         .accessibilityLabel(Text("Onion skin and timing. \(model.onionBefore) frames before, \(model.onionAfter) after"))
+        .help("Onion skin: see faint copies of the frames before and after while you draw. Also holds and timing.")
         Menu {
             Picker("When it ends", selection: Binding(get: { model.project.loopMode }, set: { model.setLoopMode($0) })) {
                 ForEach(LoopMode.allCases) { Text($0.title).tag($0) }
@@ -392,6 +398,7 @@ extension EditorView {
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(Text("When it ends: \(Text(model.project.loopMode.title))"))
+        .help("When the animation ends: loop, play back and forth, or play once")
         Menu {
             Picker("Frame rate", selection: Binding(get: { model.project.fps }, set: { model.setFPS($0) })) {
                 ForEach([1, 2, 3, 4, 6, 8, 10, 12, 15, 24, 30, 60], id: \.self) { Text("\($0) fps").tag($0) }
@@ -407,6 +414,7 @@ extension EditorView {
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(Text("Frame rate, \(model.project.fps) frames per second"))
+        .help("Frame rate: how many frames play each second, and how the timing eases")
     }
 
     // MARK: Moving between sprites
@@ -512,11 +520,13 @@ struct DeskInspector: View {
                 .buttonStyle(TileButtonStyle())
                 .disabled(!model.canAddLayer)
                 .accessibilityLabel("New layer")
+                .help("Add: a new, empty layer above this one")
                 Button { model.mergeLayerDown() } label: {
                     Text("Merge down").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
                 }
                 .buttonStyle(TileButtonStyle())
                 .disabled(model.activeLayer == 0)
+                .help("Merge down: join this layer with the one below it")
                 Spacer(minLength: 0)
             }
         }
@@ -552,6 +562,7 @@ struct DeskInspector: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(layer.isVisible ? Text("Hide layer") : Text("Show layer"))
+            .help("Show or hide this layer")
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
@@ -582,6 +593,7 @@ struct DeskInspector: View {
                         .accessibilityLabel(Text("Colour \(c.hexString)"))
                         .accessibilityAddTraits(.isButton)
                         .accessibilityAction { model.pickColor(c) }
+                        .help("A lighter or darker step of your colour: click to draw with it")
                 }
             }
             .padding(.horizontal, 4)
@@ -594,6 +606,7 @@ struct DeskInspector: View {
             }
             .buttonStyle(TileButtonStyle())
             .accessibilityHint("Brightness, contrast, hue and saturation of the selection, layer, frame or every frame")
+            .help("Adjust colours: brightness, contrast, hue and saturation of the selection, layer, frame or every frame. Key: Shift-Command-U")
             MoreColorsSection(model: model)
         }
     }
@@ -622,6 +635,7 @@ struct DeskInspector: View {
                     }
                     .buttonStyle(TileButtonStyle())
                     .accessibilityLabel(Text(preset.title))
+                    .help(Text("\(Text(preset.title)): draws the frames of this movement from your picture"))
                 }
             }
         }

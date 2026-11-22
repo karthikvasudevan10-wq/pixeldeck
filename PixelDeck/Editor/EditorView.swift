@@ -455,6 +455,7 @@ struct EditorView: View {
                             .buttonStyle(TileButtonStyle(active: on))
                             .accessibilityLabel(Text(kind.title))
                             .accessibilityAddTraits(on ? .isSelected : [])
+                            .help(Text("\(Text(kind.title)): drag on the canvas to draw it"))
                             .id(kind)
                         }
                     }
@@ -473,6 +474,7 @@ struct EditorView: View {
             .buttonStyle(TileButtonStyle(active: model.shapeFilled))
             .disabled(model.shapeKind == .line)
             .accessibilityLabel(model.shapeFilled ? Text("Filled shapes") : Text("Outline shapes"))
+            .help("Filled or outline: draw shapes solid, or just their edge")
             // Outline thickness: tap to step through 1 to 4 pixels.
             Button {
                 model.shapeThickness = model.shapeThickness >= ShapeRaster.thicknessRange.upperBound ? 1 : model.shapeThickness + 1
@@ -488,6 +490,7 @@ struct EditorView: View {
             .disabled(model.shapeFilled && model.shapeKind != .line)
             .accessibilityLabel(Text("Outline thickness, \(model.shapeThickness) pixels"))
             .accessibilityHint("Changes how thick shape outlines and lines are drawn")
+            .help("Thickness: how thick lines and outlines are, 1 to 4 pixels")
             Button { model.lockProportions.toggle() } label: {
                 Text(verbatim: "1:1")
                     .font(AppFont.pixel(11))
@@ -497,6 +500,7 @@ struct EditorView: View {
             .buttonStyle(TileButtonStyle(active: model.lockProportions))
             .accessibilityLabel("Lock proportions")
             .accessibilityAddTraits(model.lockProportions ? .isSelected : [])
+            .help("1:1: keep shapes as wide as they are tall (squares and circles)")
         }
         .padding(6)
         .background(Theme.chip)
@@ -522,22 +526,27 @@ struct EditorView: View {
                     .buttonStyle(TileButtonStyle(active: on))
                     .accessibilityLabel(Text("Brush size \(n)"))
                     .accessibilityAddTraits(on ? .isSelected : [])
+                    .help(Text("Brush size \(n): the pencil and eraser are \(n) pixels wide. Keys: [ and ]"))
                 }
                 Theme.line.frame(width: 2, height: 28)
-                stripToggle("Round", on: model.brushRound) { model.brushRound.toggle() }
+                stripToggle("Round", on: model.brushRound, tip: "Round: a round brush tip instead of a square one (sizes 3 and 4)") { model.brushRound.toggle() }
                     .accessibilityLabel("Round brush")
-                StripChip(title: Text("Pixel-perfect"), on: model.pixelPerfect) { model.pixelPerfect.toggle() }
+                StripChip(title: Text("Pixel-perfect"), on: model.pixelPerfect,
+                          tip: "Pixel-perfect: tidies doubled pixels and corners as you draw, so curves stay one pixel wide. Key: P") { model.pixelPerfect.toggle() }
                     .accessibilityHint("Cleans doubled pixels and L-shaped corners as you draw, so curves stay one pixel wide. Works with the smallest brush.")
                 if model.tool == .pencil {
-                    StripChip(title: Text("Shade"), on: model.shadeMode != nil) {
+                    StripChip(title: Text("Shade"), on: model.shadeMode != nil,
+                              tip: "Shade: the brush darkens or lightens what you have drawn, following your light. Key: H") {
                         model.shadeMode = model.shadeMode == nil ? .shade : nil
                     }
                     .accessibilityLabel("Shading assistant")
                     .accessibilityHint("The brush shades or highlights what you've drawn, following your light")
                 }
-                stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes && model.project.retroMode == nil) { model.dither.toggle() }
+                stripToggle("Dither", on: model.dither, pro: !model.access.allowsArtistBrushes && model.project.retroMode == nil,
+                            tip: "Dither: draws every other pixel, a checkerboard that blends two colours") { model.dither.toggle() }
                     .accessibilityLabel("Dither brush")
-                stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes) { model.mirrorVertical.toggle() }
+                stripToggle("⇕", on: model.mirrorVertical, pro: !model.access.allowsArtistBrushes,
+                            tip: "Top-bottom symmetry: copies what you draw above and below. With Mirror on too, it is four-way.") { model.mirrorVertical.toggle() }
                     .accessibilityLabel("Top-bottom symmetry")
                     .accessibilityHint("With Mirror on too, it's four-way")
             }
@@ -546,7 +555,7 @@ struct EditorView: View {
         .padding(.horizontal, 12)
     }
 
-    private func stripToggle(_ label: String, on: Bool, pro: Bool = false, action: @escaping () -> Void) -> some View {
+    private func stripToggle(_ label: String, on: Bool, pro: Bool = false, tip: LocalizedStringKey? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(verbatim: label)
                 .font(AppFont.pixel(11))
@@ -557,6 +566,7 @@ struct EditorView: View {
         }
         .buttonStyle(TileButtonStyle(active: on))
         .accessibilityAddTraits(on ? .isSelected : [])
+        .tip(tip)
     }
 
     /// One 4×4 dot per frame; the current one is a 12×4 accent bar.

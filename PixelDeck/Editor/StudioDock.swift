@@ -54,6 +54,7 @@ struct FrameRow: View {
                 .buttonStyle(PrimaryButtonStyle(depth: 4))
                 .disabled(model.frameCount < 2 && !model.isPlaying)
                 .accessibilityLabel(model.isPlaying ? Text("Pause") : Text("Play"))
+                .help("Play or pause the animation. Key: Space")
                 .tourHighlight(.play)
             }
 
@@ -72,6 +73,7 @@ struct FrameRow: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel("Add frame")
+                        .help("New frame: add a frame after this one. Key: N")
                     }
                 }
                 .onChange(of: model.currentIndex) { _, i in
@@ -157,6 +159,7 @@ struct FrameRow: View {
             Button(role: .destructive) { model.deleteFrame(at: index) } label: { Label("Delete", systemImage: "trash") }
         }
         .accessibilityLabel(current ? Text("Frame \(index + 1), selected") : Text("Frame \(index + 1)"))
+        .help(Text("Frame \(index + 1): click to work on it. Right-click to duplicate, hold, add sound or delete."))
         .accessibilityValue(model.hasSound(onFrame: index) ? Text("Has sound") : Text(verbatim: ""))
     }
 }
@@ -271,6 +274,7 @@ struct PaletteRow: View {
                 .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
                 .accessibilityAction { model.pickColor(c) }
                 .accessibilityAction(named: Text("Change colour")) { onEdit(i) }
+                .help(Text("Colour \(i + 1): click to draw with it, press and hold to change it. Keys: 1 to 0"))
                 .tourHighlight(.swatch(i))
         }
     }
@@ -316,6 +320,7 @@ struct ToolRow: View {
         .buttonStyle(TileButtonStyle(active: model.mirror))
         .accessibilityLabel("Mirror")
         .accessibilityAddTraits(model.mirror ? .isSelected : [])
+        .help("Mirror: whatever you draw is copied on the other side. Key: Y")
         tool(.select, icon: .select, fixed: fixed)
     }
 
@@ -330,6 +335,7 @@ struct ToolRow: View {
         .buttonStyle(TileButtonStyle(active: active))
         .accessibilityLabel(Text(t.title))
         .accessibilityAddTraits(active ? .isSelected : [])
+        .help(t.tip)
     }
 }
 

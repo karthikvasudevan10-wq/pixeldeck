@@ -11,6 +11,15 @@ extension SelectionMode {
         }
     }
 
+    /// The tooltip.
+    var tip: LocalizedStringKey {
+        switch self {
+        case .box: "Box: drag a rectangle over the pixels you want"
+        case .lasso: "Lasso: draw around the pixels you want, any shape"
+        case .wand: "Magic wand: click a colour to select the pixels touching it"
+        }
+    }
+
     var hint: LocalizedStringResource {
         switch self {
         case .box: "Drag over pixels to select them"

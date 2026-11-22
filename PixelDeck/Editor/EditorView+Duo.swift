@@ -268,13 +268,15 @@ extension EditorView {
         .accessibilityLabel(Text("Frame rate, \(model.project.fps) frames per second"))
     }
 
-    func barButton(_ icon: PixelIcon, _ label: LocalizedStringKey, tint: Color = Theme.text,
+    /// `tip`: the tooltip (the label by default).
+    func barButton(_ icon: PixelIcon, _ label: LocalizedStringKey, tint: Color = Theme.text, tip: LocalizedStringKey? = nil,
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             icon.view(size: 20).foregroundStyle(tint).frame(width: 44, height: 44).contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(label)
+        .help(tip ?? label)
     }
 
     // MARK: Easel

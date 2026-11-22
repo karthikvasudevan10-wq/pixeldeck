@@ -38,6 +38,8 @@ struct StripChip: View {
     let title: Text
     var on = false
     var pro = false
+    /// The tooltip.
+    var tip: LocalizedStringKey? = nil
     var action: () -> Void
 
     var body: some View {
@@ -53,6 +55,7 @@ struct StripChip: View {
         }
         .buttonStyle(TileButtonStyle(active: on))
         .accessibilityAddTraits(on ? .isSelected : [])
+        .tip(tip)
     }
 }
 
@@ -167,8 +170,8 @@ struct SelectionStrip: View {
             if model.hasSelection {
                 if let dial { dialRow(dial) }
                 OptionStrip {
-                    StripChip(title: Text("Rotate"), on: dial == .rotate) { dial = dial == .rotate ? nil : .rotate }
-                    StripChip(title: Text("Scale"), on: dial == .scale) { dial = dial == .scale ? nil : .scale }
+                    StripChip(title: Text("Rotate"), on: dial == .rotate, tip: "Rotate: turn the selected pixels") { dial = dial == .rotate ? nil : .rotate }
+                    StripChip(title: Text("Scale"), on: dial == .scale, tip: "Scale: make the selected pixels bigger or smaller") { dial = dial == .scale ? nil : .scale }
                     Menu {
                         Button { model.flipSelection(horizontal: true) } label: {
                             Label { Text(FrameTransform.flipHorizontal.title) } icon: { Image(systemName: FrameTransform.flipHorizontal.systemImage) }
@@ -185,6 +188,7 @@ struct SelectionStrip: View {
                             .background(Theme.tool)
                             .contentShape(Rectangle())
                     }
+                    .help("Flip: mirror the selected pixels left to right or top to bottom")
                     Theme.line.frame(width: 2, height: 28)
                     if model.floating != nil {
                         Button(action: onTween) {
@@ -194,26 +198,29 @@ struct SelectionStrip: View {
                         .disabled(!model.canTween)
                         .accessibilityLabel("Tween")
                         .accessibilityHint("Draws the in-between frames along the way you dragged the selection")
+                        .help("Tween: draw the in-between frames along the way you dragged the selection")
                     }
                     if let panels {
-                        StripChip(title: Text("Animate")) { panels.presets = true }
-                        StripChip(title: Text("Colours")) { panels.adjust = true }
-                        StripChip(title: Text("Stamp")) { panels.stamps = true }
+                        StripChip(title: Text("Animate"), tip: "Animate: make this selection bounce, blink, float and more") { panels.presets = true }
+                        StripChip(title: Text("Colours"), tip: "Colours: change the brightness, contrast, hue and saturation of the selection") { panels.adjust = true }
+                        StripChip(title: Text("Stamp"), tip: "Stamp: save this selection to reuse, or place a saved stamp") { panels.stamps = true }
                     }
                     Button { model.deleteSelection(); dial = nil } label: {
                         PixelIcon.trash.view(size: 18).frame(width: 36, height: 36).contentShape(Rectangle())
                     }
                     .buttonStyle(TileButtonStyle())
                     .accessibilityLabel("Delete selected pixels")
+                    .help("Delete the selected pixels. Key: Delete")
                     Button { model.commitSelection(); dial = nil } label: {
                         Text("Done").font(AppFont.pixel(12)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
                     }
                     .buttonStyle(PrimaryButtonStyle(depth: 3))
+                    .help("Done: put the selection down where it is")
                 }
             }
             OptionStrip {
                 ForEach(SelectionMode.allCases) { mode in
-                    StripChip(title: Text(mode.title), on: model.selectionMode == mode) {
+                    StripChip(title: Text(mode.title), on: model.selectionMode == mode, tip: mode.tip) {
                         model.selectionMode = mode
                     }
                 }

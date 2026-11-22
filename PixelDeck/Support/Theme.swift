@@ -195,6 +195,15 @@ struct SectionLabel: View {
     }
 }
 
+extension View {
+    /// A tooltip (shown when the pointer rests on the control, on the Mac and on iPad with a
+    /// trackpad or mouse), when there is one to show.
+    @ViewBuilder
+    func tip(_ text: LocalizedStringKey?) -> some View {
+        if let text { help(text) } else { self }
+    }
+}
+
 /// Square-cornered card.
 extension View {
     func card(padding: CGFloat = 14) -> some View {

@@ -17,6 +17,20 @@ extension Tool {
     }
 }
 
+extension Tool {
+    /// For the tooltip shown when the pointer rests on the tool: its name, what it does, and its key.
+    var tip: LocalizedStringKey {
+        switch self {
+        case .pencil: "Pencil: draw pixels in your colour. Key: B"
+        case .eraser: "Eraser: rub pixels out. Key: E (X switches to it and back)"
+        case .fill: "Fill: flood an area with your colour. Key: G"
+        case .eyedropper: "Colour picker: click a pixel to draw with its colour. Key: I"
+        case .select: "Select and move: box, lasso or wand some pixels, then move, turn, resize or copy them. Key: M"
+        case .shape: "Shapes: lines, rectangles, circles, stars and more. Key: U"
+        }
+    }
+}
+
 extension ShapeKind {
     var title: LocalizedStringResource {
         switch self {
