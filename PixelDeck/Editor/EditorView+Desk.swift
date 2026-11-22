@@ -73,7 +73,8 @@ extension EditorView {
                     Theme.line.frame(width: 2)
                     DeskInspector(model: model, tab: $inspectorTab,
                                   onEditSwatch: { editingSwatch = SwatchEdit(index: $0) },
-                                  onLayers: { showingLayers = true })
+                                  onLayers: { showingLayers = true },
+                                  onPalettes: { showingPalettes = true })
                         .frame(width: Self.inspectorWidth)
                 }
             }
@@ -456,13 +457,15 @@ extension EditorView {
 
 // MARK: Inspector
 
-/// The desk's right-hand panel: layers, the palette with its ramp, and animation presets, in one
-/// scrolling column. The tabs jump to a section.
+/// The desk's right-hand panel. Layers is the overview (layers, the palette with its ramp, and
+/// animation presets, as designed); Colours and Animate each show their own tools in full.
 struct DeskInspector: View {
     let model: EditorModel
     @Binding var tab: InspectorTab
     var onEditSwatch: (Int) -> Void
     var onLayers: () -> Void
+    /// Open the palettes panel (ready-made and saved palettes, ramps, colours from a photo).
+    var onPalettes: () -> Void
     @Environment(StudioPanelState.self) private var panels: StudioPanelState?
     @State private var bridge = AIBridge.shared
 
@@ -479,27 +482,36 @@ struct DeskInspector: View {
                 .padding(3)
                 .background(Theme.tool)
                 .padding(12)
-            ScrollViewReader { proxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        if tab == .ai && showsAI {
-                            AIInspectorPanel()
-                        } else {
-                            layers.id(InspectorTab.layers)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    if tab == .ai && showsAI {
+                        AIInspectorPanel()
+                    } else {
+                        switch tab {
+                        case .colours:
+                            // Everything about colour, in one place.
+                            palette
                             Theme.line.frame(height: 2)
-                            palette.id(InspectorTab.colours)
+                            coloursHelp
+                        case .animate:
+                            // Everything about movement, in one place.
+                            presets
                             Theme.line.frame(height: 2)
-                            presets.id(InspectorTab.animate)
+                            animateTools
+                        default:
+                            // The overview, as designed: layers, the palette, then presets.
+                            layers
+                            Theme.line.frame(height: 2)
+                            palette
+                            Theme.line.frame(height: 2)
+                            presets
                         }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 16)
                 }
-                .scrollBounceBehavior(.basedOnSize)
-                .onChange(of: tab) { _, t in
-                    withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(t, anchor: .top) }
-                }
+                .padding(.horizontal, 12)
+                .padding(.bottom, 16)
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
         .background(Theme.surface)
         // An assistant has started drawing: show what it's doing.
@@ -601,6 +613,12 @@ struct DeskInspector: View {
                  comment: "Under the ramp: the colour it starts from (e.g. Blue), and the hue shift in degrees")
                 .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
                 .padding(.horizontal, 4)
+            Button(action: onPalettes) {
+                Text("Choose a palette…").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
+            }
+            .buttonStyle(TileButtonStyle())
+            .accessibilityHint("Ready-made palettes, your saved ones, ramps, and colours from a photo")
+            .help("Choose a palette: ready-made sets, your saved ones, ramps, and colours from a photo. Key: Command-K")
             Button { panels?.adjust = true } label: {
                 Text("Adjust colours…").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
             }
@@ -608,6 +626,40 @@ struct DeskInspector: View {
             .accessibilityHint("Brightness, contrast, hue and saturation of the selection, layer, frame or every frame")
             .help("Adjust colours: brightness, contrast, hue and saturation of the selection, layer, frame or every frame. Key: Shift-Command-U")
             MoreColorsSection(model: model)
+        }
+    }
+
+    /// Under the palette on the Colours tab: how the swatches work.
+    private var coloursHelp: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("How colours work").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            Text("Click a swatch to draw with it. Press and hold a swatch to change its colour. The strip under the swatches is your colour in lighter and darker steps.")
+                .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+            Text("Choose a palette swaps all ten swatches at once: ready-made sets, palettes you have saved, or colours taken from a photo.")
+                .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
+        }
+    }
+
+    /// Under the presets on the Animate tab: the other animation tools.
+    private var animateTools: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Animation tools").font(AppFont.pixel(11)).foregroundStyle(Theme.muted)
+            Button { panels?.onionTiming = true } label: {
+                Text("Onion skin and timing…").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
+            }
+            .buttonStyle(TileButtonStyle())
+            .help("Onion skin and timing: faint copies of nearby frames while you draw, and how long each frame is held")
+            Button { panels?.sound = true } label: {
+                Text("Sound on this frame…").font(AppFont.pixel(11)).padding(.horizontal, 12).frame(height: 36).contentShape(Rectangle())
+            }
+            .buttonStyle(TileButtonStyle())
+            .help("Sound on this frame: record or choose a sound that starts when this frame plays")
+            MotionGuideMenu(model: model)
+                .font(AppFont.body(14, .medium, relativeTo: .subheadline))
+                .tint(Theme.text)
+                .help("Motion guides: a faint figure showing a walk, run or jump to draw over")
+            Text("A preset draws the frames of a movement from your picture. Frame rate and what happens at the end are under the canvas, in the timeline.")
+                .font(AppFont.body(13, relativeTo: .footnote)).foregroundStyle(Theme.muted)
         }
     }
 
